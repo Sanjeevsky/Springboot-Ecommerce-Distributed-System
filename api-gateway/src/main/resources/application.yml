@@ -1,0 +1,19 @@
+server:
+  port: 8081
+
+#Spring Cloud Gateway to automatically fetch all routes to api-gateway
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lowerCaseServiceId: true
+
+#
+#      routes:
+#        - id: <path> //service name
+#        uri: <service-path> // lb://service-name
+#
