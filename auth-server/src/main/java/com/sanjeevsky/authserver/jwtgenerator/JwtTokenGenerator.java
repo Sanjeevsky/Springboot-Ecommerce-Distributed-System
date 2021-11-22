@@ -26,7 +26,7 @@ public class JwtTokenGenerator {
                 .setSubject(user.getPassword())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + VALIDITY))
-                .signWith(SignatureAlgorithm.ES512, secret)
+                .signWith(SignatureAlgorithm.HS256, secret)
                 .compact();
 
         return new LoginDTO(user.getEmail(), jwt);
