@@ -12,8 +12,30 @@ spring:
           enabled: true
           lowerCaseServiceId: true
 
-#
+
 #      routes:
-#        - id: <path> //service name
-#        uri: <service-path> // lb://service-name
-#
+#      - id: auth-service
+#        uri: lb://auth-service
+#        predicates:
+#          - Path=/auth-service/**
+#      - id: customer-service
+#        uri: lb://customer-service
+#        predicates:
+#          - Path=/customer-service/**
+#        filters:
+#          - AuthenticationFilter
+#      - id: configserver
+#        uri: lb://configserver
+#        predicates:
+#          - Path=/configserver/**
+#      - id: payment-service
+#        uri: lb://payment-service
+#        predicates:
+#          - Path=/payment-service/**
+#      - id: shopping-cart-service
+#        uri: lb://shopping-cart-service
+#        predicates:
+#          - Path=/shopping-cart-service/**
+
+
+
