@@ -1,13 +1,15 @@
 package com.sanjeevsky.catalogservice.model;
 
 import lombok.*;
-import org.springframework.data.annotation.CreatedDate;
-import org.springframework.data.annotation.LastModifiedDate;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.Type;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @AllArgsConstructor
@@ -19,7 +21,8 @@ public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false)
-    private Long id;
+    @Type(type = "org.hibernate.type.UUIDCharType")
+    private UUID id;
     private String name;
     private String description;
     @ManyToOne
@@ -35,14 +38,14 @@ public class Product {
     private String model;
     private double mrpPrice;
     private double salePrice;
+    private double gstValue;
     @OneToMany(cascade = CascadeType.ALL)
     private List<Variant> variants;
-    @ManyToMany(cascade = CascadeType.ALL)
-    private List<Discount> discounts;
-    @CreatedDate
-    private Date createdAt;
-    @LastModifiedDate
-    private Date modifiedAt;
+    private double discount;
     private boolean hasVariant;
     private ArrayList<String> images;
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+    @UpdateTimestamp
+    private LocalDateTime modifiedAt;
 }

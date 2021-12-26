@@ -9,23 +9,25 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 public class CategoryController {
     @Autowired
     private CategoryService categoryService;
 
     @GetMapping("/getCategory/{id}")
-    ResponseEntity<?> getCategory(@PathVariable long id) throws CategoryNotExistsException {
+    ResponseEntity<?> getCategory(@PathVariable UUID id) throws CategoryNotExistsException {
         return new ResponseEntity<>(categoryService.getCategory(id), HttpStatus.OK);
     }
 
     @GetMapping("/getCategories")
-    ResponseEntity<?> getCategories() throws  CategoryListEmptyException {
+    ResponseEntity<?> getCategories() throws CategoryListEmptyException {
         return new ResponseEntity<>(categoryService.getAllCategory(), HttpStatus.OK);
     }
 
     @PostMapping("/add-category")
-    ResponseEntity<?> addCategory(@RequestBody Category category){
-        return new ResponseEntity<>(categoryService.addCategory(category),HttpStatus.CREATED);
+    ResponseEntity<?> addCategory(@RequestBody Category category) {
+        return new ResponseEntity<>(categoryService.addCategory(category), HttpStatus.CREATED);
     }
 }

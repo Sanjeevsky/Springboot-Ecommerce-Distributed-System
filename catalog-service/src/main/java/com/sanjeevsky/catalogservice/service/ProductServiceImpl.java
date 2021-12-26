@@ -35,13 +35,14 @@ public class ProductServiceImpl implements ProductService {
             product.setBrand(brandService.getBrand(productRequest.getBrandId()));
             product.setCategory(categoryService.getCategory(productRequest.getCategoryId()));
             product.setSubCategory(subCategoryService.getSubCategory(productRequest.getSubCategoryId()));
-            product.setDiscounts(productRequest.getDiscounts());
+            product.setDiscount(productRequest.getDiscount());
             product.setHasVariant(productRequest.isHasVariant());
             product.setModel(productRequest.getModel());
             product.setMrpPrice(productRequest.getMrpPrice());
             product.setSalePrice(productRequest.getSalePrice());
             product.setImages(productRequest.getImages());
             product.setStatus(productRequest.getStatus());
+            product.setGstValue(productRequest.getGstValue());
             return productRepository.save(product);
         }
     }

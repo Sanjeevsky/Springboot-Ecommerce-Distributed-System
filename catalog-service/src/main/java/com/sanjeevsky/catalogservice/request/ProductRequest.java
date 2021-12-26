@@ -1,6 +1,5 @@
 package com.sanjeevsky.catalogservice.request;
 
-import com.sanjeevsky.catalogservice.model.Discount;
 import com.sanjeevsky.catalogservice.model.Variant;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,6 +8,7 @@ import lombok.Setter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -18,14 +18,15 @@ public class ProductRequest {
     private String name;
     private String description;
     private String model;
-    private long brandId;
-    private long categoryId;
-    private long subCategoryId;
+    private UUID brandId;
+    private UUID categoryId;
+    private UUID subCategoryId;
     private double mrpPrice;
     private double salePrice;
+    private double gstValue;
     private int status;
     private List<Variant> variants;
-    private List<Discount> discounts;
+    private double discount;
     private ArrayList<String> images;
     private boolean hasVariant;
 }

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static com.sanjeevsky.catalogservice.service.ProductServiceImpl.CATEGORY_DOES_NOT_EXISTS;
 
@@ -19,7 +20,7 @@ public class CategoryServiceImpl implements CategoryService {
     private CategoryRepository categoryRepository;
 
     @Override
-    public Category getCategory(Long categoryId) throws CategoryNotExistsException {
+    public Category getCategory(UUID categoryId) throws CategoryNotExistsException {
         Optional<Category> category = categoryRepository.findById(categoryId);
         if (category.isEmpty()) {
             throw new CategoryNotExistsException(CATEGORY_DOES_NOT_EXISTS);

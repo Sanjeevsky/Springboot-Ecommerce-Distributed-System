@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/catalog-service")
-public class CatalogController {
+public class ProductCatalogController {
     @Autowired
     private ProductService repository;
 

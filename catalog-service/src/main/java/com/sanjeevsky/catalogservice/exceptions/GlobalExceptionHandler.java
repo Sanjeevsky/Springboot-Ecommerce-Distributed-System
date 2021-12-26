@@ -12,6 +12,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<String>(exception.getMessage(), HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(BrandAlreadyExistsException.class)
+    public ResponseEntity<?> exceptionHandler(BrandAlreadyExistsException exception) {
+        return new ResponseEntity<String>(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
     @ExceptionHandler(SubCategoryListEmptyException.class)
     public ResponseEntity<?> exceptionHandler(SubCategoryListEmptyException exception) {
         return new ResponseEntity<String>(exception.getMessage(), HttpStatus.NOT_FOUND);
