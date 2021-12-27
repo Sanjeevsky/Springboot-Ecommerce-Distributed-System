@@ -7,13 +7,15 @@ import com.sanjeevsky.catalogservice.request.ProductRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+import java.util.UUID;
+
+import static com.sanjeevsky.catalogservice.utils.ErrorConstants.NO_PRODUCT_FOUND_WITH_GIVEN_UUID;
+import static com.sanjeevsky.catalogservice.utils.ErrorConstants.PRODUCT_WITH_THIS_MODEL_AND_BRAND_ALREADY_EXISTS_IN_CATALOG;
+
 @Service
 public class ProductServiceImpl implements ProductService {
 
-    public static final String PRODUCT_WITH_THIS_MODEL_AND_BRAND_ALREADY_EXISTS_IN_CATALOG = "Product with this Model and Brand Already Exists in Catalog...!!!";
-    public static final String BRAND_DOES_NOT_EXISTS = "Brand With Given Id Doesn't Exists...!!";
-    public static final String CATEGORY_DOES_NOT_EXISTS = "Category with Given Id Does not Exists ..!!";
-    public static final String SUB_CATEGORY_DOES_NOT_EXISTS = "Sub-Category with Given Id Does not Exists ..!!";
     @Autowired
     private ProductRepository productRepository;
     @Autowired
@@ -45,5 +47,14 @@ public class ProductServiceImpl implements ProductService {
             product.setGstValue(productRequest.getGstValue());
             return productRepository.save(product);
         }
+    }
+
+    @Override
+    public Product getProduct(UUID uuid) throws NoSuchProductExistsException {
+        Optional<Product> product = productRepository.findById(uuid);
+        if (product.isEmpty()) {
+            throw new NoSuchProductExistsException(NO_PRODUCT_FOUND_WITH_GIVEN_UUID);
+        }
+        return product.get();
     }
 }

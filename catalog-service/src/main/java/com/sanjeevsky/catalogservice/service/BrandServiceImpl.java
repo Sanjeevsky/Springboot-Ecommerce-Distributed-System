@@ -12,12 +12,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.sanjeevsky.catalogservice.service.ProductServiceImpl.BRAND_DOES_NOT_EXISTS;
+import static com.sanjeevsky.catalogservice.utils.ErrorConstants.*;
 
 @Service
 public class BrandServiceImpl implements BrandService {
-    public static final String BRAND_LIST_EMPTY = "Brand List Empty";
-    public static final String BRAND_ALREADY_EXISTS = "Brand Already Exists";
+
     @Autowired
     private BrandRepository brandRepository;
 
@@ -49,12 +48,12 @@ public class BrandServiceImpl implements BrandService {
     }
 
     @Override
-    public Brand addBrand(Brand brand) throws BrandAlreadyExistsException {
-        Optional<Brand> name = brandRepository.findOneByName(brand.getName());
-        if (name.isPresent()) {
+    public Brand addBrand(String name) throws BrandAlreadyExistsException {
+        Optional<Brand> brand = brandRepository.findOneByName(name);
+        if (brand.isPresent()) {
             throw new BrandAlreadyExistsException(BRAND_ALREADY_EXISTS);
         }
-        return brandRepository.save(brand);
+        return brandRepository.save(Brand.builder().name(name).build());
     }
 
 }

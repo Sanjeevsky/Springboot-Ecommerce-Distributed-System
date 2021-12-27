@@ -11,11 +11,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.sanjeevsky.catalogservice.service.ProductServiceImpl.SUB_CATEGORY_DOES_NOT_EXISTS;
+import static com.sanjeevsky.catalogservice.utils.ErrorConstants.CATEGORY_LIST_EMPTY;
+import static com.sanjeevsky.catalogservice.utils.ErrorConstants.SUB_CATEGORY_DOES_NOT_EXISTS;
 
 @Service
 public class SubCategoryServiceImpl implements SubCategoryService {
-    public static final String CATEGORY_LIST_EMPTY = "Category List Empty ";
     @Autowired
     private SubCategoryRepository subCategoryRepository;
 

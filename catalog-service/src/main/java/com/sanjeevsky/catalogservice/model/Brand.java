@@ -1,6 +1,7 @@
 package com.sanjeevsky.catalogservice.model;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
@@ -15,6 +16,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
+@Builder
 public class Brand {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

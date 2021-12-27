@@ -46,4 +46,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<?> subCategoryNotExistsExceptionHandler(SubCategoryNotExistsException exception) {
         return new ResponseEntity<String>(exception.getMessage(), HttpStatus.NOT_FOUND);
     }
+
+    @ExceptionHandler
+    public ResponseEntity<?> globalException(Exception exception) {
+        return new ResponseEntity<String>(exception.getMessage(), HttpStatus.CONFLICT);
+    }
 }

@@ -15,5 +15,5 @@ public interface BrandService {
 
     List<Brand> getBrandList() throws BrandListEmptyException;
 
-    Brand addBrand(Brand brand) throws BrandAlreadyExistsException;
+    Brand addBrand(String brand) throws BrandAlreadyExistsException;
 }
