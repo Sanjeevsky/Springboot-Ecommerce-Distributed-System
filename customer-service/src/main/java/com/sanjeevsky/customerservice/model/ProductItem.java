@@ -1,32 +1,32 @@
-package com.sanjeevsky.catalogservice.model;
+package com.sanjeevsky.customerservice.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.web.bind.annotation.GetMapping;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
-@Getter
-public class Variant {
+public class ProductItem {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false)
     @Type(type = "org.hibernate.type.UUIDCharType")
     private UUID id;
-    private String condition1Name;
-    private String condition1Value;
-    private String condition2Name;
-    private String condition2Value;
-    private double mrpPrice;
-    private double salePrice;
+    private UUID productId;
+    private int qty;
     @CreationTimestamp
     private LocalDateTime createdAt;
     @UpdateTimestamp

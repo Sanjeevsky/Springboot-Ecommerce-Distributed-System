@@ -1,8 +1,9 @@
-package com.sanjeevsky.catalogservice.model;
+package com.sanjeevsky.customerservice.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -12,21 +13,24 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Getter
-public class Variant {
+@Setter
+public class Address {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    @Column(name = "id", nullable = false)
     @Type(type = "org.hibernate.type.UUIDCharType")
+    @Column(name = "id", nullable = false)
     private UUID id;
-    private String condition1Name;
-    private String condition1Value;
-    private String condition2Name;
-    private String condition2Value;
-    private double mrpPrice;
-    private double salePrice;
+    private String city;
+    private String state;
+    private  String country;
+    private int zipCode;
+    private String home;
+    private String streetLocality;
+    private String landmark;
+    private String user;
     @CreationTimestamp
     private LocalDateTime createdAt;
     @UpdateTimestamp

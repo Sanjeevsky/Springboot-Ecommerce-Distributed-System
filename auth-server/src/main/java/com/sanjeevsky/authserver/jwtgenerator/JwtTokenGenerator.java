@@ -23,7 +23,7 @@ public class JwtTokenGenerator {
     public LoginDTO generateToken(UserDTO user) {
         final String jwt = Jwts.builder()
                 .setIssuer("EcommerceApplicationAdmin")
-                .setSubject(user.getPassword())
+                .setSubject(user.getEmail())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + VALIDITY))
                 .signWith(SignatureAlgorithm.HS256, secret)

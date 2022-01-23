@@ -1,32 +1,33 @@
-package com.sanjeevsky.catalogservice.model;
+package com.sanjeevsky.customerservice.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Type;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.w3c.dom.stylesheets.LinkStyle;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
-public class Variant {
+@Setter
+@Builder
+public class Cart {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false)
     @Type(type = "org.hibernate.type.UUIDCharType")
     private UUID id;
-    private String condition1Name;
-    private String condition1Value;
-    private String condition2Name;
-    private String condition2Value;
-    private double mrpPrice;
-    private double salePrice;
+    @Column(name = "user", nullable = false,unique = true)
+    private String user;
+    @OneToMany(cascade = CascadeType.ALL)
+    private List<ProductItem> productItems;
+    private double cartTotal;
+    private int cartQty;
     @CreationTimestamp
     private LocalDateTime createdAt;
     @UpdateTimestamp

@@ -12,9 +12,14 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<String>(exception.getMessage(), HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(NoSuchProductExistsException.class)
+    public ResponseEntity<?> exceptionHandler(NoSuchProductExistsException exception) {
+        return new ResponseEntity<String>(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
     @ExceptionHandler(BrandAlreadyExistsException.class)
     public ResponseEntity<?> exceptionHandler(BrandAlreadyExistsException exception) {
-        return new ResponseEntity<String>(exception.getMessage(), HttpStatus.NOT_FOUND);
+        return new ResponseEntity<String>(exception.getMessage(), HttpStatus.CONFLICT);
     }
 
     @ExceptionHandler(SubCategoryListEmptyException.class)
@@ -49,6 +54,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<?> globalException(Exception exception) {
-        return new ResponseEntity<String>(exception.getMessage(), HttpStatus.CONFLICT);
+        return new ResponseEntity<String>(exception.getLocalizedMessage(), HttpStatus.CONFLICT);
     }
 }
