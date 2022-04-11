@@ -1,6 +1,8 @@
 package com.sanjeevsky.catalogservice.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
@@ -15,6 +17,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
+@Builder
 public class SubCategory {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -22,6 +25,10 @@ public class SubCategory {
     @Type(type = "org.hibernate.type.UUIDCharType")
     private UUID id;
     private String subcategoryName;
+    @ManyToOne(cascade = CascadeType.ALL, optional = false)
+    @JoinColumn(name = "category_id", nullable = false, unique = true)
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+    private Category category;
     @CreationTimestamp
     private LocalDateTime createdAt;
     @UpdateTimestamp

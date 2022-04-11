@@ -10,6 +10,8 @@ public class ErrorConstants {
     public static final String SUB_CATEGORY_DOES_NOT_EXISTS = "Sub-Category with Given Id Does not Exists ..!!";
     public static final String CATEGORY_LIST_EMPTY = "Category List Empty ";
     public static final String NO_PRODUCT_FOUND_WITH_GIVEN_UUID = "No Product Found with Given UUID..";
+    public static final String PRODUCT_WITH_GIVEN_ID_DOESN_T_EXISTS = "Product with given Id doesn't exists.";
+    public static final String VARIANT_WITH_GIVEN_ID_DOESN_T_EXISTS = "Variant with given Id doesn't exists.";
 
 
 }

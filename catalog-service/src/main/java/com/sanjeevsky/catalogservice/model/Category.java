@@ -1,6 +1,7 @@
 package com.sanjeevsky.catalogservice.model;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
@@ -16,6 +17,7 @@ import java.util.UUID;
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
+@Builder
 public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -23,7 +25,7 @@ public class Category {
     @Type(type = "org.hibernate.type.UUIDCharType")
     private UUID id;
     private String categoryName;
-    @OneToMany(cascade = CascadeType.ALL)
+    @OneToMany(cascade = CascadeType.ALL, mappedBy = "category")
     private List<SubCategory> subCategories;
     @CreationTimestamp
     private LocalDateTime createdAt;

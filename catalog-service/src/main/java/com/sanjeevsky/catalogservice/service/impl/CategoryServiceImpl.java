@@ -1,10 +1,11 @@
-package com.sanjeevsky.catalogservice.service;
+package com.sanjeevsky.catalogservice.service.impl;
 
+import com.sanjeevsky.catalogservice.exceptions.CategoryAlreadyExistsException;
 import com.sanjeevsky.catalogservice.exceptions.CategoryListEmptyException;
 import com.sanjeevsky.catalogservice.exceptions.CategoryNotExistsException;
 import com.sanjeevsky.catalogservice.model.Category;
-import com.sanjeevsky.catalogservice.model.SubCategory;
 import com.sanjeevsky.catalogservice.repository.CategoryRepository;
+import com.sanjeevsky.catalogservice.service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -48,18 +49,10 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public Category addCategory(Category category) {
-        return categoryRepository.save(category);
-    }
-
-    @Override
-    public Category addSubCategory(UUID categoryId, SubCategory subcategory) throws CategoryNotExistsException {
-        Optional<Category> optional = categoryRepository.findById(categoryId);
-        if (optional.isEmpty()) {
-            throw new CategoryNotExistsException(CATEGORY_DOES_NOT_EXISTS);
-        }
-        Category category = optional.get();
-        category.getSubCategories().add(subcategory);
-        return categoryRepository.save(category);
+    public Category addCategory(String categoryName) throws CategoryAlreadyExistsException {
+        Optional<Category> category = categoryRepository.findOneByCategoryName(categoryName);
+        if (category.isPresent()) throw new CategoryAlreadyExistsException("Category with given name already exists.");
+        Category build = Category.builder().categoryName(categoryName).build();
+        return categoryRepository.save(build);
     }
 }

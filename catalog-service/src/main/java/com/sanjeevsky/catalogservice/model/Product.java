@@ -32,15 +32,13 @@ public class Product {
     @ManyToOne
     @JoinColumn(name = "category_id")
     private Category category;
-    @ManyToOne
+    @ManyToOne()
     @JoinColumn(name = "sub_category_id")
     private SubCategory subCategory;
     private String model;
     private double mrpPrice;
     private double salePrice;
     private double gstValue;
-    @OneToMany(cascade = CascadeType.ALL)
-    private List<Variant> variants;
     private double discount;
     private boolean hasVariant;
     private ArrayList<String> images;
@@ -48,4 +46,8 @@ public class Product {
     private LocalDateTime createdAt;
     @UpdateTimestamp
     private LocalDateTime modifiedAt;
+
+    @OneToMany(mappedBy = "product", orphanRemoval = true)
+    private List<Variant> variants = new ArrayList<>();
+
 }

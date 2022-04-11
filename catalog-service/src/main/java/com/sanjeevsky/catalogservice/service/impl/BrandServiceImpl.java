@@ -1,10 +1,11 @@
-package com.sanjeevsky.catalogservice.service;
+package com.sanjeevsky.catalogservice.service.impl;
 
 import com.sanjeevsky.catalogservice.exceptions.BrandAlreadyExistsException;
 import com.sanjeevsky.catalogservice.exceptions.BrandListEmptyException;
 import com.sanjeevsky.catalogservice.exceptions.BrandNotExistsException;
 import com.sanjeevsky.catalogservice.model.Brand;
 import com.sanjeevsky.catalogservice.repository.BrandRepository;
+import com.sanjeevsky.catalogservice.service.BrandService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

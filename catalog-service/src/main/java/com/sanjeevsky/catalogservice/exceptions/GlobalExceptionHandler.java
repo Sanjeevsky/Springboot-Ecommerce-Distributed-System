@@ -32,6 +32,16 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<String>(exception.getMessage(), HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(VariantNotExistsException.class)
+    public ResponseEntity<?> exceptionHandler(VariantNotExistsException exception) {
+        return new ResponseEntity<String>(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(CategoryAlreadyExistsException.class)
+    public ResponseEntity<?> exceptionHandler(CategoryAlreadyExistsException exception) {
+        return new ResponseEntity<String>(exception.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(BrandNotExistsException.class)
     public ResponseEntity<?> brandNotExistsExceptionHandler(BrandNotExistsException exception) {
         return new ResponseEntity<String>(exception.getMessage(), HttpStatus.NOT_FOUND);
@@ -49,6 +59,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(SubCategoryNotExistsException.class)
     public ResponseEntity<?> subCategoryNotExistsExceptionHandler(SubCategoryNotExistsException exception) {
+        return new ResponseEntity<String>(exception.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(ProductNotExistsException.class)
+    public ResponseEntity<?> productNotExistsExceptionHandler(ProductNotExistsException exception) {
         return new ResponseEntity<String>(exception.getMessage(), HttpStatus.NOT_FOUND);
     }
 

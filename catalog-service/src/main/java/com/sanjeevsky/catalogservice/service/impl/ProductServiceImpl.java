@@ -1,9 +1,12 @@
-package com.sanjeevsky.catalogservice.service;
+package com.sanjeevsky.catalogservice.service.impl;
 
 import com.sanjeevsky.catalogservice.exceptions.*;
 import com.sanjeevsky.catalogservice.model.Product;
 import com.sanjeevsky.catalogservice.repository.ProductRepository;
-import com.sanjeevsky.catalogservice.request.ProductRequest;
+import com.sanjeevsky.catalogservice.service.BrandService;
+import com.sanjeevsky.catalogservice.service.CategoryService;
+import com.sanjeevsky.catalogservice.service.ProductService;
+import com.sanjeevsky.catalogservice.service.SubCategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -26,25 +29,14 @@ public class ProductServiceImpl implements ProductService {
     private SubCategoryService subCategoryService;
 
     @Override
-    public Product addProduct(ProductRequest productRequest) throws ProductAlreadyExistsException, BrandNotExistsException, CategoryNotExistsException, SubCategoryNotExistsException, SubCategoryListEmptyException {
-        if (productRepository.findByModelAndBrandId(productRequest.getModel(), productRequest.getBrandId()).isPresent()) {
+    public Product addProduct(UUID brandId, UUID categoryId, UUID subCategoryId, Product product) throws ProductAlreadyExistsException, BrandNotExistsException, CategoryNotExistsException, SubCategoryNotExistsException, SubCategoryListEmptyException {
+        if (productRepository.findByModelAndBrandId(product.getModel(), brandId).isPresent()) {
             throw new ProductAlreadyExistsException(PRODUCT_WITH_THIS_MODEL_AND_BRAND_ALREADY_EXISTS_IN_CATALOG);
         } else {
             //Generate Product from Request Data
-            Product product = new Product();
-            product.setName(productRequest.getName());
-            product.setDescription(productRequest.getDescription());
-            product.setBrand(brandService.getBrand(productRequest.getBrandId()));
-            product.setCategory(categoryService.getCategory(productRequest.getCategoryId()));
-            product.setSubCategory(subCategoryService.getSubCategory(productRequest.getSubCategoryId()));
-            product.setDiscount(productRequest.getDiscount());
-            product.setHasVariant(productRequest.isHasVariant());
-            product.setModel(productRequest.getModel());
-            product.setMrpPrice(productRequest.getMrpPrice());
-            product.setSalePrice(productRequest.getSalePrice());
-            product.setImages(productRequest.getImages());
-            product.setStatus(productRequest.getStatus());
-            product.setGstValue(productRequest.getGstValue());
+            product.setBrand(brandService.getBrand(brandId));
+            product.setCategory(categoryService.getCategory(categoryId));
+            product.setSubCategory(subCategoryService.getSubCategory(subCategoryId));
             return productRepository.save(product);
         }
     }

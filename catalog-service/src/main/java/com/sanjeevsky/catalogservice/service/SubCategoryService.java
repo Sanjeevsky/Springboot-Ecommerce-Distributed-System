@@ -12,4 +12,6 @@ public interface SubCategoryService {
     SubCategory getSubCategory(UUID subCategoryId) throws CategoryNotExistsException, SubCategoryListEmptyException;
 
     List<SubCategory> getAllSubCategory() throws SubCategoryListEmptyException;
+
+    SubCategory addSubCategory(UUID categoryId, String subcategoryName) throws CategoryNotExistsException;
 }

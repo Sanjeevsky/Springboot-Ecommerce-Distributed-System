@@ -1,9 +1,8 @@
 package com.sanjeevsky.catalogservice.controller;
 
+import com.sanjeevsky.catalogservice.exceptions.CategoryAlreadyExistsException;
 import com.sanjeevsky.catalogservice.exceptions.CategoryListEmptyException;
 import com.sanjeevsky.catalogservice.exceptions.CategoryNotExistsException;
-import com.sanjeevsky.catalogservice.model.Category;
-import com.sanjeevsky.catalogservice.model.SubCategory;
 import com.sanjeevsky.catalogservice.service.CategoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +16,7 @@ import static com.sanjeevsky.catalogservice.utils.LoggingConstants.*;
 
 @RestController
 @Slf4j
-@RequestMapping("/catalog-service")
+@RequestMapping("/catalog-service/")
 public class CategoryController {
     @Autowired
     private CategoryService categoryService;
@@ -40,15 +39,9 @@ public class CategoryController {
         return new ResponseEntity<>(categoryService.getAllCategory(), HttpStatus.OK);
     }
 
-    @PostMapping("/add-category")
-    ResponseEntity<?> addCategory(@RequestBody Category category) {
-        log.info(ADD_CATEGORY_REQUEST_WITH_CATEGORY_NAME, category.getCategoryName());
-        return new ResponseEntity<>(categoryService.addCategory(category), HttpStatus.CREATED);
-    }
-
-    @PostMapping("/add-subcategory/{category-id}")
-    ResponseEntity<?> addSubCategory(@PathVariable(name = "category-id") UUID categoryId, @RequestBody SubCategory subcategory) throws CategoryNotExistsException {
-        log.info(ADD_SUB_CATEGORY_REQUEST_WITH_CATEGORY_ID_AND_SUB_CATEGORY_NAME, categoryId, subcategory.getSubcategoryName());
-        return new ResponseEntity<>(categoryService.addSubCategory(categoryId, subcategory), HttpStatus.CREATED);
+    @PostMapping("/addCategory")
+    ResponseEntity<?> addCategory(@RequestParam("categoryName") String categoryName) throws CategoryAlreadyExistsException {
+        log.info(ADD_CATEGORY_REQUEST_WITH_CATEGORY_NAME, categoryName);
+        return new ResponseEntity<>(categoryService.addCategory(categoryName), HttpStatus.CREATED);
     }
 }
