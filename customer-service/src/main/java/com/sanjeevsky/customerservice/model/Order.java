@@ -10,7 +10,9 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -18,7 +20,7 @@ import java.util.UUID;
 @NoArgsConstructor
 @Getter
 @Setter
-public class Orders {
+public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "id", nullable = false)
@@ -28,8 +30,8 @@ public class Orders {
     private Address address;
     @Column(nullable = false)
     private UUID userId;
-    @OneToMany(cascade = CascadeType.ALL)
-    private List<ProductItem> productItems;
+    @OneToMany(mappedBy = "order", orphanRemoval = true)
+    private Set<ProductItem> productItems = new LinkedHashSet<>();
     private double orderTotal;
     private double discount;
     private double shippingCharges;

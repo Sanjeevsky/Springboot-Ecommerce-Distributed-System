@@ -1,20 +1,27 @@
 package com.sanjeevsky.customerservice.service.impl;
 
+import com.sanjeevsky.customerservice.clients.ProductFeignClient;
 import com.sanjeevsky.customerservice.exceptions.CartDoesnotExistsException;
 import com.sanjeevsky.customerservice.exceptions.InvalidRequestException;
 import com.sanjeevsky.customerservice.model.Cart;
 import com.sanjeevsky.customerservice.repository.CartRepository;
 import com.sanjeevsky.customerservice.service.CartService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class CartServiceImpl implements CartService {
     @Autowired
     private CartRepository cartRepository;
+
+    @Autowired
+    private ProductFeignClient productFeignClient;
     @Override
     public Cart getCart(String user) {
         Optional<Cart> cart = cartRepository.findByUser(user);
@@ -41,6 +48,26 @@ public class CartServiceImpl implements CartService {
     @Override
     public Cart updateCart(String user, UUID productID, int qty) {
         if (qty<0) throw new InvalidRequestException("Quantity Can't be Negative");
+        try {
+            ResponseEntity<?> product = productFeignClient.getProduct(productID);
+            switch (product.getStatusCode()){
+                case OK:
+                {
+                    break;
+                }
+                case NOT_FOUND:
+                {
+                    break;
+                }
+                case INTERNAL_SERVER_ERROR:
+                {
+                    break;
+                }
+
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         if (qty==0){
            return this.removeProduct(user,productID);
         }else {
@@ -55,7 +82,7 @@ public class CartServiceImpl implements CartService {
             throw new CartDoesnotExistsException("Cart Doesn't Exits Exception");
         }
         Cart cart = optionalCart.get();
-        cart.getProductItems().stream().filter(productItem -> productItem.getProductId() != productID);
+        cart.getProductItems().stream().filter(productItem -> productItem.getProductId() != productID).collect(Collectors.toList());
         return cartRepository.save(cart);
     }
 
@@ -66,12 +93,11 @@ public class CartServiceImpl implements CartService {
             throw new CartDoesnotExistsException("Cart Doesn't Exits Exception");
         }
         Cart cart = optionalCart.get();
-        cart.getProductItems().stream().map(productItem -> {
-            if (productItem.getProductId() == productID){
+        cart.getProductItems().stream().peek(productItem -> {
+            if (productItem.getProductId()== productID){
                 productItem.setQty(qty);
             }
-            return productItem;
-        });
+        }).collect(Collectors.toList());
         return cartRepository.save(cart);
     }
 }

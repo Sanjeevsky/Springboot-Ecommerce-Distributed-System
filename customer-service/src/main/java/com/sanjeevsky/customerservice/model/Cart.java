@@ -20,6 +20,7 @@ import java.util.UUID;
 public class Cart {
     @Id
     @Column(name = "id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     @Type(type = "org.hibernate.type.UUIDCharType")
     private UUID id;
     @Column(name = "user", nullable = false,unique = true)
