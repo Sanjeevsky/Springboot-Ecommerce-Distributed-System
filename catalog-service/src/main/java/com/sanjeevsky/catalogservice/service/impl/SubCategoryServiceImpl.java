@@ -24,7 +24,7 @@ public class SubCategoryServiceImpl implements SubCategoryService {
     private SubCategoryRepository subCategoryRepository;
 
     @Override
-    public SubCategory getSubCategory(UUID subCategoryId) throws CategoryNotExistsException, SubCategoryListEmptyException {
+    public SubCategory getSubCategory(UUID subCategoryId){
         Optional<SubCategory> category = subCategoryRepository.findById(subCategoryId);
         if (category.isEmpty()) {
             throw new SubCategoryListEmptyException(SUB_CATEGORY_DOES_NOT_EXISTS);
@@ -33,7 +33,7 @@ public class SubCategoryServiceImpl implements SubCategoryService {
     }
 
     @Override
-    public List<SubCategory> getAllSubCategory() throws SubCategoryListEmptyException {
+    public List<SubCategory> getAllSubCategory(){
         List<SubCategory> subCategories = subCategoryRepository.findAll();
         if (subCategories.isEmpty()) {
             throw new SubCategoryListEmptyException(CATEGORY_LIST_EMPTY);
@@ -42,7 +42,7 @@ public class SubCategoryServiceImpl implements SubCategoryService {
     }
 
     @Override
-    public SubCategory addSubCategory(UUID categoryId, String subcategoryName) throws CategoryNotExistsException {
+    public SubCategory addSubCategory(UUID categoryId, String subcategoryName){
         Optional<Category> category = categoryRepository.findById(categoryId);
         if (category.isEmpty()) throw new CategoryNotExistsException(CATEGORY_DOES_NOT_EXISTS);
         SubCategory subCategory = SubCategory.builder().category(category.get()).subcategoryName(subcategoryName).build();

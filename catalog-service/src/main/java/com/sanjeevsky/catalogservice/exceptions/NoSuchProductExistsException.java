@@ -1,6 +1,6 @@
 package com.sanjeevsky.catalogservice.exceptions;
 
-public class NoSuchProductExistsException extends Exception {
+public class NoSuchProductExistsException extends RuntimeException {
     public NoSuchProductExistsException(String message) {
         super(message);
     }

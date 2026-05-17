@@ -17,4 +17,6 @@ public interface PaymentService {
     Payment getByPaymentId(UUID paymentId);
 
     PaymentStatus getStatusByOrderId(UUID orderId);
+
+    Payment refundPayment(UUID paymentId);
 }

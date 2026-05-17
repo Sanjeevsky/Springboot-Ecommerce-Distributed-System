@@ -35,7 +35,7 @@ public class ProductServiceImpl implements ProductService {
     private SubCategoryService subCategoryService;
 
     @Override
-    public Product addProduct(UUID brandId, UUID categoryId, UUID subCategoryId, Product product) throws ProductAlreadyExistsException, BrandNotExistsException, CategoryNotExistsException, SubCategoryNotExistsException, SubCategoryListEmptyException {
+    public Product addProduct(UUID brandId, UUID categoryId, UUID subCategoryId, Product product){
         if (productRepository.findByModelAndBrandId(product.getModel(), brandId).isPresent()) {
             throw new ProductAlreadyExistsException(PRODUCT_WITH_THIS_MODEL_AND_BRAND_ALREADY_EXISTS_IN_CATALOG);
         } else {
@@ -48,7 +48,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Product getProduct(UUID uuid) throws NoSuchProductExistsException {
+    public Product getProduct(UUID uuid){
         Optional<Product> product = productRepository.findById(uuid);
         if (product.isEmpty()) {
             throw new NoSuchProductExistsException(NO_PRODUCT_FOUND_WITH_GIVEN_UUID);

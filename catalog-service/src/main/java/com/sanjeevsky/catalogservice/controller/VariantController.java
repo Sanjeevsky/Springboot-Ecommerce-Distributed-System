@@ -1,10 +1,9 @@
 package com.sanjeevsky.catalogservice.controller;
 
-import com.sanjeevsky.catalogservice.exceptions.ProductNotExistsException;
-import com.sanjeevsky.catalogservice.exceptions.VariantNotExistsException;
 import com.sanjeevsky.catalogservice.model.Variant;
 import com.sanjeevsky.catalogservice.model.dto.VariantDTO;
 import com.sanjeevsky.catalogservice.service.VariantService;
+import com.sanjeevsky.platform.response.ApiResponse;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,21 +13,24 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/catalog-service/variant/")
+@RequestMapping("/catalog-service/variant")
 public class VariantController {
+
     @Autowired
-    VariantService service;
+    private VariantService service;
     @Autowired
-    ModelMapper mapper;
+    private ModelMapper mapper;
 
     @PostMapping("/add/{productId}")
-    public ResponseEntity<?> addVariant(@PathVariable("productId") UUID productId, @RequestBody VariantDTO variantDTO) throws ProductNotExistsException {
+    public ResponseEntity<ApiResponse<Variant>> addVariant(
+            @PathVariable("productId") UUID productId,
+            @RequestBody VariantDTO variantDTO) {
         Variant variant = mapper.map(variantDTO, Variant.class);
-        return new ResponseEntity<>(service.addVariant(productId, variant), HttpStatus.CREATED);
+        return new ResponseEntity<>(ApiResponse.ok("Variant added", service.addVariant(productId, variant)), HttpStatus.CREATED);
     }
 
     @GetMapping("/{variantId}")
-    public ResponseEntity<?> getVariant(@PathVariable("variantId") UUID variantId) throws VariantNotExistsException {
-        return new ResponseEntity<>(service.getVariant(variantId), HttpStatus.OK);
+    public ResponseEntity<ApiResponse<Variant>> getVariant(@PathVariable("variantId") UUID variantId) {
+        return ResponseEntity.ok(ApiResponse.ok(service.getVariant(variantId)));
     }
 }

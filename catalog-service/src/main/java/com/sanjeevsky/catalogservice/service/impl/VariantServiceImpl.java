@@ -25,7 +25,7 @@ public class VariantServiceImpl implements VariantService {
     private ProductRepository productRepository;
 
     @Override
-    public Variant addVariant(UUID productId, Variant variant) throws ProductNotExistsException {
+    public Variant addVariant(UUID productId, Variant variant){
         Optional<Product> product = productRepository.findById(productId);
         if (product.isEmpty()) throw new ProductNotExistsException(PRODUCT_WITH_GIVEN_ID_DOESN_T_EXISTS);
         variant.setProduct(product.get());
@@ -33,7 +33,7 @@ public class VariantServiceImpl implements VariantService {
     }
 
     @Override
-    public Variant getVariant(UUID variantId) throws VariantNotExistsException {
+    public Variant getVariant(UUID variantId){
         Optional<Variant> variant = variantRepository.findById(variantId);
         if (variant.isEmpty()) throw new VariantNotExistsException(VARIANT_WITH_GIVEN_ID_DOESN_T_EXISTS);
         return variant.get();

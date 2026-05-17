@@ -50,4 +50,10 @@ public class PaymentController {
         log.info("Received get payment status request for orderId: {}", orderId);
         return ResponseEntity.ok(ApiResponse.ok(paymentService.getStatusByOrderId(orderId)));
     }
+
+    @PutMapping("/refund/{paymentId}")
+    public ResponseEntity<ApiResponse<Payment>> refundPayment(@PathVariable("paymentId") UUID paymentId) {
+        log.info("Received refund payment request for paymentId: {}", paymentId);
+        return ResponseEntity.ok(ApiResponse.ok("Payment refunded", paymentService.refundPayment(paymentId)));
+    }
 }

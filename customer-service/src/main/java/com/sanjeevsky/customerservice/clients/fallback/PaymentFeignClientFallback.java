@@ -1,6 +1,8 @@
 package com.sanjeevsky.customerservice.clients.fallback;
 
 import com.sanjeevsky.customerservice.clients.PaymentFeignClient;
+
+import java.util.UUID;
 import com.sanjeevsky.platform.model.payment.PaymentRequest;
 import com.sanjeevsky.platform.model.payment.PaymentResponse;
 import com.sanjeevsky.platform.model.payment.PaymentStatus;
@@ -23,5 +25,17 @@ public class PaymentFeignClientFallback implements PaymentFeignClient {
                 .currency("INR")
                 .status(PaymentStatus.FAILED)
                 .build();
+    }
+
+    @Override
+    public PaymentResponse confirmPayment(UUID paymentId) {
+        log.warn("payment-service unavailable; cannot confirm payment {}", paymentId);
+        return PaymentResponse.builder().status(PaymentStatus.FAILED).build();
+    }
+
+    @Override
+    public PaymentResponse refundPayment(UUID paymentId) {
+        log.warn("payment-service unavailable; cannot refund payment {}", paymentId);
+        return PaymentResponse.builder().status(PaymentStatus.FAILED).build();
     }
 }

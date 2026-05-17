@@ -34,7 +34,7 @@ public class ProductCatalogController {
     }
 
     @PostMapping("/addProduct")
-    private ResponseEntity<ApiResponse<Product>> addProduct(@RequestParam("categoryId") UUID categoryId, @RequestParam("subCategoryId") UUID subCategoryId, @RequestParam("brandId") UUID brandId, @RequestBody ProductDTO productDTO) throws ProductAlreadyExistsException, CategoryNotExistsException, BrandNotExistsException, SubCategoryNotExistsException, SubCategoryListEmptyException {
+    private ResponseEntity<ApiResponse<Product>> addProduct(@RequestParam("categoryId") UUID categoryId, @RequestParam("subCategoryId") UUID subCategoryId, @RequestParam("brandId") UUID brandId, @RequestBody ProductDTO productDTO){
         log.info(ADD_PRODUCT_REQUEST_WITH_PRODUCT_ID, productDTO.getName());
         Product product = mapper.map(productDTO, Product.class);
         Product saved = productService.addProduct(brandId, categoryId, subCategoryId, product);
@@ -42,7 +42,7 @@ public class ProductCatalogController {
     }
 
     @GetMapping("/getProduct/{id}")
-    ResponseEntity<ApiResponse<Product>> getProduct(@PathVariable("id") UUID uuid) throws NoSuchProductExistsException {
+    ResponseEntity<ApiResponse<Product>> getProduct(@PathVariable("id") UUID uuid){
         log.info(GET_PRODUCT_REQUEST_WITH_PRODUCT_ID, uuid);
         Product product = productService.getProduct(uuid);
         return new ResponseEntity<>(ApiResponse.ok(product), HttpStatus.OK);

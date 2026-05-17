@@ -107,6 +107,34 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
+    public Order confirmOrder(String userId, UUID orderId) {
+        log.info("Confirming order id={} for user={}", orderId, userId);
+        Order order = orderRepository.findByIdAndUserId(orderId, userId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + orderId));
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new InvalidRequestException("Order is not in PENDING state");
+        }
+        paymentFeignClient.confirmPayment(order.getPaymentId());
+        order.setStatus(OrderStatus.CONFIRMED);
+        return orderRepository.save(order);
+    }
+
+    @Override
+    public Order cancelOrder(String userId, UUID orderId) {
+        log.info("Cancelling order id={} for user={}", orderId, userId);
+        Order order = orderRepository.findByIdAndUserId(orderId, userId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + orderId));
+        if (order.getStatus() == OrderStatus.DELIVERED || order.getStatus() == OrderStatus.CANCELLED) {
+            throw new InvalidRequestException("Order cannot be cancelled in state: " + order.getStatus());
+        }
+        if (order.getPaymentId() != null) {
+            paymentFeignClient.refundPayment(order.getPaymentId());
+        }
+        order.setStatus(OrderStatus.CANCELLED);
+        return orderRepository.save(order);
+    }
+
+    @Override
     public List<Order> getOrdersByUser(String userId) {
         log.info("Fetching all orders for user={}", userId);
         return orderRepository.findAllByUserId(userId);

@@ -22,7 +22,7 @@ public class CategoryServiceImpl implements CategoryService {
     private CategoryRepository categoryRepository;
 
     @Override
-    public Category getCategory(UUID categoryId) throws CategoryNotExistsException {
+    public Category getCategory(UUID categoryId){
         Optional<Category> category = categoryRepository.findById(categoryId);
         if (category.isEmpty()) {
             throw new CategoryNotExistsException(CATEGORY_DOES_NOT_EXISTS);
@@ -31,7 +31,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public Category getCategoryName(String name) throws CategoryNotExistsException {
+    public Category getCategoryName(String name){
         Optional<Category> category = categoryRepository.findOneByCategoryName(name);
         if (category.isEmpty()) {
             throw new CategoryNotExistsException(CATEGORY_DOES_NOT_EXISTS);
@@ -40,7 +40,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public List<Category> getAllCategory() throws CategoryListEmptyException {
+    public List<Category> getAllCategory(){
         List<Category> categories = categoryRepository.findAll();
         if (categories.isEmpty()) {
             throw new CategoryListEmptyException(NOT_CATEGORY_FOUND_EXCEPTION);
@@ -49,7 +49,7 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
-    public Category addCategory(String categoryName) throws CategoryAlreadyExistsException {
+    public Category addCategory(String categoryName){
         Optional<Category> category = categoryRepository.findOneByCategoryName(categoryName);
         if (category.isPresent()) throw new CategoryAlreadyExistsException("Category with given name already exists.");
         Category build = Category.builder().categoryName(categoryName).build();

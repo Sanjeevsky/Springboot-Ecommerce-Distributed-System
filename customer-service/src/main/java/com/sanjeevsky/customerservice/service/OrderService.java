@@ -12,4 +12,8 @@ public interface OrderService {
     Order createOrder(String userId, UUID addressId);
 
     List<Order> getOrdersByUser(String userId);
+
+    Order confirmOrder(String userId, UUID orderId);
+
+    Order cancelOrder(String userId, UUID orderId);
 }

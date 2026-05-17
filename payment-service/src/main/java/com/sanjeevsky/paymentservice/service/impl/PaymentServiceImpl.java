@@ -59,6 +59,15 @@ public class PaymentServiceImpl implements PaymentService {
     }
 
     @Override
+    public Payment refundPayment(UUID paymentId) {
+        log.info("Refunding payment for paymentId: {}", paymentId);
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new PaymentNotFoundException("Payment not found with id: " + paymentId));
+        payment.setStatus(PaymentStatus.REFUNDED);
+        return paymentRepository.save(payment);
+    }
+
+    @Override
     public PaymentStatus getStatusByOrderId(UUID orderId) {
         log.info("Fetching payment status for orderId: {}", orderId);
         Payment payment = paymentRepository.findByOrderId(orderId)

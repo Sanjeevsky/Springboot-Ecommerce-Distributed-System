@@ -22,7 +22,7 @@ public class BrandServiceImpl implements BrandService {
     private BrandRepository brandRepository;
 
     @Override
-    public Brand getBrand(UUID brandId) throws BrandNotExistsException {
+    public Brand getBrand(UUID brandId){
         Optional<Brand> brand = brandRepository.findById(brandId);
         if (brand.isEmpty()) {
             throw new BrandNotExistsException(BRAND_DOES_NOT_EXISTS);
@@ -31,7 +31,7 @@ public class BrandServiceImpl implements BrandService {
     }
 
     @Override
-    public Brand getBrandByName(String name) throws BrandNotExistsException {
+    public Brand getBrandByName(String name){
         Optional<Brand> brand = brandRepository.findOneByName(name);
         if (brand.isEmpty()) {
             throw new BrandNotExistsException(BRAND_DOES_NOT_EXISTS);
@@ -40,7 +40,7 @@ public class BrandServiceImpl implements BrandService {
     }
 
     @Override
-    public List<Brand> getBrandList() throws BrandListEmptyException {
+    public List<Brand> getBrandList(){
         List<Brand> brands = brandRepository.findAll();
         if (brands.isEmpty()) {
             throw new BrandListEmptyException(BRAND_LIST_EMPTY);
@@ -49,7 +49,7 @@ public class BrandServiceImpl implements BrandService {
     }
 
     @Override
-    public Brand addBrand(String name) throws BrandAlreadyExistsException {
+    public Brand addBrand(String name){
         Optional<Brand> brand = brandRepository.findOneByName(name);
         if (brand.isPresent()) {
             throw new BrandAlreadyExistsException(BRAND_ALREADY_EXISTS);

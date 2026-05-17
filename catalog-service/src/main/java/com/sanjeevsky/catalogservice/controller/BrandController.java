@@ -1,15 +1,15 @@
 package com.sanjeevsky.catalogservice.controller;
 
-import com.sanjeevsky.catalogservice.exceptions.BrandAlreadyExistsException;
-import com.sanjeevsky.catalogservice.exceptions.BrandListEmptyException;
-import com.sanjeevsky.catalogservice.exceptions.BrandNotExistsException;
+import com.sanjeevsky.catalogservice.model.Brand;
 import com.sanjeevsky.catalogservice.service.BrandService;
+import com.sanjeevsky.platform.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 import static com.sanjeevsky.catalogservice.utils.LoggingConstants.*;
@@ -18,31 +18,31 @@ import static com.sanjeevsky.catalogservice.utils.LoggingConstants.*;
 @Slf4j
 @RequestMapping("/catalog-service")
 public class BrandController {
+
     @Autowired
     private BrandService brandService;
 
     @GetMapping("/getBrand/{id}")
-    ResponseEntity<?> getBrand(@PathVariable UUID id) throws BrandNotExistsException {
+    public ResponseEntity<ApiResponse<Brand>> getBrand(@PathVariable UUID id) {
         log.info(GET_BRAND_REQUEST_WITH_BRAND_ID, id);
-        return new ResponseEntity<>(brandService.getBrand(id), HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(brandService.getBrand(id)));
     }
 
     @GetMapping("/getBrandByName/{name}")
-    ResponseEntity<?> getBrand(@PathVariable String name) throws BrandNotExistsException {
+    public ResponseEntity<ApiResponse<Brand>> getBrandByName(@PathVariable String name) {
         log.info(GET_BRAND_REQUEST_WITH_BRAND_NAME, name);
-        return new ResponseEntity<>(brandService.getBrandByName(name), HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(brandService.getBrandByName(name)));
     }
 
     @GetMapping("/getBrands")
-    ResponseEntity<?> getCategories() throws BrandListEmptyException {
+    public ResponseEntity<ApiResponse<List<Brand>>> getBrands() {
         log.info(GET_ALL_BRAND_REQUEST);
-        return new ResponseEntity<>(brandService.getBrandList(), HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(brandService.getBrandList()));
     }
 
     @PostMapping("/add-brand")
-    ResponseEntity<?> addBrand(@RequestParam("name") String name) throws BrandAlreadyExistsException {
+    public ResponseEntity<ApiResponse<Brand>> addBrand(@RequestParam("name") String name) {
         log.info(ADD_BRAND_REQUEST_WITH_BRAND_NAME, name);
-        return new ResponseEntity<>(brandService.addBrand(name), HttpStatus.CREATED);
+        return new ResponseEntity<>(ApiResponse.ok("Brand added", brandService.addBrand(name)), HttpStatus.CREATED);
     }
-
 }

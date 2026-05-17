@@ -1,47 +1,48 @@
 package com.sanjeevsky.catalogservice.controller;
 
-import com.sanjeevsky.catalogservice.exceptions.CategoryAlreadyExistsException;
-import com.sanjeevsky.catalogservice.exceptions.CategoryListEmptyException;
-import com.sanjeevsky.catalogservice.exceptions.CategoryNotExistsException;
+import com.sanjeevsky.catalogservice.model.Category;
 import com.sanjeevsky.catalogservice.service.CategoryService;
+import com.sanjeevsky.platform.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 import static com.sanjeevsky.catalogservice.utils.LoggingConstants.*;
 
 @RestController
 @Slf4j
-@RequestMapping("/catalog-service/")
+@RequestMapping("/catalog-service")
 public class CategoryController {
+
     @Autowired
     private CategoryService categoryService;
 
     @GetMapping("/getCategory/{id}")
-    ResponseEntity<?> getCategory(@PathVariable UUID id) throws CategoryNotExistsException {
+    public ResponseEntity<ApiResponse<Category>> getCategory(@PathVariable UUID id) {
         log.info(GET_CATEGORY_REQUEST_WITH_CATEGORY_ID, id);
-        return new ResponseEntity<>(categoryService.getCategory(id), HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(categoryService.getCategory(id)));
     }
 
     @GetMapping("/getCategoryByName/{name}")
-    ResponseEntity<?> getCategoryName(@PathVariable String name) throws CategoryNotExistsException {
+    public ResponseEntity<ApiResponse<Category>> getCategoryByName(@PathVariable String name) {
         log.info(GET_CATEGORY_REQUEST_WITH_CATEGORY_NAME, name);
-        return new ResponseEntity<>(categoryService.getCategoryName(name), HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(categoryService.getCategoryName(name)));
     }
 
     @GetMapping("/getCategories")
-    ResponseEntity<?> getCategories() throws CategoryListEmptyException {
+    public ResponseEntity<ApiResponse<List<Category>>> getCategories() {
         log.info(GET_ALL_CATEGORY_REQUEST);
-        return new ResponseEntity<>(categoryService.getAllCategory(), HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(categoryService.getAllCategory()));
     }
 
     @PostMapping("/addCategory")
-    ResponseEntity<?> addCategory(@RequestParam("categoryName") String categoryName) throws CategoryAlreadyExistsException {
+    public ResponseEntity<ApiResponse<Category>> addCategory(@RequestParam("categoryName") String categoryName) {
         log.info(ADD_CATEGORY_REQUEST_WITH_CATEGORY_NAME, categoryName);
-        return new ResponseEntity<>(categoryService.addCategory(categoryName), HttpStatus.CREATED);
+        return new ResponseEntity<>(ApiResponse.ok("Category added", categoryService.addCategory(categoryName)), HttpStatus.CREATED);
     }
 }

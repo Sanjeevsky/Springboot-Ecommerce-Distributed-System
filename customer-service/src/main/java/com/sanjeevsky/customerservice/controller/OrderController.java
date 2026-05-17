@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -47,6 +48,20 @@ public class OrderController {
     public ResponseEntity<ApiResponse<List<Order>>> getOrders(
             @RequestHeader(name = "X-User") String userId) {
         return ResponseEntity.ok(ApiResponse.ok(orderService.getOrdersByUser(userId)));
+    }
+
+    @PutMapping("/order/{id}/confirm")
+    public ResponseEntity<ApiResponse<Order>> confirmOrder(
+            @RequestHeader(name = "X-User") String userId,
+            @PathVariable("id") UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok("Order confirmed", orderService.confirmOrder(userId, id)));
+    }
+
+    @PutMapping("/order/{id}/cancel")
+    public ResponseEntity<ApiResponse<Order>> cancelOrder(
+            @RequestHeader(name = "X-User") String userId,
+            @PathVariable("id") UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok("Order cancelled", orderService.cancelOrder(userId, id)));
     }
 
     public static class CreateOrderRequest {
