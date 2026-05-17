@@ -5,6 +5,7 @@ import com.sanjeevsky.authserver.exceptions.NoSuchUserExistsException;
 import com.sanjeevsky.authserver.exceptions.UserAlreadyExistsException;
 import com.sanjeevsky.authserver.jwtgenerator.JwtTokenGenerator;
 import com.sanjeevsky.authserver.modal.LoginDTO;
+import com.sanjeevsky.authserver.modal.UpdatePasswordRequest;
 import com.sanjeevsky.authserver.modal.User;
 import com.sanjeevsky.authserver.modal.UserDTO;
 import com.sanjeevsky.authserver.repository.UserRepository;
@@ -50,8 +51,15 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
-    public String updatePassword(User user) {
-        return null;
+    public String updatePassword(UpdatePasswordRequest request) {
+        User user = repository.findById(request.getEmail())
+                .orElseThrow(() -> new NoSuchUserExistsException("No user found with email: " + request.getEmail()));
+        if (!decodeStringPassword(user.getPassword()).equals(request.getOldPassword())) {
+            throw new CredentialsMismatchException("Old password does not match");
+        }
+        user.setPassword(encodeStringPassword(request.getNewPassword()));
+        repository.save(user);
+        return "Password updated successfully";
     }
 
     public static String encodeStringPassword(String password){

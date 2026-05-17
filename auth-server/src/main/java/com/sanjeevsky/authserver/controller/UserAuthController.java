@@ -4,6 +4,7 @@ import com.sanjeevsky.authserver.exceptions.CredentialsMismatchException;
 import com.sanjeevsky.authserver.exceptions.NoSuchUserExistsException;
 import com.sanjeevsky.authserver.exceptions.UserAlreadyExistsException;
 import com.sanjeevsky.authserver.modal.LoginDTO;
+import com.sanjeevsky.authserver.modal.UpdatePasswordRequest;
 import com.sanjeevsky.authserver.modal.User;
 import com.sanjeevsky.authserver.modal.UserDTO;
 import com.sanjeevsky.authserver.service.UserService;
@@ -37,8 +38,8 @@ public class UserAuthController {
 
     //will implement otp validation for forget password
     @PutMapping("/updatePassword")
-    public ResponseEntity<?> updatePassword(@RequestBody User user) {
-        return new ResponseEntity<String>(service.updatePassword(user), HttpStatus.ACCEPTED);
+    public ResponseEntity<?> updatePassword(@RequestBody UpdatePasswordRequest request) {
+        return new ResponseEntity<String>(service.updatePassword(request), HttpStatus.ACCEPTED);
     }
 
 }
