@@ -128,6 +128,29 @@ class PaymentServiceImplTest {
                 .isInstanceOf(PaymentNotFoundException.class);
     }
 
+    // ─── refundPayment ────────────────────────────────────────────────────────
+
+    @Test
+    void refundPayment_changesStatusToRefunded() {
+        Payment payment = pendingPayment();
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
+        when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Payment result = paymentService.refundPayment(PAYMENT_ID);
+
+        assertThat(result.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
+        verify(paymentRepository).save(payment);
+    }
+
+    @Test
+    void refundPayment_notFound_throwsPaymentNotFoundException() {
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.refundPayment(PAYMENT_ID))
+                .isInstanceOf(PaymentNotFoundException.class)
+                .hasMessageContaining(PAYMENT_ID.toString());
+    }
+
     // ─── getStatusByOrderId ────────────────────────────────────────────────────
 
     @Test

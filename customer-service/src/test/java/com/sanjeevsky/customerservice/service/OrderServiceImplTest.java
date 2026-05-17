@@ -147,6 +147,92 @@ class OrderServiceImplTest {
         assertThat(firstSave.getUserId()).isEqualTo(USER_EMAIL);
     }
 
+    // ─── confirmOrder ─────────────────────────────────────────────────────────
+
+    @Test
+    void confirmOrder_pendingOrder_confirmsAndCallsPayment() {
+        Order order = Order.builder().id(ORDER_ID).userId(USER_EMAIL)
+                .status(OrderStatus.PENDING).paymentId(PAYMENT_ID).build();
+        when(orderRepository.findByIdAndUserId(ORDER_ID, USER_EMAIL)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Order result = orderService.confirmOrder(USER_EMAIL, ORDER_ID);
+
+        verify(paymentFeignClient).confirmPayment(PAYMENT_ID);
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+    }
+
+    @Test
+    void confirmOrder_notPendingOrder_throwsInvalidRequestException() {
+        Order order = Order.builder().id(ORDER_ID).userId(USER_EMAIL)
+                .status(OrderStatus.CONFIRMED).build();
+        when(orderRepository.findByIdAndUserId(ORDER_ID, USER_EMAIL)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.confirmOrder(USER_EMAIL, ORDER_ID))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessageContaining("PENDING");
+
+        verifyNoInteractions(paymentFeignClient);
+    }
+
+    @Test
+    void confirmOrder_notFound_throwsOrderNotFoundException() {
+        when(orderRepository.findByIdAndUserId(ORDER_ID, USER_EMAIL)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> orderService.confirmOrder(USER_EMAIL, ORDER_ID))
+                .isInstanceOf(OrderNotFoundException.class);
+    }
+
+    // ─── cancelOrder ──────────────────────────────────────────────────────────
+
+    @Test
+    void cancelOrder_pendingOrder_cancelsAndRefunds() {
+        Order order = Order.builder().id(ORDER_ID).userId(USER_EMAIL)
+                .status(OrderStatus.PENDING).paymentId(PAYMENT_ID).build();
+        when(orderRepository.findByIdAndUserId(ORDER_ID, USER_EMAIL)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Order result = orderService.cancelOrder(USER_EMAIL, ORDER_ID);
+
+        verify(paymentFeignClient).refundPayment(PAYMENT_ID);
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
+
+    @Test
+    void cancelOrder_noPaymentId_cancelsWithoutRefund() {
+        Order order = Order.builder().id(ORDER_ID).userId(USER_EMAIL)
+                .status(OrderStatus.PENDING).paymentId(null).build();
+        when(orderRepository.findByIdAndUserId(ORDER_ID, USER_EMAIL)).thenReturn(Optional.of(order));
+        when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Order result = orderService.cancelOrder(USER_EMAIL, ORDER_ID);
+
+        verifyNoInteractions(paymentFeignClient);
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+    }
+
+    @Test
+    void cancelOrder_deliveredOrder_throwsInvalidRequestException() {
+        Order order = Order.builder().id(ORDER_ID).userId(USER_EMAIL)
+                .status(OrderStatus.DELIVERED).build();
+        when(orderRepository.findByIdAndUserId(ORDER_ID, USER_EMAIL)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.cancelOrder(USER_EMAIL, ORDER_ID))
+                .isInstanceOf(InvalidRequestException.class);
+
+        verifyNoInteractions(paymentFeignClient);
+    }
+
+    @Test
+    void cancelOrder_alreadyCancelled_throwsInvalidRequestException() {
+        Order order = Order.builder().id(ORDER_ID).userId(USER_EMAIL)
+                .status(OrderStatus.CANCELLED).build();
+        when(orderRepository.findByIdAndUserId(ORDER_ID, USER_EMAIL)).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderService.cancelOrder(USER_EMAIL, ORDER_ID))
+                .isInstanceOf(InvalidRequestException.class);
+    }
+
     // ─── getOrderById ──────────────────────────────────────────────────────────
 
     @Test
