@@ -8,6 +8,8 @@ import com.sanjeevsky.platform.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import javax.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +36,7 @@ public class ProductCatalogController {
     }
 
     @PostMapping("/addProduct")
-    private ResponseEntity<ApiResponse<Product>> addProduct(@RequestParam("categoryId") UUID categoryId, @RequestParam("subCategoryId") UUID subCategoryId, @RequestParam("brandId") UUID brandId, @RequestBody ProductDTO productDTO){
+    private ResponseEntity<ApiResponse<Product>> addProduct(@RequestParam("categoryId") UUID categoryId, @RequestParam("subCategoryId") UUID subCategoryId, @RequestParam("brandId") UUID brandId, @Valid @RequestBody ProductDTO productDTO){
         log.info(ADD_PRODUCT_REQUEST_WITH_PRODUCT_ID, productDTO.getName());
         Product product = mapper.map(productDTO, Product.class);
         Product saved = productService.addProduct(brandId, categoryId, subCategoryId, product);

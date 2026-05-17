@@ -12,7 +12,7 @@ import java.util.Date;
 @Component
 @Configuration
 public class JwtTokenGenerator {
-    public static final int VALIDITY = 600 * 1000;
+    public static final long VALIDITY = 24L * 60 * 60 * 1000; // 24 hours
     @Value("${jwt.secret}")
     private String secret;
 

@@ -5,6 +5,8 @@ import com.sanjeevsky.customerservice.service.AddressService;
 import com.sanjeevsky.platform.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+
+import javax.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,7 +33,7 @@ public class CustomerServiceController {
 
     @PostMapping("/address")
     public ResponseEntity<ApiResponse<Address>> addAddress(
-            @RequestBody Address request,
+            @Valid @RequestBody Address request,
             @RequestHeader(name = "X-User") String user) {
         return new ResponseEntity<>(ApiResponse.ok(addressService.addAddress(request, user)), HttpStatus.CREATED);
     }
@@ -52,7 +54,7 @@ public class CustomerServiceController {
     @PutMapping("/address/{id}")
     public ResponseEntity<ApiResponse<Address>> updateAddress(
             @PathVariable UUID id,
-            @RequestBody Address address,
+            @Valid @RequestBody Address address,
             @RequestHeader(name = "X-User") String user) {
         return ResponseEntity.ok(ApiResponse.ok(addressService.updateAddress(id, address, user)));
     }

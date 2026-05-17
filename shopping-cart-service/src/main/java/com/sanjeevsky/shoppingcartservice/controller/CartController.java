@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
+
 import java.util.UUID;
 
 @Slf4j
@@ -29,7 +31,7 @@ public class CartController {
     @PostMapping("/cart/add")
     public ResponseEntity<ApiResponse<Cart>> addItem(
             @RequestHeader("X-User") String userId,
-            @RequestBody AddItemRequest request) {
+            @Valid @RequestBody AddItemRequest request) {
         log.info("POST /cart-service/cart/add for userId={}, productId={}", userId, request.getProductId());
         Cart cart = cartService.addItem(userId, request.getProductId(), request.getVariantId(), request.getQty());
         return ResponseEntity.ok(ApiResponse.ok(cart));

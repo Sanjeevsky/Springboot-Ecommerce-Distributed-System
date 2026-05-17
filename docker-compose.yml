@@ -24,20 +24,23 @@ services:
     build: ./service-discovery
     ports:
       - "8761:8761"
-    depends_on:
-      mysql:
-        condition: service_healthy
     environment:
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
 
   cloud-config:
     build: ./cloud-config
     ports:
       - "8071:8071"
     depends_on:
-      - service-discovery
+      service-discovery:
+        condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
@@ -49,8 +52,8 @@ services:
     ports:
       - "9000:9000"
     depends_on:
-      - service-discovery
-      - cloud-config
+      service-discovery:
+        condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
@@ -74,6 +77,8 @@ services:
       - SPRING_DATASOURCE_PASSWORD=123456
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
+      - SPRING_PROFILES_ACTIVE=dev
+      - JWT_SECRET=secret
     networks:
       - ecommerce-network
 
@@ -136,6 +141,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=123456
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
+      - SPRING_PROFILES_ACTIVE=dev
     networks:
       - ecommerce-network
 
@@ -156,6 +162,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=123456
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
+      - SPRING_PROFILES_ACTIVE=dev
     networks:
       - ecommerce-network
 
@@ -171,6 +178,7 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
+      - JWT_SECRET=secret
     networks:
       - ecommerce-network
 

@@ -1,25 +1,175 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="e77edb86-6e3e-4205-8592-b6c13cba70d7" name="Changes" comment="" />
+    <list default="true" id="e77edb86-6e3e-4205-8592-b6c13cba70d7" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth-server/src/main/java/com/sanjeevsky/authserver/controller/UserAuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-server/src/main/java/com/sanjeevsky/authserver/controller/UserAuthController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth-server/src/main/java/com/sanjeevsky/authserver/exceptions/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-server/src/main/java/com/sanjeevsky/authserver/exceptions/GlobalExceptionHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth-server/src/main/java/com/sanjeevsky/authserver/jwtgenerator/JwtTokenGenerator.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-server/src/main/java/com/sanjeevsky/authserver/jwtgenerator/JwtTokenGenerator.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth-server/src/main/java/com/sanjeevsky/authserver/modal/UpdatePasswordRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-server/src/main/java/com/sanjeevsky/authserver/modal/UpdatePasswordRequest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/auth-server/src/main/java/com/sanjeevsky/authserver/modal/UserDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/auth-server/src/main/java/com/sanjeevsky/authserver/modal/UserDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/catalog-service/src/main/java/com/sanjeevsky/catalogservice/controller/ProductCatalogController.java" beforeDir="false" afterPath="$PROJECT_DIR$/catalog-service/src/main/java/com/sanjeevsky/catalogservice/controller/ProductCatalogController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/catalog-service/src/main/java/com/sanjeevsky/catalogservice/exceptions/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/catalog-service/src/main/java/com/sanjeevsky/catalogservice/exceptions/GlobalExceptionHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/catalog-service/src/main/java/com/sanjeevsky/catalogservice/model/dto/ProductDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/catalog-service/src/main/java/com/sanjeevsky/catalogservice/model/dto/ProductDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/customer-service/src/main/java/com/sanjeevsky/customerservice/controller/CustomerServiceController.java" beforeDir="false" afterPath="$PROJECT_DIR$/customer-service/src/main/java/com/sanjeevsky/customerservice/controller/CustomerServiceController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/customer-service/src/main/java/com/sanjeevsky/customerservice/exceptions/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/customer-service/src/main/java/com/sanjeevsky/customerservice/exceptions/GlobalExceptionHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/customer-service/src/main/java/com/sanjeevsky/customerservice/model/Address.java" beforeDir="false" afterPath="$PROJECT_DIR$/customer-service/src/main/java/com/sanjeevsky/customerservice/model/Address.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/customer-service/src/main/java/com/sanjeevsky/customerservice/service/CartService.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/customer-service/src/main/java/com/sanjeevsky/customerservice/service/impl/CartServiceImpl.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/payment-service/src/main/java/com/sanjeevsky/paymentservice/exceptions/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/payment-service/src/main/java/com/sanjeevsky/paymentservice/exceptions/GlobalExceptionHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shopping-cart-service/src/main/java/com/sanjeevsky/shoppingcartservice/controller/CartController.java" beforeDir="false" afterPath="$PROJECT_DIR$/shopping-cart-service/src/main/java/com/sanjeevsky/shoppingcartservice/controller/CartController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shopping-cart-service/src/main/java/com/sanjeevsky/shoppingcartservice/exceptions/GlobalExceptionHandler.java" beforeDir="false" afterPath="$PROJECT_DIR$/shopping-cart-service/src/main/java/com/sanjeevsky/shoppingcartservice/exceptions/GlobalExceptionHandler.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/shopping-cart-service/src/main/java/com/sanjeevsky/shoppingcartservice/model/dto/AddItemRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/shopping-cart-service/src/main/java/com/sanjeevsky/shoppingcartservice/model/dto/AddItemRequest.java" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
   </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_/Users/sanjeev/IdeaProjects/Springboot-Ecommerce-Distributed-System" value="21IhnVGrDC2UCeDIUYXFkutFArT" />
+    </persistenceIdMap>
+  </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="445" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
+  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+  "lastFilter": {
+    "state": "OPEN",
+    "assignee": "Sanjeevsky"
+  }
+}]]></component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/Sanjeevsky/Springboot-Ecommerce-Distributed-System.git",
+    "accountId": "65b0824e-8947-41b5-b540-9fcb1d12b5ad"
+  }
+}]]></component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="McpProjectServerCommands">
+    <commands />
+    <urls />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 5
+}</component>
   <component name="ProjectId" id="21IhnVGrDC2UCeDIUYXFkutFArT" />
   <component name="ProjectViewState">
     <option name="foldersAlwaysOnTop" value="false" />
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">
-    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
-    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
+    "codeWithMe.voiceChat.enabledByDefault": "false",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "/Users/sanjeev/IdeaProjects/Springboot-Ecommerce-Distributed-System",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Modules",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.0",
+    "settings.editor.selected.configurable": "preferences.pluginManager",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="RunManager" selected="JAR Application.auth-server-0.0.1-SNAPSHOT.jar">
+    <configuration name="api-gateway-0.0.1-SNAPSHOT.jar" type="JarApplication" temporary="true">
+      <option name="JAR_PATH" value="$PROJECT_DIR$/api-gateway/target/api-gateway-0.0.1-SNAPSHOT.jar" />
+      <method v="2" />
+    </configuration>
+    <configuration name="auth-server-0.0.1-SNAPSHOT.jar" type="JarApplication" temporary="true">
+      <option name="JAR_PATH" value="$PROJECT_DIR$/auth-server/target/auth-server-0.0.1-SNAPSHOT.jar" />
+      <method v="2" />
+    </configuration>
+    <configuration name="cloud-config-0.0.1-SNAPSHOT.jar" type="JarApplication" temporary="true">
+      <option name="JAR_PATH" value="$PROJECT_DIR$/cloud-config/target/cloud-config-0.0.1-SNAPSHOT.jar" />
+      <method v="2" />
+    </configuration>
+    <configuration name="service-discovery-0.0.1-SNAPSHOT.jar" type="JarApplication" temporary="true">
+      <option name="JAR_PATH" value="$PROJECT_DIR$/service-discovery/target/service-discovery-0.0.1-SNAPSHOT.jar" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Unnamed" type="MavenRunConfiguration" factoryName="Maven">
+      <MavenSettings>
+        <option name="myGeneralSettings" />
+        <option name="myRunnerSettings" />
+        <option name="myRunnerParameters">
+          <MavenRunnerParameters>
+            <option name="cmdOptions" />
+            <option name="profiles">
+              <set />
+            </option>
+            <option name="goals">
+              <list />
+            </option>
+            <option name="multimoduleDir" />
+            <option name="pomFileName" />
+            <option name="profilesMap">
+              <map />
+            </option>
+            <option name="projectsCmdOptionValues">
+              <list />
+            </option>
+            <option name="resolveToWorkspace" value="false" />
+            <option name="workingDirPath" value="$PROJECT_DIR$" />
+          </MavenRunnerParameters>
+        </option>
+      </MavenSettings>
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="docker-deploy" factoryName="dockerfile" temporary="true">
+      <deployment type="dockerfile">
+        <settings />
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <configuration name="cloud-config/Dockerfile" type="docker-deploy" factoryName="dockerfile" temporary="true" server-name="Docker">
+      <deployment type="dockerfile">
+        <settings>
+          <option name="sourceFilePath" value="cloud-config/Dockerfile" />
+        </settings>
+      </deployment>
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="JAR Application.service-discovery-0.0.1-SNAPSHOT.jar" />
+        <item itemvalue="JAR Application.cloud-config-0.0.1-SNAPSHOT.jar" />
+        <item itemvalue="JAR Application.auth-server-0.0.1-SNAPSHOT.jar" />
+        <item itemvalue="JAR Application.api-gateway-0.0.1-SNAPSHOT.jar" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="jdk-19.0.2-corretto-19.0.2-249ae16d76d6-e8693060" />
+      </set>
+    </attachedChunks>
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
@@ -29,7 +179,34 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1637634676032</updated>
+      <workItem from="1779022612137" duration="8953000" />
     </task>
     <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="XSLT-Support.FileAssociations.UIState">
+    <expand />
+    <select />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
   </component>
 </project>
