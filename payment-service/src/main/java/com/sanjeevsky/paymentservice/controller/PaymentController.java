@@ -4,6 +4,7 @@ import com.sanjeevsky.paymentservice.model.Payment;
 import com.sanjeevsky.paymentservice.model.PaymentRequest;
 import com.sanjeevsky.paymentservice.model.PaymentStatus;
 import com.sanjeevsky.paymentservice.service.PaymentService;
+import com.sanjeevsky.platform.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,32 +22,32 @@ public class PaymentController {
     private PaymentService paymentService;
 
     @PostMapping("/initiate")
-    public ResponseEntity<Payment> initiatePayment(@RequestBody PaymentRequest request) {
+    public ResponseEntity<ApiResponse<Payment>> initiatePayment(@RequestBody PaymentRequest request) {
         log.info("Received initiate payment request for orderId: {}", request.getOrderId());
-        return new ResponseEntity<>(paymentService.initiatePayment(request), HttpStatus.CREATED);
+        return new ResponseEntity<>(ApiResponse.ok(paymentService.initiatePayment(request)), HttpStatus.CREATED);
     }
 
     @PutMapping("/confirm/{paymentId}")
-    public ResponseEntity<Payment> confirmPayment(@PathVariable("paymentId") UUID paymentId) {
+    public ResponseEntity<ApiResponse<Payment>> confirmPayment(@PathVariable("paymentId") UUID paymentId) {
         log.info("Received confirm payment request for paymentId: {}", paymentId);
-        return new ResponseEntity<>(paymentService.confirmPayment(paymentId), HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok("Payment confirmed", paymentService.confirmPayment(paymentId)));
     }
 
     @PutMapping("/fail/{paymentId}")
-    public ResponseEntity<Payment> failPayment(@PathVariable("paymentId") UUID paymentId) {
+    public ResponseEntity<ApiResponse<Payment>> failPayment(@PathVariable("paymentId") UUID paymentId) {
         log.info("Received fail payment request for paymentId: {}", paymentId);
-        return new ResponseEntity<>(paymentService.failPayment(paymentId), HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok("Payment marked failed", paymentService.failPayment(paymentId)));
     }
 
     @GetMapping("/{paymentId}")
-    public ResponseEntity<Payment> getByPaymentId(@PathVariable("paymentId") UUID paymentId) {
+    public ResponseEntity<ApiResponse<Payment>> getByPaymentId(@PathVariable("paymentId") UUID paymentId) {
         log.info("Received get payment request for paymentId: {}", paymentId);
-        return new ResponseEntity<>(paymentService.getByPaymentId(paymentId), HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(paymentService.getByPaymentId(paymentId)));
     }
 
     @GetMapping("/status/{orderId}")
-    public ResponseEntity<PaymentStatus> getStatusByOrderId(@PathVariable("orderId") UUID orderId) {
+    public ResponseEntity<ApiResponse<PaymentStatus>> getStatusByOrderId(@PathVariable("orderId") UUID orderId) {
         log.info("Received get payment status request for orderId: {}", orderId);
-        return new ResponseEntity<>(paymentService.getStatusByOrderId(orderId), HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(paymentService.getStatusByOrderId(orderId)));
     }
 }

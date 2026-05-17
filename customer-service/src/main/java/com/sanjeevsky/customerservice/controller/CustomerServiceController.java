@@ -2,6 +2,7 @@ package com.sanjeevsky.customerservice.controller;
 
 import com.sanjeevsky.customerservice.model.Address;
 import com.sanjeevsky.customerservice.service.AddressService;
+import com.sanjeevsky.platform.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,8 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-import static com.sanjeevsky.customerservice.utils.CommonConstants.UNAUTHORIZED_ACCESS;
-
 @Slf4j
 @RestController
 @RequestMapping("/customer-service")
@@ -31,53 +30,38 @@ public class CustomerServiceController {
     }
 
     @PostMapping("/address")
-    public ResponseEntity<?> addAddress(
+    public ResponseEntity<ApiResponse<Address>> addAddress(
             @RequestBody Address request,
             @RequestHeader(name = "X-User") String user) {
-        if (user == null || user.isEmpty()) {
-            return ResponseEntity.badRequest().body(UNAUTHORIZED_ACCESS);
-        }
-        return new ResponseEntity<>(addressService.addAddress(request, user), HttpStatus.OK);
+        return new ResponseEntity<>(ApiResponse.ok(addressService.addAddress(request, user)), HttpStatus.CREATED);
     }
 
     @GetMapping("/address/{id}")
-    public ResponseEntity<?> getAddress(
+    public ResponseEntity<ApiResponse<Address>> getAddress(
             @PathVariable("id") UUID id,
             @RequestHeader(name = "X-User") String user) {
-        if (user == null || user.isEmpty()) {
-            return ResponseEntity.badRequest().body(UNAUTHORIZED_ACCESS);
-        }
-        return new ResponseEntity<>(addressService.getAddress(id, user), HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(addressService.getAddress(id, user)));
     }
 
     @GetMapping("/addresses")
-    public ResponseEntity<?> getAddresses(
+    public ResponseEntity<ApiResponse<?>> getAddresses(
             @RequestHeader(name = "X-User") String user) {
-        if (user == null || user.isEmpty()) {
-            return ResponseEntity.badRequest().body(UNAUTHORIZED_ACCESS);
-        }
-        return new ResponseEntity<>(addressService.getAddresses(user), HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(addressService.getAddresses(user)));
     }
 
     @PutMapping("/address/{id}")
-    public ResponseEntity<?> updateAddress(
+    public ResponseEntity<ApiResponse<Address>> updateAddress(
             @PathVariable UUID id,
             @RequestBody Address address,
             @RequestHeader(name = "X-User") String user) {
-        if (user == null || user.isEmpty()) {
-            return ResponseEntity.badRequest().body(UNAUTHORIZED_ACCESS);
-        }
-        return new ResponseEntity<>(addressService.updateAddress(id, address, user), HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(addressService.updateAddress(id, address, user)));
     }
 
     @DeleteMapping("/address/{id}")
-    public ResponseEntity<?> deleteAddress(
+    public ResponseEntity<Void> deleteAddress(
             @PathVariable UUID id,
             @RequestHeader(name = "X-User") String user) {
-        if (user == null || user.isEmpty()) {
-            return ResponseEntity.badRequest().body(UNAUTHORIZED_ACCESS);
-        }
         addressService.deleteAddress(id, user);
-        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        return ResponseEntity.noContent().build();
     }
 }

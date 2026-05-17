@@ -1,24 +1,26 @@
 package com.sanjeevsky.authserver.exceptions;
 
-import brave.Response;
-import com.sanjeevsky.authserver.modal.User;
+import com.sanjeevsky.platform.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalExceptionHandler {
+
     @ExceptionHandler(NoSuchUserExistsException.class)
-    public ResponseEntity<?> noUserFoundExceptionHandler(NoSuchUserExistsException exception){
-        return new ResponseEntity<String>(exception.getMessage(),HttpStatus.NOT_FOUND);
+    public ResponseEntity<ApiResponse<Void>> noUserFoundExceptionHandler(NoSuchUserExistsException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
     }
+
     @ExceptionHandler(UserAlreadyExistsException.class)
-    public ResponseEntity<?> userAlreadyExistsExceptionHandler(UserAlreadyExistsException exception){
-        return new ResponseEntity<String>(exception.getMessage(),HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ApiResponse<Void>> userAlreadyExistsExceptionHandler(UserAlreadyExistsException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.CONFLICT);
     }
+
     @ExceptionHandler(CredentialsMismatchException.class)
-    public ResponseEntity<?> credentialMismatchExceptionHandler(CredentialsMismatchException exception){
-        return new ResponseEntity<String>(exception.getMessage(), HttpStatus.CONFLICT);
+    public ResponseEntity<ApiResponse<Void>> credentialMismatchExceptionHandler(CredentialsMismatchException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.UNAUTHORIZED);
     }
 }

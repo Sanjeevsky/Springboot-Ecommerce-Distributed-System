@@ -1,27 +1,41 @@
 package com.sanjeevsky.customerservice.exceptions;
+
+import com.sanjeevsky.platform.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-@ControllerAdvice
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MandatoryFieldException.class)
-    public ResponseEntity<?> exception(MandatoryFieldException exception){
-        return new ResponseEntity<String>(exception.getMessage(), HttpStatus.CONFLICT);
+    public ResponseEntity<ApiResponse<Void>> handleMandatoryField(MandatoryFieldException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(AddressAlreadyExistsException.class)
-    public ResponseEntity<?> exception(AddressAlreadyExistsException exception){
-        return new ResponseEntity<String>(exception.getMessage(), HttpStatus.CONFLICT);
+    public ResponseEntity<ApiResponse<Void>> handleAddressAlreadyExists(AddressAlreadyExistsException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.CONFLICT);
     }
+
     @ExceptionHandler(AddressDoesnotExistsException.class)
-    public ResponseEntity<?> exception(AddressDoesnotExistsException exception){
-        return new ResponseEntity<String>(exception.getMessage(), HttpStatus.CONFLICT);
+    public ResponseEntity<ApiResponse<Void>> handleAddressNotFound(AddressDoesnotExistsException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
     }
+
     @ExceptionHandler(NoAddressExistsException.class)
-    public ResponseEntity<?> exception(NoAddressExistsException exception){
-        return new ResponseEntity<String>(exception.getMessage(), HttpStatus.CONFLICT);
+    public ResponseEntity<ApiResponse<Void>> handleNoAddress(NoAddressExistsException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOrderNotFound(OrderNotFoundException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidRequest(InvalidRequestException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
     }
 }

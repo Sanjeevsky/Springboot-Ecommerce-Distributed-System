@@ -2,6 +2,7 @@ package com.sanjeevsky.customerservice.controller;
 
 import com.sanjeevsky.customerservice.model.Order;
 import com.sanjeevsky.customerservice.service.OrderService;
+import com.sanjeevsky.platform.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,9 +14,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.UUID;
-
-import static com.sanjeevsky.customerservice.utils.CommonConstants.UNAUTHORIZED_ACCESS;
 
 @Slf4j
 @RestController
@@ -29,34 +29,24 @@ public class OrderController {
     }
 
     @GetMapping("/order/{id}")
-    public ResponseEntity<?> getOrder(
+    public ResponseEntity<ApiResponse<Order>> getOrder(
             @RequestHeader(name = "X-User") String userHeader,
             @PathVariable("id") UUID id) {
-        if (userHeader == null || userHeader.isEmpty()) {
-            return ResponseEntity.badRequest().body(UNAUTHORIZED_ACCESS);
-        }
-        UUID user = UUID.fromString(userHeader);
-        return new ResponseEntity<>(orderService.getOrderById(user, id), HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(orderService.getOrderById(userHeader, id)));
     }
 
     @PostMapping("/order")
-    public ResponseEntity<?> createOrder(
+    public ResponseEntity<ApiResponse<Order>> createOrder(
             @RequestHeader(name = "X-User") String userId,
             @RequestBody CreateOrderRequest request) {
-        if (userId == null || userId.isEmpty()) {
-            return ResponseEntity.badRequest().body(UNAUTHORIZED_ACCESS);
-        }
         Order order = orderService.createOrder(userId, request.getAddressId());
-        return new ResponseEntity<>(order, HttpStatus.CREATED);
+        return new ResponseEntity<>(ApiResponse.ok("Order placed successfully", order), HttpStatus.CREATED);
     }
 
     @GetMapping("/orders")
-    public ResponseEntity<?> getOrders(
+    public ResponseEntity<ApiResponse<List<Order>>> getOrders(
             @RequestHeader(name = "X-User") String userId) {
-        if (userId == null || userId.isEmpty()) {
-            return ResponseEntity.badRequest().body(UNAUTHORIZED_ACCESS);
-        }
-        return new ResponseEntity<>(orderService.getOrdersByUser(userId), HttpStatus.OK);
+        return ResponseEntity.ok(ApiResponse.ok(orderService.getOrdersByUser(userId)));
     }
 
     public static class CreateOrderRequest {

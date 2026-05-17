@@ -4,6 +4,7 @@ import com.sanjeevsky.customerservice.clients.CartFeignClient;
 import com.sanjeevsky.customerservice.clients.PaymentFeignClient;
 import com.sanjeevsky.customerservice.exceptions.AddressDoesnotExistsException;
 import com.sanjeevsky.customerservice.exceptions.InvalidRequestException;
+import com.sanjeevsky.customerservice.exceptions.OrderNotFoundException;
 import com.sanjeevsky.customerservice.model.Address;
 import com.sanjeevsky.customerservice.model.Order;
 import com.sanjeevsky.customerservice.model.OrderItem;
@@ -18,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -44,11 +44,10 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Order getOrderById(UUID user, UUID id) {
+    public Order getOrderById(String user, UUID id) {
         log.info("Fetching order with id={} for user={}", id, user);
-        Optional<Order> order = orderRepository.findByIdAndUserId(id, user);
-        if (order.isEmpty()) throw new RuntimeException("Order Not Found");
-        return order.get();
+        return orderRepository.findByIdAndUserId(id, user)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found with id: " + id));
     }
 
     @Override
@@ -78,7 +77,7 @@ public class OrderServiceImpl implements OrderService {
                 .collect(Collectors.toList());
 
         Order order = Order.builder()
-                .userId(UUID.fromString(userId))
+                .userId(userId)
                 .address(address)
                 .orderItems(orderItems)
                 .orderTotal(cart.getTotalAmount())
@@ -110,6 +109,6 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public List<Order> getOrdersByUser(String userId) {
         log.info("Fetching all orders for user={}", userId);
-        return orderRepository.findAllByUserId(UUID.fromString(userId));
+        return orderRepository.findAllByUserId(userId);
     }
 }

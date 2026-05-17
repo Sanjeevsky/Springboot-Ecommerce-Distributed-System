@@ -45,8 +45,7 @@ public class Order {
     private Address address;
 
     @Column(nullable = false)
-    @Type(type = "org.hibernate.type.UUIDCharType")
-    private UUID userId;
+    private String userId;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
