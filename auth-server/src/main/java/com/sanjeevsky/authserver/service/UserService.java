@@ -10,7 +10,7 @@ import com.sanjeevsky.authserver.modal.UserDTO;
 
 public interface UserService {
 
-    User registerUser(User user) throws UserAlreadyExistsException;
-    LoginDTO authenticateUser(UserDTO user) throws NoSuchUserExistsException, CredentialsMismatchException;
+    User registerUser(User user);
+    LoginDTO authenticateUser(UserDTO user);
     String updatePassword(UpdatePasswordRequest request);
 }

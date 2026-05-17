@@ -25,7 +25,7 @@ public class UserServiceImp implements UserService {
     private BCryptPasswordEncoder passwordEncoder;
 
     @Override
-    public User registerUser(User user) throws UserAlreadyExistsException {
+    public User registerUser(User user) {
         if (repository.findById(user.getEmail()).isPresent()) {
             throw new UserAlreadyExistsException("User Already Exists with this Email...!!");
         }
@@ -34,7 +34,7 @@ public class UserServiceImp implements UserService {
     }
 
     @Override
-    public LoginDTO authenticateUser(UserDTO user) throws NoSuchUserExistsException, CredentialsMismatchException {
+    public LoginDTO authenticateUser(UserDTO user) {
         Optional<User> stored = repository.findById(user.getEmail());
         if (stored.isPresent()) {
             if (passwordEncoder.matches(user.getPassword(), stored.get().getPassword())) {
