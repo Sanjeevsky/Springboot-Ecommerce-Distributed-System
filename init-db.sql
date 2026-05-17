@@ -1,0 +1,5 @@
+CREATE DATABASE IF NOT EXISTS `auth-db`;
+CREATE DATABASE IF NOT EXISTS `product-catalog-db`;
+CREATE DATABASE IF NOT EXISTS `customer-service-db`;
+CREATE DATABASE IF NOT EXISTS `shopping-cart-db`;
+CREATE DATABASE IF NOT EXISTS `payment-db`;

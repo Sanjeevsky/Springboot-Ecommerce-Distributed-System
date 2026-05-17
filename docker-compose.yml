@@ -1,0 +1,182 @@
+version: '3.8'
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_DATABASE: auth-db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecommerce-network
+
+  service-discovery:
+    build: ./service-discovery
+    ports:
+      - "8761:8761"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
+    networks:
+      - ecommerce-network
+
+  cloud-config:
+    build: ./cloud-config
+    ports:
+      - "8071:8071"
+    depends_on:
+      - service-discovery
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
+    networks:
+      - ecommerce-network
+
+  spring-server:
+    build: ./spring-server
+    ports:
+      - "9000:9000"
+    depends_on:
+      - service-discovery
+      - cloud-config
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
+    networks:
+      - ecommerce-network
+
+  auth-server:
+    build: ./auth-server
+    ports:
+      - "8083:8083"
+    depends_on:
+      - service-discovery
+      - cloud-config
+      - spring-server
+      mysql:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/auth-db?createDatabaseIfNotExist=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
+      - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
+    networks:
+      - ecommerce-network
+
+  catalog-service:
+    build: ./catalog-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - service-discovery
+      - cloud-config
+      - spring-server
+      mysql:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/product-catalog-db?createDatabaseIfNotExist=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
+      - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
+      - SPRING_PROFILES_ACTIVE=dev
+    networks:
+      - ecommerce-network
+
+  customer-service:
+    build: ./customer-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - service-discovery
+      - cloud-config
+      - spring-server
+      mysql:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/customer-service-db?createDatabaseIfNotExist=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
+      - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
+      - SPRING_PROFILES_ACTIVE=dev
+    networks:
+      - ecommerce-network
+
+  shopping-cart-service:
+    build: ./shopping-cart-service
+    ports:
+      - "8086:8086"
+    depends_on:
+      - service-discovery
+      - cloud-config
+      - spring-server
+      mysql:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/shopping-cart-db?createDatabaseIfNotExist=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
+      - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
+    networks:
+      - ecommerce-network
+
+  payment-service:
+    build: ./payment-service
+    ports:
+      - "8085:8085"
+    depends_on:
+      - service-discovery
+      - cloud-config
+      - spring-server
+      mysql:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/payment-db?createDatabaseIfNotExist=true&useSSL=false
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
+      - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
+    networks:
+      - ecommerce-network
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8081:8081"
+    depends_on:
+      - service-discovery
+      - cloud-config
+      - spring-server
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
+      - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
+    networks:
+      - ecommerce-network
+
+volumes:
+  mysql-data:
+
+networks:
+  ecommerce-network:
+    driver: bridge

@@ -1,7 +1,6 @@
 package com.sanjeevsky.authserver.jwtgenerator;
 
 import com.sanjeevsky.authserver.modal.LoginDTO;
-import com.sanjeevsky.authserver.modal.User;
 import com.sanjeevsky.authserver.modal.UserDTO;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -11,10 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Date;
 @Component
-
-
-
-
+@Configuration
 public class JwtTokenGenerator {
     public static final int VALIDITY = 600 * 1000;
     @Value("${jwt.secret}")

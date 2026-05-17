@@ -6,6 +6,8 @@ public class LoggingConstants {
     public static final String SERVICE_UP_AND_HEALTHY = "Service Up and Healthy...";
     public static final String ADD_PRODUCT_REQUEST_WITH_PRODUCT_ID = "Add Product Request with Product id : {}";
     public static final String GET_PRODUCT_REQUEST_WITH_PRODUCT_ID = "Get Product Request with Product id : {}";
+    public static final String LIST_PRODUCTS_REQUEST = "List products request - page={}, size={}, sort={}";
+    public static final String SEARCH_PRODUCTS_REQUEST = "Search products request - keyword={}, categoryId={}, brandId={}";
 
 
     /*Brand Section*/
