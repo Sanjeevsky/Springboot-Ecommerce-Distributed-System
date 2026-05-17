@@ -1,7 +1,6 @@
 package com.sanjeevsky.apigateway.filter;
 
 import io.jsonwebtoken.Claims;
-import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
@@ -18,7 +17,7 @@ import reactor.core.publisher.Mono;
 public class AuthenticationFilter implements GatewayFilter {
 
     @Autowired
-    private RouterValidator routerValidator;//custom route validator
+    private RouterValidator routerValidator;
     @Autowired
     private JwtUtil jwtUtil;
 
@@ -48,9 +47,6 @@ public class AuthenticationFilter implements GatewayFilter {
         return chain.filter(exchange);
     }
 
-
-    /*PRIVATE*/
-
     private Mono<Void> onError(ServerWebExchange exchange, String err, HttpStatus httpStatus) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(httpStatus);
@@ -58,7 +54,11 @@ public class AuthenticationFilter implements GatewayFilter {
     }
 
     private String getAuthHeader(ServerHttpRequest request) {
-        return request.getHeaders().getOrEmpty("Authorization").get(0);
+        String header = request.getHeaders().getOrEmpty("Authorization").get(0);
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7);
+        }
+        return header;
     }
 
     private boolean isAuthMissing(ServerHttpRequest request) {

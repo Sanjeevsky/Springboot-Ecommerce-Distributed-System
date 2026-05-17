@@ -9,15 +9,12 @@ import com.sanjeevsky.catalogservice.service.ProductService;
 import com.sanjeevsky.catalogservice.service.SubCategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 import static com.sanjeevsky.catalogservice.utils.ErrorConstants.NO_PRODUCT_FOUND_WITH_GIVEN_UUID;
 import static com.sanjeevsky.catalogservice.utils.ErrorConstants.PRODUCT_WITH_THIS_MODEL_AND_BRAND_ALREADY_EXISTS_IN_CATALOG;
@@ -65,43 +62,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Page<Product> searchProducts(String keyword, UUID categoryId, UUID brandId, int page, int size) {
         PageRequest pageable = PageRequest.of(page, size, Sort.by("name").ascending());
-
-        boolean hasKeyword = keyword != null && !keyword.isEmpty();
-        boolean hasCategoryId = categoryId != null;
-        boolean hasBrandId = brandId != null;
-
-        if (hasKeyword && hasCategoryId && hasBrandId) {
-            // keyword + category + brand: fetch by name, filter category and brand in memory (MVP)
-            Page<Product> byName = productRepository.findByNameContainingIgnoreCaseAndStatus(keyword, 1, pageable);
-            List<Product> filtered = byName.getContent().stream()
-                    .filter(p -> p.getCategory() != null && p.getCategory().getId().equals(categoryId))
-                    .filter(p -> p.getBrand() != null && p.getBrand().getId().equals(brandId))
-                    .collect(Collectors.toList());
-            return new PageImpl<>(filtered, pageable, filtered.size());
-        } else if (hasKeyword && hasCategoryId) {
-            // keyword + category: fetch by name, filter category in memory
-            Page<Product> byName = productRepository.findByNameContainingIgnoreCaseAndStatus(keyword, 1, pageable);
-            List<Product> filtered = byName.getContent().stream()
-                    .filter(p -> p.getCategory() != null && p.getCategory().getId().equals(categoryId))
-                    .collect(Collectors.toList());
-            return new PageImpl<>(filtered, pageable, filtered.size());
-        } else if (hasKeyword && hasBrandId) {
-            // keyword + brand: fetch by name, filter brand in memory
-            Page<Product> byName = productRepository.findByNameContainingIgnoreCaseAndStatus(keyword, 1, pageable);
-            List<Product> filtered = byName.getContent().stream()
-                    .filter(p -> p.getBrand() != null && p.getBrand().getId().equals(brandId))
-                    .collect(Collectors.toList());
-            return new PageImpl<>(filtered, pageable, filtered.size());
-        } else if (hasCategoryId && hasBrandId) {
-            return productRepository.findByCategoryIdAndBrandIdAndStatus(categoryId, brandId, 1, pageable);
-        } else if (hasKeyword) {
-            return productRepository.findByNameContainingIgnoreCaseAndStatus(keyword, 1, pageable);
-        } else if (hasCategoryId) {
-            return productRepository.findByCategoryIdAndStatus(categoryId, 1, pageable);
-        } else if (hasBrandId) {
-            return productRepository.findByBrandIdAndStatus(brandId, 1, pageable);
-        } else {
-            return productRepository.findAllByStatus(1, pageable);
-        }
+        String kw = (keyword != null && !keyword.isBlank()) ? keyword : null;
+        return productRepository.search(kw, categoryId, brandId, pageable);
     }
 }
