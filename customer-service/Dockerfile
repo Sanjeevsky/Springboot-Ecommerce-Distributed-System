@@ -1,4 +1,4 @@
-FROM openjdk:11
-ADD target/*.jar customer-service
-ENTRYPOINT ["java", "-jar","customer-service"]
+FROM eclipse-temurin:11-jre
+ADD target/*.jar app.jar
+ENTRYPOINT ["java", "-jar", "app.jar"]
 EXPOSE 8082

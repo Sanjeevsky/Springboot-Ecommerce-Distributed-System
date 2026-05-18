@@ -1,0 +1,99 @@
+package com.sanjeevsky.customerservice.events;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sanjeevsky.customerservice.model.Order;
+import com.sanjeevsky.customerservice.repository.OrderRepository;
+import com.sanjeevsky.platform.events.OrderCancelledEvent;
+import com.sanjeevsky.platform.events.OrderConfirmedEvent;
+import com.sanjeevsky.platform.model.order.OrderStatus;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.stereotype.Component;
+
+import java.util.UUID;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class InventoryEventConsumer {
+
+    private final OrderRepository orderRepository;
+    private final OrderEventPublisher eventPublisher;
+    private final ObjectMapper objectMapper;
+
+    @KafkaListener(topics = "inventory-events", groupId = "customer-group")
+    public void consume(String payload) {
+        log.info("Received inventory event: {}", payload);
+        try {
+            JsonNode root = objectMapper.readTree(payload);
+
+            if (!root.has("orderId")) {
+                log.warn("Inventory event missing orderId, skipping");
+                return;
+            }
+
+            UUID orderId = UUID.fromString(root.get("orderId").asText());
+            String userId = root.has("userId") ? root.get("userId").asText() : null;
+
+            if (root.has("availableQty")) {
+                // StockInsufficientEvent
+                handleStockInsufficient(orderId, userId, root);
+            } else if (root.has("items")) {
+                // StockReservedEvent
+                handleStockReserved(orderId, userId);
+            } else {
+                log.warn("Unrecognised inventory event format for orderId={}", orderId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to process inventory event payload: {}", payload, e);
+        }
+    }
+
+    private void handleStockInsufficient(UUID orderId, String userId, JsonNode root) {
+        UUID productId = root.has("productId") ? UUID.fromString(root.get("productId").asText()) : null;
+        int available = root.has("availableQty") ? root.get("availableQty").asInt() : 0;
+        int requested = root.has("requestedQty") ? root.get("requestedQty").asInt() : 0;
+
+        log.warn("StockInsufficientEvent for orderId={}: productId={}, available={}, requested={}",
+                orderId, productId, available, requested);
+
+        orderRepository.findById(orderId).ifPresentOrElse(order -> {
+            if (order.getStatus() == OrderStatus.CANCELLED || order.getStatus() == OrderStatus.DELIVERED) {
+                log.info("Order {} already in terminal state {}, skipping auto-cancel", orderId, order.getStatus());
+                return;
+            }
+            order.setStatus(OrderStatus.CANCELLED);
+            orderRepository.save(order);
+            log.info("Order {} auto-cancelled due to insufficient stock", orderId);
+
+            eventPublisher.publishOrderCancelled(OrderCancelledEvent.builder()
+                    .orderId(orderId)
+                    .userId(userId != null ? userId : order.getUserId())
+                    .reason("Insufficient stock for product " + productId
+                            + " (available=" + available + ", requested=" + requested + ")")
+                    .build());
+        }, () -> log.warn("Order {} not found when processing StockInsufficientEvent", orderId));
+    }
+
+    private void handleStockReserved(UUID orderId, String userId) {
+        log.info("StockReservedEvent for orderId={}, confirming order", orderId);
+
+        orderRepository.findById(orderId).ifPresentOrElse(order -> {
+            if (order.getStatus() != OrderStatus.PENDING) {
+                log.info("Order {} is in state {}, not confirming", orderId, order.getStatus());
+                return;
+            }
+            order.setStatus(OrderStatus.CONFIRMED);
+            Order confirmed = orderRepository.save(order);
+            log.info("Order {} confirmed after stock reservation", orderId);
+
+            eventPublisher.publishOrderConfirmed(OrderConfirmedEvent.builder()
+                    .orderId(orderId)
+                    .userId(userId != null ? userId : confirmed.getUserId())
+                    .totalAmount(confirmed.getOrderTotal())
+                    .build());
+        }, () -> log.warn("Order {} not found when processing StockReservedEvent", orderId));
+    }
+}

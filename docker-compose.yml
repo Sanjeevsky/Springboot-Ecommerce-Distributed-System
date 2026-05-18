@@ -49,7 +49,8 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_started
     ports:
       - "9092:9092"
     environment:
@@ -106,7 +107,6 @@ services:
         condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
     networks:
       - ecommerce-network
 
@@ -117,14 +117,17 @@ services:
     ports:
       - "8083:8083"
     depends_on:
-      - service-discovery
-      - cloud-config
-      - spring-server
+      service-discovery:
+        condition: service_healthy
+      cloud-config:
+        condition: service_started
+      spring-server:
+        condition: service_started
       mysql:
         condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/auth-db?createDatabaseIfNotExist=true&useSSL=false
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/auth-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
@@ -139,16 +142,19 @@ services:
     ports:
       - "8084:8084"
     depends_on:
-      - service-discovery
-      - cloud-config
-      - spring-server
+      service-discovery:
+        condition: service_healthy
+      cloud-config:
+        condition: service_started
+      spring-server:
+        condition: service_started
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/product-catalog-db?createDatabaseIfNotExist=true&useSSL=false
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/product-catalog-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
@@ -164,15 +170,19 @@ services:
     ports:
       - "8082:8082"
     depends_on:
-      - service-discovery
-      - cloud-config
-      - spring-server
-      - kafka
+      service-discovery:
+        condition: service_healthy
+      cloud-config:
+        condition: service_started
+      spring-server:
+        condition: service_started
+      kafka:
+        condition: service_healthy
       mysql:
         condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/customer-service-db?createDatabaseIfNotExist=true&useSSL=false
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/customer-service-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
@@ -187,16 +197,19 @@ services:
     ports:
       - "8086:8086"
     depends_on:
-      - service-discovery
-      - cloud-config
-      - spring-server
+      service-discovery:
+        condition: service_healthy
+      cloud-config:
+        condition: service_started
+      spring-server:
+        condition: service_started
       mysql:
         condition: service_healthy
       redis:
         condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/shopping-cart-db?createDatabaseIfNotExist=true&useSSL=false
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/shopping-cart-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
@@ -212,15 +225,19 @@ services:
     ports:
       - "8085:8085"
     depends_on:
-      - service-discovery
-      - cloud-config
-      - spring-server
-      - kafka
+      service-discovery:
+        condition: service_healthy
+      cloud-config:
+        condition: service_started
+      spring-server:
+        condition: service_started
+      kafka:
+        condition: service_healthy
       mysql:
         condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/payment-db?createDatabaseIfNotExist=true&useSSL=false
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/payment-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
@@ -235,9 +252,12 @@ services:
     ports:
       - "8081:8081"
     depends_on:
-      - service-discovery
-      - cloud-config
-      - spring-server
+      service-discovery:
+        condition: service_healthy
+      cloud-config:
+        condition: service_started
+      spring-server:
+        condition: service_started
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
@@ -253,15 +273,24 @@ services:
     ports:
       - "8087:8087"
     depends_on:
-      - service-discovery
-      - cloud-config
-      - kafka
+      service-discovery:
+        condition: service_healthy
+      cloud-config:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/notification-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=123456
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
+      - MYSQL_HOST=mysql
     networks:
       - ecommerce-network
 
@@ -270,14 +299,17 @@ services:
     ports:
       - "8088:8088"
     depends_on:
-      - service-discovery
-      - cloud-config
-      - kafka
+      service-discovery:
+        condition: service_healthy
+      cloud-config:
+        condition: service_started
+      kafka:
+        condition: service_healthy
       mysql:
         condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/inventory-db?createDatabaseIfNotExist=true&useSSL=false
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/inventory-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
@@ -292,13 +324,15 @@ services:
     ports:
       - "8089:8089"
     depends_on:
-      - service-discovery
-      - cloud-config
+      service-discovery:
+        condition: service_healthy
+      cloud-config:
+        condition: service_started
       mysql:
         condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/coupon-db?createDatabaseIfNotExist=true&useSSL=false
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/coupon-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
@@ -312,14 +346,17 @@ services:
     ports:
       - "8090:8090"
     depends_on:
-      - service-discovery
-      - cloud-config
-      - kafka
+      service-discovery:
+        condition: service_healthy
+      cloud-config:
+        condition: service_started
+      kafka:
+        condition: service_healthy
       mysql:
         condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/review-db?createDatabaseIfNotExist=true&useSSL=false
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/review-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071
@@ -334,13 +371,15 @@ services:
     ports:
       - "8091:8091"
     depends_on:
-      - service-discovery
-      - cloud-config
+      service-discovery:
+        condition: service_healthy
+      cloud-config:
+        condition: service_started
       mysql:
         condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/wishlist-db?createDatabaseIfNotExist=true&useSSL=false
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/wishlist-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=123456
       - SPRING_CONFIG_IMPORT=optional:configserver:http://cloud-config:8071

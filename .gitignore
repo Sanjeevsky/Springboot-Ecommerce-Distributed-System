@@ -1,0 +1,27 @@
+# Build artifacts
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+
+# IDE files
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Local config / secrets
+*.env
+application-local.properties
+
+# Graphify output
+graphify-out/

@@ -2,7 +2,9 @@ package com.sanjeevsky.reviewservice.service.impl;
 
 import com.sanjeevsky.reviewservice.dto.ReviewSummary;
 import com.sanjeevsky.reviewservice.exceptions.ReviewNotFoundException;
+import com.sanjeevsky.reviewservice.exceptions.UnauthorizedReviewException;
 import com.sanjeevsky.reviewservice.model.Review;
+import com.sanjeevsky.reviewservice.repository.OrderEligibilityRepository;
 import com.sanjeevsky.reviewservice.repository.ReviewRepository;
 import com.sanjeevsky.reviewservice.service.ReviewService;
 import lombok.extern.slf4j.Slf4j;
@@ -21,9 +23,16 @@ public class ReviewServiceImpl implements ReviewService {
     @Autowired
     private ReviewRepository reviewRepository;
 
+    @Autowired
+    private OrderEligibilityRepository eligibilityRepository;
+
     @Override
     public Review addReview(String userId, Review review) {
         log.info("Adding review for productId: {} by userId: {}", review.getProductId(), userId);
+        if (!eligibilityRepository.existsByUserIdAndProductId(userId, review.getProductId())) {
+            throw new UnauthorizedReviewException(
+                    "User " + userId + " has not purchased product " + review.getProductId());
+        }
         review.setUserId(userId);
         review.setStatus("PENDING");
         Review saved = reviewRepository.save(review);

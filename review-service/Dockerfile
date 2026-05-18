@@ -1,4 +1,4 @@
-FROM openjdk:11
-ADD target/*.jar review-service.jar
-ENTRYPOINT ["java", "-jar", "review-service.jar"]
+FROM eclipse-temurin:11-jre
+ADD target/*.jar app.jar
+ENTRYPOINT ["java", "-jar", "app.jar"]
 EXPOSE 8090

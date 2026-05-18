@@ -1,4 +1,4 @@
-FROM openjdk:11
-ADD target/*.jar service-discovery
-ENTRYPOINT ["java", "-jar","service-discovery"]
+FROM eclipse-temurin:11-jre
+ADD target/*.jar app.jar
+ENTRYPOINT ["java", "-jar", "app.jar"]
 EXPOSE 8761
