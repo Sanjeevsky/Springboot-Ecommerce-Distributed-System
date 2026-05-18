@@ -108,7 +108,7 @@ class OrderServiceImplTest {
 
         PaymentResponse payment = new PaymentResponse();
         payment.setId(PAYMENT_ID);
-        payment.setStatus(PaymentStatus.INITIATED);
+        payment.setStatus(PaymentStatus.PENDING);
 
         when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(cart);
         when(customerFeignClient.getAddress(USER, ADDRESS_ID)).thenReturn(address);
