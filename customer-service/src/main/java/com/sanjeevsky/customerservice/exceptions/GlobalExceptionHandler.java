@@ -40,11 +40,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(OrderNotFoundException.class)
-    public ResponseEntity<ApiResponse<Void>> handleOrderNotFound(OrderNotFoundException ex) {
-        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
-    }
-
     @ExceptionHandler(InvalidRequestException.class)
     public ResponseEntity<ApiResponse<Void>> handleInvalidRequest(InvalidRequestException ex) {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
