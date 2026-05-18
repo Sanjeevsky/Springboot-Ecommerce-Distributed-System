@@ -1,0 +1,12 @@
+com/sanjeevsky/reviewservice/kafka/OrderEventConsumer.class
+com/sanjeevsky/reviewservice/exceptions/GlobalExceptionHandler.class
+com/sanjeevsky/reviewservice/service/impl/ReviewServiceImpl.class
+com/sanjeevsky/reviewservice/repository/ReviewRepository.class
+com/sanjeevsky/reviewservice/controller/ReviewController.class
+com/sanjeevsky/reviewservice/model/Review$ReviewBuilder.class
+com/sanjeevsky/reviewservice/ReviewServiceApplication.class
+com/sanjeevsky/reviewservice/model/Review.class
+com/sanjeevsky/reviewservice/dto/ReviewSummary.class
+com/sanjeevsky/reviewservice/exceptions/ReviewNotFoundException.class
+com/sanjeevsky/reviewservice/dto/ReviewSummary$ReviewSummaryBuilder.class
+com/sanjeevsky/reviewservice/service/ReviewService.class

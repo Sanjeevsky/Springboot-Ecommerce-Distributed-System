@@ -2,6 +2,7 @@ package com.sanjeevsky.customerservice.service;
 
 import com.sanjeevsky.customerservice.clients.CartFeignClient;
 import com.sanjeevsky.customerservice.clients.PaymentFeignClient;
+import com.sanjeevsky.customerservice.events.OrderEventPublisher;
 import com.sanjeevsky.customerservice.exceptions.AddressDoesnotExistsException;
 import com.sanjeevsky.customerservice.exceptions.InvalidRequestException;
 import com.sanjeevsky.customerservice.exceptions.OrderNotFoundException;
@@ -41,6 +42,7 @@ class OrderServiceImplTest {
     @Mock private AddressRepository addressRepository;
     @Mock private CartFeignClient cartFeignClient;
     @Mock private PaymentFeignClient paymentFeignClient;
+    @Mock private OrderEventPublisher eventPublisher;
 
     @InjectMocks
     private OrderServiceImpl orderService;

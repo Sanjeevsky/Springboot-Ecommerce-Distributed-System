@@ -1,0 +1,17 @@
+com/sanjeevsky/inventoryservice/repository/InventoryTransactionRepository.class
+com/sanjeevsky/inventoryservice/exceptions/InventoryNotFoundException.class
+com/sanjeevsky/inventoryservice/controller/InventoryController.class
+com/sanjeevsky/inventoryservice/service/impl/InventoryServiceImpl.class
+com/sanjeevsky/inventoryservice/exceptions/GlobalExceptionHandler.class
+com/sanjeevsky/inventoryservice/model/Inventory.class
+com/sanjeevsky/inventoryservice/events/OrderEventConsumer.class
+com/sanjeevsky/inventoryservice/InventoryServiceApplication.class
+com/sanjeevsky/inventoryservice/repository/InventoryRepository.class
+com/sanjeevsky/inventoryservice/exceptions/InsufficientStockException.class
+com/sanjeevsky/inventoryservice/config/KafkaConfig.class
+com/sanjeevsky/inventoryservice/controller/StockRequest.class
+com/sanjeevsky/inventoryservice/model/InventoryTransaction.class
+com/sanjeevsky/inventoryservice/model/InventoryTransaction$InventoryTransactionBuilder.class
+com/sanjeevsky/inventoryservice/events/InventoryEventPublisher.class
+com/sanjeevsky/inventoryservice/model/Inventory$InventoryBuilder.class
+com/sanjeevsky/inventoryservice/service/InventoryService.class

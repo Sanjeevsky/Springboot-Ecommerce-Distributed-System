@@ -1,11 +1,15 @@
 package com.sanjeevsky.paymentservice.service.impl;
 
+import com.sanjeevsky.paymentservice.events.PaymentEventPublisher;
 import com.sanjeevsky.paymentservice.exceptions.PaymentNotFoundException;
 import com.sanjeevsky.paymentservice.model.Payment;
 import com.sanjeevsky.paymentservice.model.PaymentRequest;
 import com.sanjeevsky.paymentservice.model.PaymentStatus;
 import com.sanjeevsky.paymentservice.repository.PaymentRepository;
 import com.sanjeevsky.paymentservice.service.PaymentService;
+import com.sanjeevsky.platform.events.PaymentConfirmedEvent;
+import com.sanjeevsky.platform.events.PaymentInitiatedEvent;
+import com.sanjeevsky.platform.events.PaymentRefundedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -18,6 +22,8 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Autowired
     private PaymentRepository paymentRepository;
+    @Autowired
+    private PaymentEventPublisher eventPublisher;
 
     @Override
     public Payment initiatePayment(PaymentRequest request) {
@@ -30,6 +36,14 @@ public class PaymentServiceImpl implements PaymentService {
                 .build();
         Payment savedPayment = paymentRepository.save(payment);
         log.info("Payment initiated with paymentId: {}", savedPayment.getId());
+
+        eventPublisher.publishPaymentInitiated(PaymentInitiatedEvent.builder()
+                .paymentId(savedPayment.getId())
+                .orderId(savedPayment.getOrderId())
+                .userId(savedPayment.getUserId())
+                .amount(savedPayment.getAmount())
+                .build());
+
         return savedPayment;
     }
 
@@ -39,7 +53,16 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found with id: " + paymentId));
         payment.setStatus(PaymentStatus.SUCCESS);
-        return paymentRepository.save(payment);
+        Payment confirmed = paymentRepository.save(payment);
+
+        eventPublisher.publishPaymentConfirmed(PaymentConfirmedEvent.builder()
+                .paymentId(confirmed.getId())
+                .orderId(confirmed.getOrderId())
+                .userId(confirmed.getUserId())
+                .amount(confirmed.getAmount())
+                .build());
+
+        return confirmed;
     }
 
     @Override
@@ -64,7 +87,16 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found with id: " + paymentId));
         payment.setStatus(PaymentStatus.REFUNDED);
-        return paymentRepository.save(payment);
+        Payment refunded = paymentRepository.save(payment);
+
+        eventPublisher.publishPaymentRefunded(PaymentRefundedEvent.builder()
+                .paymentId(refunded.getId())
+                .orderId(refunded.getOrderId())
+                .userId(refunded.getUserId())
+                .amount(refunded.getAmount())
+                .build());
+
+        return refunded;
     }
 
     @Override

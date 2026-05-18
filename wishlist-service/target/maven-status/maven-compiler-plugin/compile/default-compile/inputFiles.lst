@@ -1,0 +1,10 @@
+/Users/sanjeev/IdeaProjects/Springboot-Ecommerce-Distributed-System/wishlist-service/src/main/java/com/sanjeevsky/wishlistservice/WishlistServiceApplication.java
+/Users/sanjeev/IdeaProjects/Springboot-Ecommerce-Distributed-System/wishlist-service/src/main/java/com/sanjeevsky/wishlistservice/repository/WishlistRepository.java
+/Users/sanjeev/IdeaProjects/Springboot-Ecommerce-Distributed-System/wishlist-service/src/main/java/com/sanjeevsky/wishlistservice/exceptions/GlobalExceptionHandler.java
+/Users/sanjeev/IdeaProjects/Springboot-Ecommerce-Distributed-System/wishlist-service/src/main/java/com/sanjeevsky/wishlistservice/controller/WishlistController.java
+/Users/sanjeev/IdeaProjects/Springboot-Ecommerce-Distributed-System/wishlist-service/src/main/java/com/sanjeevsky/wishlistservice/service/WishlistService.java
+/Users/sanjeev/IdeaProjects/Springboot-Ecommerce-Distributed-System/wishlist-service/src/main/java/com/sanjeevsky/wishlistservice/service/impl/WishlistServiceImpl.java
+/Users/sanjeev/IdeaProjects/Springboot-Ecommerce-Distributed-System/wishlist-service/src/main/java/com/sanjeevsky/wishlistservice/dto/AddToWishlistRequest.java
+/Users/sanjeev/IdeaProjects/Springboot-Ecommerce-Distributed-System/wishlist-service/src/main/java/com/sanjeevsky/wishlistservice/exceptions/WishlistItemAlreadyExistsException.java
+/Users/sanjeev/IdeaProjects/Springboot-Ecommerce-Distributed-System/wishlist-service/src/main/java/com/sanjeevsky/wishlistservice/exceptions/WishlistItemNotFoundException.java
+/Users/sanjeev/IdeaProjects/Springboot-Ecommerce-Distributed-System/wishlist-service/src/main/java/com/sanjeevsky/wishlistservice/model/WishlistItem.java

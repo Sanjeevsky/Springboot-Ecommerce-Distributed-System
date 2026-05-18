@@ -13,7 +13,9 @@ public class RouterValidator {
             "/auth-service/",
             "/catalog-service/product/list",
             "/catalog-service/product/search",
-            "/catalog-service/product/getProduct/"
+            "/catalog-service/product/getProduct/",
+            "/review-service/product/",
+            "/coupon-service/active"
     );
 
     public Predicate<ServerHttpRequest> isSecured =

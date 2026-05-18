@@ -2,6 +2,7 @@ package com.sanjeevsky.customerservice.service.impl;
 
 import com.sanjeevsky.customerservice.clients.CartFeignClient;
 import com.sanjeevsky.customerservice.clients.PaymentFeignClient;
+import com.sanjeevsky.customerservice.events.OrderEventPublisher;
 import com.sanjeevsky.customerservice.exceptions.AddressDoesnotExistsException;
 import com.sanjeevsky.customerservice.exceptions.InvalidRequestException;
 import com.sanjeevsky.customerservice.exceptions.OrderNotFoundException;
@@ -11,6 +12,10 @@ import com.sanjeevsky.customerservice.model.OrderItem;
 import com.sanjeevsky.customerservice.repository.AddressRepository;
 import com.sanjeevsky.customerservice.repository.OrderRepository;
 import com.sanjeevsky.customerservice.service.OrderService;
+import com.sanjeevsky.platform.events.OrderCancelledEvent;
+import com.sanjeevsky.platform.events.OrderConfirmedEvent;
+import com.sanjeevsky.platform.events.OrderItemEvent;
+import com.sanjeevsky.platform.events.OrderPlacedEvent;
 import com.sanjeevsky.platform.model.cart.CartSnapshot;
 import com.sanjeevsky.platform.model.order.OrderStatus;
 import com.sanjeevsky.platform.model.payment.PaymentRequest;
@@ -32,15 +37,18 @@ public class OrderServiceImpl implements OrderService {
     private final AddressRepository addressRepository;
     private final CartFeignClient cartFeignClient;
     private final PaymentFeignClient paymentFeignClient;
+    private final OrderEventPublisher eventPublisher;
 
     public OrderServiceImpl(OrderRepository orderRepository,
                             AddressRepository addressRepository,
                             CartFeignClient cartFeignClient,
-                            PaymentFeignClient paymentFeignClient) {
+                            PaymentFeignClient paymentFeignClient,
+                            OrderEventPublisher eventPublisher) {
         this.orderRepository = orderRepository;
         this.addressRepository = addressRepository;
         this.cartFeignClient = cartFeignClient;
         this.paymentFeignClient = paymentFeignClient;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -103,6 +111,24 @@ public class OrderServiceImpl implements OrderService {
         cartFeignClient.clearCart(userId);
         log.info("Cart cleared for user={}", userId);
 
+        List<OrderItemEvent> itemEvents = finalOrder.getOrderItems().stream()
+                .map(i -> OrderItemEvent.builder()
+                        .productId(i.getProductId())
+                        .variantId(i.getVariantId())
+                        .productName(i.getProductName())
+                        .unitPrice(i.getUnitPrice())
+                        .qty(i.getQty())
+                        .build())
+                .collect(Collectors.toList());
+
+        eventPublisher.publishOrderPlaced(OrderPlacedEvent.builder()
+                .orderId(finalOrder.getId())
+                .userId(userId)
+                .totalAmount(finalOrder.getOrderTotal())
+                .addressId(addressId)
+                .items(itemEvents)
+                .build());
+
         return finalOrder;
     }
 
@@ -116,7 +142,15 @@ public class OrderServiceImpl implements OrderService {
         }
         paymentFeignClient.confirmPayment(order.getPaymentId());
         order.setStatus(OrderStatus.CONFIRMED);
-        return orderRepository.save(order);
+        Order confirmed = orderRepository.save(order);
+
+        eventPublisher.publishOrderConfirmed(OrderConfirmedEvent.builder()
+                .orderId(confirmed.getId())
+                .userId(userId)
+                .totalAmount(confirmed.getOrderTotal())
+                .build());
+
+        return confirmed;
     }
 
     @Override
@@ -131,7 +165,15 @@ public class OrderServiceImpl implements OrderService {
             paymentFeignClient.refundPayment(order.getPaymentId());
         }
         order.setStatus(OrderStatus.CANCELLED);
-        return orderRepository.save(order);
+        Order cancelled = orderRepository.save(order);
+
+        eventPublisher.publishOrderCancelled(OrderCancelledEvent.builder()
+                .orderId(cancelled.getId())
+                .userId(userId)
+                .reason("Cancelled by user")
+                .build());
+
+        return cancelled;
     }
 
     @Override

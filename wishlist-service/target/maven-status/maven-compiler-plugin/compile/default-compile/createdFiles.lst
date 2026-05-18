@@ -1,0 +1,12 @@
+com/sanjeevsky/wishlistservice/exceptions/WishlistItemAlreadyExistsException.class
+com/sanjeevsky/wishlistservice/service/WishlistService.class
+com/sanjeevsky/wishlistservice/dto/AddToWishlistRequest$AddToWishlistRequestBuilder.class
+com/sanjeevsky/wishlistservice/dto/AddToWishlistRequest.class
+com/sanjeevsky/wishlistservice/service/impl/WishlistServiceImpl.class
+com/sanjeevsky/wishlistservice/exceptions/GlobalExceptionHandler.class
+com/sanjeevsky/wishlistservice/WishlistServiceApplication.class
+com/sanjeevsky/wishlistservice/model/WishlistItem.class
+com/sanjeevsky/wishlistservice/exceptions/WishlistItemNotFoundException.class
+com/sanjeevsky/wishlistservice/repository/WishlistRepository.class
+com/sanjeevsky/wishlistservice/controller/WishlistController.class
+com/sanjeevsky/wishlistservice/model/WishlistItem$WishlistItemBuilder.class

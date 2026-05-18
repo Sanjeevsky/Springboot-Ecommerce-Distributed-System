@@ -32,6 +32,21 @@ public class GatewayConfig {
                 .route("payment-service", r -> r.path("/payment-service/**")
                         .filters(f -> f.filter(filter))
                         .uri("lb://payment-service"))
+                .route("inventory-service", r -> r.path("/inventory-service/**")
+                        .filters(f -> f.filter(filter))
+                        .uri("lb://inventory-service"))
+                .route("notification-service", r -> r.path("/notification-service/**")
+                        .filters(f -> f.filter(filter))
+                        .uri("lb://notification-service"))
+                .route("coupon-service", r -> r.path("/coupon-service/**")
+                        .filters(f -> f.filter(filter))
+                        .uri("lb://coupon-service"))
+                .route("review-service", r -> r.path("/review-service/**")
+                        .filters(f -> f.filter(filter))
+                        .uri("lb://review-service"))
+                .route("wishlist-service", r -> r.path("/wishlist-service/**")
+                        .filters(f -> f.filter(filter))
+                        .uri("lb://wishlist-service"))
                 .build();
     }
 

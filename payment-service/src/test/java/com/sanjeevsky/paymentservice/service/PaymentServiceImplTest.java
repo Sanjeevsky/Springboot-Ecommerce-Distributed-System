@@ -1,5 +1,6 @@
 package com.sanjeevsky.paymentservice.service;
 
+import com.sanjeevsky.paymentservice.events.PaymentEventPublisher;
 import com.sanjeevsky.paymentservice.exceptions.PaymentNotFoundException;
 import com.sanjeevsky.paymentservice.model.Payment;
 import com.sanjeevsky.paymentservice.model.PaymentRequest;
@@ -26,6 +27,8 @@ class PaymentServiceImplTest {
 
     @Mock
     private PaymentRepository paymentRepository;
+    @Mock
+    private PaymentEventPublisher eventPublisher;
 
     @InjectMocks
     private PaymentServiceImpl paymentService;

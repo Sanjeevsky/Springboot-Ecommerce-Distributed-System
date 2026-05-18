@@ -8,6 +8,8 @@ import com.sanjeevsky.catalogservice.service.CategoryService;
 import com.sanjeevsky.catalogservice.service.ProductService;
 import com.sanjeevsky.catalogservice.service.SubCategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -32,6 +34,7 @@ public class ProductServiceImpl implements ProductService {
     private SubCategoryService subCategoryService;
 
     @Override
+    @CacheEvict(value = "products", allEntries = true)
     public Product addProduct(UUID brandId, UUID categoryId, UUID subCategoryId, Product product){
         if (productRepository.findByModelAndBrandId(product.getModel(), brandId).isPresent()) {
             throw new ProductAlreadyExistsException(PRODUCT_WITH_THIS_MODEL_AND_BRAND_ALREADY_EXISTS_IN_CATALOG);
@@ -45,6 +48,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Cacheable(value = "products", key = "#uuid")
     public Product getProduct(UUID uuid){
         Optional<Product> product = productRepository.findById(uuid);
         if (product.isEmpty()) {
