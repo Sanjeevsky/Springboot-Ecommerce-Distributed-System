@@ -12,7 +12,7 @@
   --bg:#03080f;--bg2:#060e1a;--bg3:#0b1628;--border:#112038;--border2:#1a3050;
   --text:#b8cfe8;--text-dim:#3d5a7a;
   --cyan:#00c8f0;--amber:#f0a000;--green:#00e490;--purple:#9d78ff;
-  --rose:#ff4d6d;--orange:#ff6b00;
+  --rose:#ff4d6d;--orange:#ff6b00;--teal:#00d2be;
 }
 html,body{width:100%;min-height:100vh;background:var(--bg);color:var(--text);
   font-family:'Chakra Petch',sans-serif;overflow-x:hidden}
@@ -70,7 +70,7 @@ h1 span{color:var(--cyan)}
 .flow-btn.reset:hover{color:var(--text);background:var(--bg3)}
 .flow-label{font-size:10px;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
 .diagram-wrapper{position:relative;z-index:5;padding:20px 24px 0;overflow-x:auto}
-.diagram{position:relative;width:1320px;height:680px;margin:0 auto;
+.diagram{position:relative;width:1320px;height:800px;margin:0 auto;
   animation:diagram-in .6s ease both}
 @keyframes diagram-in{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 .band{position:absolute;left:0;right:0;height:1px;
@@ -88,6 +88,7 @@ h1 span{color:var(--cyan)}
   animation:dash-flow .9s linear infinite reverse}
 .path-db{fill:none;stroke:var(--border2);stroke-width:1;opacity:.4;stroke-dasharray:3 6}
 .path-cloud{fill:none;stroke:var(--green);stroke-width:1;opacity:.2;stroke-dasharray:4 6}
+.path-obs{fill:none;stroke:var(--teal);stroke-width:1.5;opacity:.5;stroke-dasharray:5 5}
 @keyframes dash-flow{from{stroke-dashoffset:0}to{stroke-dashoffset:-30}}
 .arrow-route{fill:var(--amber)}
 .arrow-feign{fill:var(--cyan)}
@@ -122,6 +123,7 @@ h1 span{color:var(--cyan)}
 .node-cloud{--node-color:var(--green);--node-rgb:0,228,144}
 .node-db{--node-color:var(--rose);--node-rgb:255,77,109}
 .node-mq{--node-color:var(--orange);--node-rgb:255,107,0}
+.node-obs{--node-color:var(--teal);--node-rgb:0,210,190}
 .topic-chip{position:absolute;transform:translateX(-50%);background:rgba(255,107,0,.1);
   border:1px dashed rgba(255,107,0,.5);border-radius:3px;padding:3px 8px;
   font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;
@@ -172,10 +174,11 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     <div class="subtitle">Spring Boot 2.5.7 · Spring Cloud 2020.0.4 · Java 11 · Auto-generated</div>
   </div>
   <div class="header-right">
-    <div class="stat-chip"><div class="num">14</div><div class="lbl">Services</div></div>
+    <div class="stat-chip"><div class="num">15</div><div class="lbl">Services</div></div>
     <div class="stat-chip"><div class="num">3</div><div class="lbl">Kafka Topics</div></div>
-    <div class="stat-chip"><div class="num">10</div><div class="lbl">Databases</div></div>
-    <div class="stat-chip"><div class="num">225</div><div class="lbl">Unit Tests</div></div>
+    <div class="stat-chip"><div class="num">11</div><div class="lbl">Databases</div></div>
+    <div class="stat-chip"><div class="num">4</div><div class="lbl">Observability</div></div>
+    <div class="stat-chip"><div class="num">214</div><div class="lbl">Unit Tests</div></div>
     <div class="live-badge"><div class="live-dot"></div>LIVE MAP</div>
   </div>
 </header>
@@ -191,6 +194,7 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     <div class="legend-item"><div class="legend-dot" style="border-color:var(--green)"></div><div class="legend-label">Spring Cloud</div></div>
     <div class="legend-item"><div class="legend-dot" style="border-color:var(--rose)"></div><div class="legend-label">Data</div></div>
     <div class="legend-item"><div class="legend-dot" style="border-color:var(--orange)"></div><div class="legend-label">Messaging</div></div>
+    <div class="legend-item"><div class="legend-dot" style="border-color:var(--teal)"></div><div class="legend-label">Observability</div></div>
   </div>
 </div>
 <div class="flow-controls">
@@ -204,13 +208,15 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
   <div class="band" style="top:148px"></div>
   <div class="band" style="top:318px"></div>
   <div class="band" style="top:490px"></div>
+  <div class="band" style="top:622px"></div>
   <div class="section-label" style="top:132px;left:10px">GATEWAY LAYER</div>
   <div class="section-label" style="top:200px;left:10px">CORE SERVICES</div>
   <div class="section-label" style="top:368px;left:10px">EXTENDED SERVICES</div>
   <div class="section-label" style="top:500px;left:10px">INFRASTRUCTURE</div>
+  <div class="section-label" style="top:634px;left:10px">OBSERVABILITY</div>
   <div class="section-label" style="top:184px;left:1080px">SPRING CLOUD</div>
 
-  <svg id="conn-svg" viewBox="0 0 1320 680">
+  <svg id="conn-svg" viewBox="0 0 1320 800">
     <defs>
       <marker id="ar" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
         <path d="M0,0 L6,3 L0,6 Z" class="arrow-route" opacity=".7"/>
@@ -224,30 +230,36 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     </defs>
     <path class="path-db" d="M 300,276 C 300,410.0 290,410.0 290,544"/>
     <path class="path-db" d="M 480,276 C 480,410.0 290,410.0 290,544"/>
-    <path class="path-db" d="M 480,276 C 480,410.0 490,410.0 490,544"/>
-    <path class="path-db" d="M 300,446 C 300,495.0 290,495.0 290,544"/>
-    <path class="path-feign active" d="M 724,244 C 724,244.0 956,244.0 956,244" marker-end="url(#af)"/>
-    <path class="path-feign active" d="M 724,244 C 724,244.0 776,244.0 776,244" marker-end="url(#af)"/>
-    <path class="path-kafka-pub active" d="M 660,276 C 660,410.0 690,410.0 690,544" marker-end="url(#ak)"/>
-    <path class="path-kafka-sub active" d="M 690,544 C 690,410.0 660,410.0 660,276" marker-end="url(#ak)"/>
+    <path class="path-db" d="M 480,276 C 480,410.0 470,410.0 470,544"/>
+    <path class="path-db" d="M 275,446 C 275,495.0 290,495.0 290,544"/>
     <path class="path-db" d="M 660,276 C 660,410.0 290,410.0 290,544"/>
-    <path class="path-kafka-pub active" d="M 480,446 C 480,495.0 690,495.0 690,544" marker-end="url(#ak)"/>
-    <path class="path-kafka-sub active" d="M 690,544 C 690,495.0 480,495.0 480,446" marker-end="url(#ak)"/>
-    <path class="path-db" d="M 480,446 C 480,495.0 290,495.0 290,544"/>
-    <path class="path-kafka-sub active" d="M 690,544 C 690,495.0 660,495.0 660,446" marker-end="url(#ak)"/>
-    <path class="path-db" d="M 596,426 C 596,501.0 354,501.0 354,576"/>
-    <path class="path-kafka-pub active" d="M 840,276 C 840,410.0 690,410.0 690,544" marker-end="url(#ak)"/>
+    <path class="path-kafka-pub active" d="M 493,426 C 493,501.0 596,501.0 596,576" marker-end="url(#ak)"/>
+    <path class="path-kafka-sub active" d="M 596,576 C 596,501.0 493,501.0 493,426" marker-end="url(#ak)"/>
+    <path class="path-db" d="M 429,446 C 429,495.0 290,495.0 290,544"/>
+    <path class="path-kafka-sub active" d="M 660,544 C 660,495.0 583,495.0 583,446" marker-end="url(#ak)"/>
+    <path class="path-db" d="M 519,426 C 519,501.0 354,501.0 354,576"/>
+    <path class="path-feign active" d="M 801,414 C 801,329.0 956,329.0 956,244" marker-end="url(#af)"/>
+    <path class="path-feign active" d="M 737,394 C 737,335.0 660,335.0 660,276" marker-end="url(#af)"/>
+    <path class="path-feign active" d="M 673,414 C 673,414.0 339,414.0 339,414" marker-end="url(#af)"/>
+    <path class="path-feign active" d="M 737,394 C 737,335.0 840,335.0 840,276" marker-end="url(#af)"/>
+    <path class="path-kafka-pub active" d="M 737,446 C 737,495.0 660,495.0 660,544" marker-end="url(#ak)"/>
+    <path class="path-kafka-sub active" d="M 660,544 C 660,495.0 737,495.0 737,446" marker-end="url(#ak)"/>
+    <path class="path-db" d="M 673,426 C 673,501.0 354,501.0 354,576"/>
+    <path class="path-kafka-pub active" d="M 840,276 C 840,410.0 660,410.0 660,544" marker-end="url(#ak)"/>
     <path class="path-db" d="M 776,256 C 776,416.0 354,416.0 354,576"/>
-    <path class="path-kafka-sub active" d="M 690,544 C 690,495.0 840,495.0 840,446" marker-end="url(#ak)"/>
-    <path class="path-db" d="M 776,426 C 776,501.0 354,501.0 354,576"/>
+    <path class="path-kafka-sub active" d="M 724,576 C 724,501.0 827,501.0 827,426" marker-end="url(#ak)"/>
+    <path class="path-db" d="M 827,426 C 827,501.0 354,501.0 354,576"/>
     <path class="path-feign active" d="M 956,244 C 956,244.0 544,244.0 544,244" marker-end="url(#af)"/>
     <path class="path-db" d="M 956,256 C 956,416.0 354,416.0 354,576"/>
-    <path class="path-db" d="M 956,426 C 956,501.0 354,501.0 354,576"/>
+    <path class="path-feign active" d="M 1045,394 C 1045,335.0 1020,335.0 1020,276" marker-end="url(#af)"/>
+    <path class="path-db" d="M 981,426 C 981,501.0 354,501.0 354,576"/>
+    <path class="path-obs" d="M 696,706 C 696,706.0 624,706.0 624,706"/>
+    <path class="path-obs" d="M 896,706 C 896,641.0 724,641.0 724,576"/>
   </svg>
 
-  <div class="topic-chip" style="left:590px;top:510px;animation-delay:1.8s">inventory-events</div>
-  <div class="topic-chip" style="left:750px;top:515px;animation-delay:2.05s">order-events</div>
-  <div class="topic-chip" style="left:550px;top:540px;animation-delay:2.3s">payment-events</div>
+  <div class="topic-chip" style="left:560px;top:510px;animation-delay:1.8s">inventory-events</div>
+  <div class="topic-chip" style="left:720px;top:515px;animation-delay:2.05s">order-events</div>
+  <div class="topic-chip" style="left:520px;top:540px;animation-delay:2.3s">payment-events</div>
   <div class="node node-cloud"
        style="left:80px;top:270px;animation-delay:0.05s;width:120px"
        data-tip="cloud service on :8071">
@@ -310,13 +322,13 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
   </div>
   <div class="node node-core"
        style="left:660px;top:250px;animation-delay:0.78s;width:130px"
-       data-tip="Feign → shopping-cart-service, payment-service; Publishes: order-events; Consumes: inventory-events">
+       data-tip="core service on :8082">
     <div class="node-header">
       <div class="node-icon">◉</div>
       <div class="node-name">customer-service</div>
     </div>
     <div class="node-port">:8082</div>
-    <div class="node-tag">Feign · Kafka pub · Kafka sub</div>
+    <div class="node-tag">Core</div>
   </div>
   <div class="node node-core"
        style="left:840px;top:250px;animation-delay:0.86s;width:130px"
@@ -339,7 +351,7 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     <div class="node-tag">Feign</div>
   </div>
   <div class="node node-ext"
-       style="left:300px;top:420px;animation-delay:1.42s;width:130px"
+       style="left:275px;top:420px;animation-delay:1.42s;width:130px"
        data-tip="extended service on :8089">
     <div class="node-header">
       <div class="node-icon">◬</div>
@@ -349,7 +361,7 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     <div class="node-tag">Extended</div>
   </div>
   <div class="node node-ext"
-       style="left:480px;top:420px;animation-delay:1.50s;width:130px"
+       style="left:429px;top:420px;animation-delay:1.50s;width:130px"
        data-tip="Publishes: inventory-events; Consumes: order-events">
     <div class="node-header">
       <div class="node-icon">◬</div>
@@ -359,7 +371,7 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     <div class="node-tag">Kafka pub · Kafka sub</div>
   </div>
   <div class="node node-ext"
-       style="left:660px;top:420px;animation-delay:1.58s;width:130px"
+       style="left:583px;top:420px;animation-delay:1.58s;width:130px"
        data-tip="Consumes: order-events, payment-events">
     <div class="node-header">
       <div class="node-icon">◬</div>
@@ -369,7 +381,17 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     <div class="node-tag">Kafka sub</div>
   </div>
   <div class="node node-ext"
-       style="left:840px;top:420px;animation-delay:1.66s;width:130px"
+       style="left:737px;top:420px;animation-delay:1.66s;width:130px"
+       data-tip="Feign → shopping-cart-service, customer-service, coupon-service, payment-service; Publishes: order-events; Consumes: inventory-events">
+    <div class="node-header">
+      <div class="node-icon">◬</div>
+      <div class="node-name">order-service</div>
+    </div>
+    <div class="node-port">:8092</div>
+    <div class="node-tag">Feign · Kafka pub · Kafka sub</div>
+  </div>
+  <div class="node node-ext"
+       style="left:891px;top:420px;animation-delay:1.74s;width:130px"
        data-tip="Consumes: order-events">
     <div class="node-header">
       <div class="node-icon">◬</div>
@@ -379,17 +401,17 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     <div class="node-tag">Kafka sub</div>
   </div>
   <div class="node node-ext"
-       style="left:1020px;top:420px;animation-delay:1.74s;width:130px"
-       data-tip="extended service on :8091">
+       style="left:1045px;top:420px;animation-delay:1.82s;width:130px"
+       data-tip="Feign → shopping-cart-service">
     <div class="node-header">
       <div class="node-icon">◬</div>
       <div class="node-name">wishlist-service</div>
     </div>
     <div class="node-port">:8091</div>
-    <div class="node-tag">Extended</div>
+    <div class="node-tag">Feign</div>
   </div>
   <div class="node node-db"
-       style="left:290px;top:570px;animation-delay:1.14s;width:130px"
+       style="left:290px;top:570px;animation-delay:1.22s;width:130px"
        data-tip="MySQL 8.0. 10 databases — one per service. init-db.sql creates all schemas.">
     <div class="node-header">
       <div class="node-icon">◨</div>
@@ -399,7 +421,7 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     <div class="node-tag">Per-service schema</div>
   </div>
   <div class="node node-db"
-       style="left:490px;top:570px;animation-delay:1.22s;width:130px"
+       style="left:470px;top:570px;animation-delay:1.30s;width:130px"
        data-tip="Used by catalog-service (@Cacheable) and shopping-cart-service.">
     <div class="node-header">
       <div class="node-icon">◩</div>
@@ -409,7 +431,7 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     <div class="node-tag">Cache · Session</div>
   </div>
   <div class="node node-mq"
-       style="left:690px;top:570px;animation-delay:1.30s;width:130px"
+       style="left:660px;top:570px;animation-delay:1.38s;width:130px"
        data-tip="order-events (3p), payment-events (3p), inventory-events (3p). JSON serialization.">
     <div class="node-header">
       <div class="node-icon">◧</div>
@@ -419,7 +441,7 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     <div class="node-tag">3 topics</div>
   </div>
   <div class="node node-mq"
-       style="left:890px;top:570px;animation-delay:1.38s;width:130px"
+       style="left:840px;top:570px;animation-delay:1.46s;width:130px"
        data-tip="ZooKeeper for Kafka cluster coordination.">
     <div class="node-header">
       <div class="node-icon">◫</div>
@@ -427,6 +449,46 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     </div>
     <div class="node-port">:2181</div>
     <div class="node-tag">Kafka Coord.</div>
+  </div>
+  <div class="node node-obs"
+       style="left:760px;top:700px;animation-delay:1.62s;width:130px"
+       data-tip="Auto-provisioned with Prometheus datasource + ecommerce-overview dashboard (8 panels). admin/admin.">
+    <div class="node-header">
+      <div class="node-icon">◈</div>
+      <div class="node-name">Grafana</div>
+    </div>
+    <div class="node-port">:3000</div>
+    <div class="node-tag">Dashboards</div>
+  </div>
+  <div class="node node-obs"
+       style="left:960px;top:700px;animation-delay:1.70s;width:130px"
+       data-tip="provectuslabs/kafka-ui — browse topics, partitions, consumer group lag in real time.">
+    <div class="node-header">
+      <div class="node-icon">◈</div>
+      <div class="node-name">Kafka UI</div>
+    </div>
+    <div class="node-port">:8080</div>
+    <div class="node-tag">Topic Monitor</div>
+  </div>
+  <div class="node node-obs"
+       style="left:560px;top:700px;animation-delay:1.78s;width:130px"
+       data-tip="Scrapes /actuator/prometheus from all 12 services every 15s. Feeds Grafana.">
+    <div class="node-header">
+      <div class="node-icon">◈</div>
+      <div class="node-name">Prometheus</div>
+    </div>
+    <div class="node-port">:9090</div>
+    <div class="node-tag">Metrics Scrape</div>
+  </div>
+  <div class="node node-obs"
+       style="left:360px;top:700px;animation-delay:1.86s;width:130px"
+       data-tip="Receives B3 traces from all 12 business services via spring-cloud-sleuth-zipkin. 100% sampling.">
+    <div class="node-header">
+      <div class="node-icon">◈</div>
+      <div class="node-name">Zipkin</div>
+    </div>
+    <div class="node-port">:9411</div>
+    <div class="node-tag">Distributed Traces</div>
   </div>
   <canvas id="particle-canvas"></canvas>
 </div>
@@ -490,16 +552,88 @@ const PATHS=[
     {
         "pts": [
             [
-                724,
-                244
+                493,
+                426
             ],
             [
-                724,
-                244.0
+                493,
+                501.0
+            ],
+            [
+                596,
+                501.0
+            ],
+            [
+                596,
+                576
+            ]
+        ],
+        "color": "#ff6b00",
+        "speed": 1.1,
+        "r": 3.5,
+        "count": 3
+    },
+    {
+        "pts": [
+            [
+                596,
+                576
+            ],
+            [
+                596,
+                501.0
+            ],
+            [
+                493,
+                501.0
+            ],
+            [
+                493,
+                426
+            ]
+        ],
+        "color": "#ff9900",
+        "speed": 0.95,
+        "r": 3.5,
+        "count": 3
+    },
+    {
+        "pts": [
+            [
+                660,
+                544
+            ],
+            [
+                660,
+                495.0
+            ],
+            [
+                583,
+                495.0
+            ],
+            [
+                583,
+                446
+            ]
+        ],
+        "color": "#ff9900",
+        "speed": 0.95,
+        "r": 3.5,
+        "count": 3
+    },
+    {
+        "pts": [
+            [
+                801,
+                414
+            ],
+            [
+                801,
+                329.0
             ],
             [
                 956,
-                244.0
+                329.0
             ],
             [
                 956,
@@ -514,20 +648,20 @@ const PATHS=[
     {
         "pts": [
             [
-                724,
-                244
+                737,
+                394
             ],
             [
-                724,
-                244.0
+                737,
+                335.0
             ],
             [
-                776,
-                244.0
+                660,
+                335.0
             ],
             [
-                776,
-                244
+                660,
+                276
             ]
         ],
         "color": "#00c8f0",
@@ -538,19 +672,67 @@ const PATHS=[
     {
         "pts": [
             [
-                660,
+                673,
+                414
+            ],
+            [
+                673,
+                414.0
+            ],
+            [
+                339,
+                414.0
+            ],
+            [
+                339,
+                414
+            ]
+        ],
+        "color": "#00c8f0",
+        "speed": 0.9,
+        "r": 3.0,
+        "count": 2
+    },
+    {
+        "pts": [
+            [
+                737,
+                394
+            ],
+            [
+                737,
+                335.0
+            ],
+            [
+                840,
+                335.0
+            ],
+            [
+                840,
                 276
+            ]
+        ],
+        "color": "#00c8f0",
+        "speed": 0.9,
+        "r": 3.0,
+        "count": 2
+    },
+    {
+        "pts": [
+            [
+                737,
+                446
+            ],
+            [
+                737,
+                495.0
             ],
             [
                 660,
-                410.0
+                495.0
             ],
             [
-                690,
-                410.0
-            ],
-            [
-                690,
+                660,
                 544
             ]
         ],
@@ -562,91 +744,19 @@ const PATHS=[
     {
         "pts": [
             [
-                690,
-                544
-            ],
-            [
-                690,
-                410.0
-            ],
-            [
                 660,
-                410.0
-            ],
-            [
-                660,
-                276
-            ]
-        ],
-        "color": "#ff9900",
-        "speed": 0.95,
-        "r": 3.5,
-        "count": 3
-    },
-    {
-        "pts": [
-            [
-                480,
-                446
-            ],
-            [
-                480,
-                495.0
-            ],
-            [
-                690,
-                495.0
-            ],
-            [
-                690,
                 544
-            ]
-        ],
-        "color": "#ff6b00",
-        "speed": 1.1,
-        "r": 3.5,
-        "count": 3
-    },
-    {
-        "pts": [
-            [
-                690,
-                544
-            ],
-            [
-                690,
-                495.0
-            ],
-            [
-                480,
-                495.0
-            ],
-            [
-                480,
-                446
-            ]
-        ],
-        "color": "#ff9900",
-        "speed": 0.95,
-        "r": 3.5,
-        "count": 3
-    },
-    {
-        "pts": [
-            [
-                690,
-                544
-            ],
-            [
-                690,
-                495.0
             ],
             [
                 660,
                 495.0
             ],
             [
-                660,
+                737,
+                495.0
+            ],
+            [
+                737,
                 446
             ]
         ],
@@ -666,11 +776,11 @@ const PATHS=[
                 410.0
             ],
             [
-                690,
+                660,
                 410.0
             ],
             [
-                690,
+                660,
                 544
             ]
         ],
@@ -682,20 +792,20 @@ const PATHS=[
     {
         "pts": [
             [
-                690,
-                544
+                724,
+                576
             ],
             [
-                690,
-                495.0
+                724,
+                501.0
             ],
             [
-                840,
-                495.0
+                827,
+                501.0
             ],
             [
-                840,
-                446
+                827,
+                426
             ]
         ],
         "color": "#ff9900",
@@ -720,6 +830,30 @@ const PATHS=[
             [
                 544,
                 244
+            ]
+        ],
+        "color": "#00c8f0",
+        "speed": 0.9,
+        "r": 3.0,
+        "count": 2
+    },
+    {
+        "pts": [
+            [
+                1045,
+                394
+            ],
+            [
+                1045,
+                335.0
+            ],
+            [
+                1020,
+                335.0
+            ],
+            [
+                1020,
+                276
             ]
         ],
         "color": "#00c8f0",

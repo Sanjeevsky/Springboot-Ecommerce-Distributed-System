@@ -107,6 +107,12 @@ def scan_java(service_dir):
             if const_name in topic_constants:
                 kafka_pub.add(topic_constants[const_name])
 
+        # kafkaTemplate.send(ClassName.CONST_NAME, ...) — qualified constant reference
+        for m in re.finditer(r'kafkaTemplate\.send\s*\(\s*\w+\.([A-Z_][A-Z_0-9]+)\s*,', src):
+            const_name = m.group(1)
+            if const_name in topic_constants:
+                kafka_pub.add(topic_constants[const_name])
+
         # @KafkaListener(topics = "..." or topics = {"a","b"})
         for m in re.finditer(r'@KafkaListener\s*\(([^)]+)\)', src):
             annotation = m.group(1)
@@ -156,6 +162,19 @@ def build_graph():
         {'id':'zookeeper',  'name':'ZooKeeper',    'port':'2181',  'type':'mq',
          'tag':'Kafka Coord.','icon':'◫',
          'tip':'ZooKeeper for Kafka cluster coordination.'},
+        # Observability stack — always-on
+        {'id':'zipkin',     'name':'Zipkin',       'port':'9411',  'type':'obs',
+         'tag':'Distributed Traces','icon':'◈',
+         'tip':'Receives B3 traces from all 12 business services via spring-cloud-sleuth-zipkin. 100% sampling.'},
+        {'id':'prometheus', 'name':'Prometheus',   'port':'9090',  'type':'obs',
+         'tag':'Metrics Scrape','icon':'◈',
+         'tip':'Scrapes /actuator/prometheus from all 12 services every 15s. Feeds Grafana.'},
+        {'id':'grafana',    'name':'Grafana',      'port':'3000',  'type':'obs',
+         'tag':'Dashboards','icon':'◈',
+         'tip':'Auto-provisioned with Prometheus datasource + ecommerce-overview dashboard (8 panels). admin/admin.'},
+        {'id':'kafka-ui',   'name':'Kafka UI',     'port':'8080',  'type':'obs',
+         'tag':'Topic Monitor','icon':'◈',
+         'tip':'provectuslabs/kafka-ui — browse topics, partitions, consumer group lag in real time.'},
     ]
     for n in infra:
         services[n['id']] = n
@@ -235,30 +254,26 @@ def build_graph():
         if svc.get('redis'):
             connections.append({'from': sname, 'to': 'redis', 'type': 'db'})
 
+    # Static observability connections
+    connections.append({'from': 'grafana',  'to': 'prometheus', 'type': 'obs'})
+    connections.append({'from': 'kafka-ui', 'to': 'kafka',      'type': 'obs'})
+
     return services, connections
 
 def _icon(t):
-    return {'gateway':'◆','core':'◉','extended':'◬','cloud':'◎','db':'◨','mq':'◧'}.get(t,'●')
+    return {'gateway':'◆','core':'◉','extended':'◬','cloud':'◎','db':'◨','mq':'◧','obs':'◈'}.get(t,'●')
 
 # ── 6. COMPUTE LAYOUT ─────────────────────────────────────────────────────────
 
 def compute_layout(services):
     """
-    Assign (x, y) to each service in the 1320×680 design space.
+    Assign (x, y) to each service in the 1320×800 design space.
     Columns within each row are evenly spaced.
     """
-    W, H = 1320, 680
-    ROWS = {
-        'gateway':  {'y': 85,  'xstart': 660, 'order': []},
-        'core':     {'y': 250, 'order': ['api-gateway']},  # gateway handled above
-        'extended': {'y': 420, 'order': []},
-        'cloud':    {'y': None, 'order': []},  # fixed left column
-        'db':       {'y': 570, 'xstart': 290, 'order': []},
-        'mq':       {'y': 570, 'xstart': 690, 'order': []},
-    }
+    W = 1320
 
     # Sort services into buckets
-    buckets = {t: [] for t in ['gateway','core','extended','cloud','db','mq']}
+    buckets = {t: [] for t in ['gateway','core','extended','cloud','db','mq','obs']}
     for name, svc in services.items():
         t = svc['type']
         if t in buckets:
@@ -293,17 +308,27 @@ def compute_layout(services):
     for i, name in enumerate(clouds):
         positions[name] = (80, 270 + i * 90)
 
-    # DB — MySQL, Redis
+    # DB — MySQL, Redis (left half of infra row)
     dbs = sorted(buckets['db'])
-    db_xs = [290, 490, 390]  # up to 3 db nodes
+    db_xs = [290, 470]
     for i, name in enumerate(dbs):
-        positions[name] = (db_xs[i] if i < len(db_xs) else 290 + i*160, 570)
+        positions[name] = (db_xs[i] if i < len(db_xs) else 290 + i*180, 570)
 
-    # MQ — Kafka, ZooKeeper
+    # MQ — Kafka, ZooKeeper (right half of infra row)
     mqs = sorted(buckets['mq'])
-    mq_xs = [690, 890, 790]
+    mq_xs = [660, 840]
     for i, name in enumerate(mqs):
-        positions[name] = (mq_xs[i] if i < len(mq_xs) else 690 + i*160, 570)
+        positions[name] = (mq_xs[i] if i < len(mq_xs) else 660 + i*180, 570)
+
+    # Observability row — Zipkin, Prometheus, Grafana, Kafka UI
+    obs_order = ['zipkin', 'prometheus', 'grafana', 'kafka-ui']
+    obs_all = obs_order + [n for n in sorted(buckets['obs']) if n not in obs_order]
+    n = len(obs_all)
+    xpad = min(200, (W - 240) // (n + 1))
+    xstart = (W - xpad*(n-1)) // 2
+    for i, name in enumerate(obs_all):
+        if name in services:
+            positions[name] = (xstart + i*xpad, 700)
 
     return positions
 
@@ -316,6 +341,7 @@ TYPE_COLOR = {
     'cloud':   ('var(--green)',  '0,228,144',  'node-cloud'),
     'db':      ('var(--rose)',   '255,77,109', 'node-db'),
     'mq':      ('var(--orange)', '255,107,0',  'node-mq'),
+    'obs':     ('var(--teal)',   '0,210,190',  'node-obs'),
 }
 
 def make_node_html(svc, x, y, delay):
@@ -368,6 +394,7 @@ def make_svg_path(conn, positions):
         'kafka-sub': 'path-kafka-sub active',
         'db':        'path-db',
         'cloud':     'path-cloud',
+        'obs':       'path-obs',
     }.get(ctype, 'path-db')
 
     markers = {
@@ -427,17 +454,21 @@ def count_topics(services):
 def count_dbs(services):
     return sum(1 for s in services.values() if s.get('mysql'))
 
+def count_obs(services):
+    return sum(1 for s in services.values() if s['type'] == 'obs')
+
 # ── 9. RENDER ─────────────────────────────────────────────────────────────────
 
 def render(services, connections, positions):
     test_count  = count_tests()
     topic_count = count_topics(services)
     db_count    = count_dbs(services)
-    svc_count   = sum(1 for s in services.values() if s['type'] not in ('db','mq'))
+    obs_count   = count_obs(services)
+    svc_count   = sum(1 for s in services.values() if s['type'] not in ('db','mq','obs'))
     particle_js = make_particle_paths(connections, positions)
 
     # Build node HTML with staggered delays by type
-    type_order = ['cloud','gateway','core','extended','db','mq']
+    type_order = ['cloud','gateway','core','extended','db','mq','obs']
     delay_counter = [0.0]
     def next_delay(base):
         d = base + delay_counter[0] * 0.08
@@ -480,6 +511,7 @@ def render(services, connections, positions):
         svc_count=svc_count,
         topic_count=topic_count,
         db_count=db_count,
+        obs_count=obs_count,
         test_count=test_count,
         nodes_html='\n'.join(nodes_html),
         paths_html='\n'.join(paths_html),
@@ -503,7 +535,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
   --bg:#03080f;--bg2:#060e1a;--bg3:#0b1628;--border:#112038;--border2:#1a3050;
   --text:#b8cfe8;--text-dim:#3d5a7a;
   --cyan:#00c8f0;--amber:#f0a000;--green:#00e490;--purple:#9d78ff;
-  --rose:#ff4d6d;--orange:#ff6b00;
+  --rose:#ff4d6d;--orange:#ff6b00;--teal:#00d2be;
 }}
 html,body{{width:100%;min-height:100vh;background:var(--bg);color:var(--text);
   font-family:'Chakra Petch',sans-serif;overflow-x:hidden}}
@@ -561,7 +593,7 @@ h1 span{{color:var(--cyan)}}
 .flow-btn.reset:hover{{color:var(--text);background:var(--bg3)}}
 .flow-label{{font-size:10px;color:var(--text-dim);font-family:'JetBrains Mono',monospace}}
 .diagram-wrapper{{position:relative;z-index:5;padding:20px 24px 0;overflow-x:auto}}
-.diagram{{position:relative;width:1320px;height:680px;margin:0 auto;
+.diagram{{position:relative;width:1320px;height:800px;margin:0 auto;
   animation:diagram-in .6s ease both}}
 @keyframes diagram-in{{from{{opacity:0;transform:translateY(16px)}}to{{opacity:1;transform:translateY(0)}}}}
 .band{{position:absolute;left:0;right:0;height:1px;
@@ -579,6 +611,7 @@ h1 span{{color:var(--cyan)}}
   animation:dash-flow .9s linear infinite reverse}}
 .path-db{{fill:none;stroke:var(--border2);stroke-width:1;opacity:.4;stroke-dasharray:3 6}}
 .path-cloud{{fill:none;stroke:var(--green);stroke-width:1;opacity:.2;stroke-dasharray:4 6}}
+.path-obs{{fill:none;stroke:var(--teal);stroke-width:1.5;opacity:.5;stroke-dasharray:5 5}}
 @keyframes dash-flow{{from{{stroke-dashoffset:0}}to{{stroke-dashoffset:-30}}}}
 .arrow-route{{fill:var(--amber)}}
 .arrow-feign{{fill:var(--cyan)}}
@@ -613,6 +646,7 @@ h1 span{{color:var(--cyan)}}
 .node-cloud{{--node-color:var(--green);--node-rgb:0,228,144}}
 .node-db{{--node-color:var(--rose);--node-rgb:255,77,109}}
 .node-mq{{--node-color:var(--orange);--node-rgb:255,107,0}}
+.node-obs{{--node-color:var(--teal);--node-rgb:0,210,190}}
 .topic-chip{{position:absolute;transform:translateX(-50%);background:rgba(255,107,0,.1);
   border:1px dashed rgba(255,107,0,.5);border-radius:3px;padding:3px 8px;
   font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.06em;
@@ -666,6 +700,7 @@ footer{{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(
     <div class="stat-chip"><div class="num">{svc_count}</div><div class="lbl">Services</div></div>
     <div class="stat-chip"><div class="num">{topic_count}</div><div class="lbl">Kafka Topics</div></div>
     <div class="stat-chip"><div class="num">{db_count}</div><div class="lbl">Databases</div></div>
+    <div class="stat-chip"><div class="num">{obs_count}</div><div class="lbl">Observability</div></div>
     <div class="stat-chip"><div class="num">{test_count}</div><div class="lbl">Unit Tests</div></div>
     <div class="live-badge"><div class="live-dot"></div>LIVE MAP</div>
   </div>
@@ -682,6 +717,7 @@ footer{{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(
     <div class="legend-item"><div class="legend-dot" style="border-color:var(--green)"></div><div class="legend-label">Spring Cloud</div></div>
     <div class="legend-item"><div class="legend-dot" style="border-color:var(--rose)"></div><div class="legend-label">Data</div></div>
     <div class="legend-item"><div class="legend-dot" style="border-color:var(--orange)"></div><div class="legend-label">Messaging</div></div>
+    <div class="legend-item"><div class="legend-dot" style="border-color:var(--teal)"></div><div class="legend-label">Observability</div></div>
   </div>
 </div>
 <div class="flow-controls">
@@ -695,13 +731,15 @@ footer{{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(
   <div class="band" style="top:148px"></div>
   <div class="band" style="top:318px"></div>
   <div class="band" style="top:490px"></div>
+  <div class="band" style="top:622px"></div>
   <div class="section-label" style="top:132px;left:10px">GATEWAY LAYER</div>
   <div class="section-label" style="top:200px;left:10px">CORE SERVICES</div>
   <div class="section-label" style="top:368px;left:10px">EXTENDED SERVICES</div>
   <div class="section-label" style="top:500px;left:10px">INFRASTRUCTURE</div>
+  <div class="section-label" style="top:634px;left:10px">OBSERVABILITY</div>
   <div class="section-label" style="top:184px;left:1080px">SPRING CLOUD</div>
 
-  <svg id="conn-svg" viewBox="0 0 1320 680">
+  <svg id="conn-svg" viewBox="0 0 1320 800">
     <defs>
       <marker id="ar" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
         <path d="M0,0 L6,3 L0,6 Z" class="arrow-route" opacity=".7"/>
