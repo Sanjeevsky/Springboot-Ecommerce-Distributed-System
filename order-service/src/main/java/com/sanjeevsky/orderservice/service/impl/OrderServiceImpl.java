@@ -1,6 +1,7 @@
 package com.sanjeevsky.orderservice.service.impl;
 
 import com.sanjeevsky.orderservice.clients.CartFeignClient;
+import com.sanjeevsky.orderservice.clients.CouponFeignClient;
 import com.sanjeevsky.orderservice.clients.CustomerFeignClient;
 import com.sanjeevsky.orderservice.clients.PaymentFeignClient;
 import com.sanjeevsky.orderservice.events.OrderEventPublisher;
@@ -8,6 +9,7 @@ import com.sanjeevsky.orderservice.exceptions.AddressNotFoundException;
 import com.sanjeevsky.orderservice.exceptions.InvalidRequestException;
 import com.sanjeevsky.orderservice.exceptions.OrderNotFoundException;
 import com.sanjeevsky.orderservice.model.AddressDto;
+import com.sanjeevsky.orderservice.model.CouponValidationResult;
 import com.sanjeevsky.orderservice.model.Order;
 import com.sanjeevsky.orderservice.model.OrderItem;
 import com.sanjeevsky.orderservice.model.ShippingAddress;
@@ -38,6 +40,7 @@ public class OrderServiceImpl implements OrderService {
     private final CartFeignClient cartFeignClient;
     private final PaymentFeignClient paymentFeignClient;
     private final CustomerFeignClient customerFeignClient;
+    private final CouponFeignClient couponFeignClient;
     private final OrderEventPublisher eventPublisher;
 
     @Override
@@ -48,10 +51,13 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Order createOrder(String userId, UUID addressId) {
-        log.info("Creating order for user={}, addressId={}", userId, addressId);
+    public Order createOrder(String userId, UUID addressId, String couponCode) {
+        log.info("Creating order for user={}, addressId={}, couponCode={}", userId, addressId, couponCode);
 
         CartSnapshot cart = cartFeignClient.getCheckoutSnapshot(userId);
+        if (cart == null) {
+            throw new InvalidRequestException("Cart unavailable");
+        }
         if (cart.getItems() == null || cart.getItems().isEmpty()) {
             throw new InvalidRequestException("Cart is empty");
         }
@@ -82,13 +88,31 @@ public class OrderServiceImpl implements OrderService {
                         .build())
                 .collect(Collectors.toList());
 
+        double cartTotal = cart.getTotalAmount();
+        double discount = 0;
+        String appliedCoupon = null;
+
+        if (couponCode != null && !couponCode.isBlank()) {
+            CouponValidationResult validation = couponFeignClient.validateCoupon(couponCode, cartTotal);
+            if (validation.isValid()) {
+                discount = validation.getDiscountAmount();
+                appliedCoupon = couponCode;
+                log.info("Coupon {} applied: discount={}", couponCode, discount);
+                couponFeignClient.applyCoupon(couponCode);
+            } else {
+                log.warn("Coupon {} invalid: {}", couponCode, validation.getMessage());
+            }
+        }
+
+        double orderTotal = Math.max(0, cartTotal - discount);
+
         Order order = Order.builder()
                 .userId(userId)
                 .shippingAddress(shippingAddress)
                 .orderItems(orderItems)
-                .orderTotal(cart.getTotalAmount())
+                .orderTotal(orderTotal)
                 .status(OrderStatus.PENDING)
-                .discount(0)
+                .discount(discount)
                 .shippingCharges(0)
                 .build();
 
@@ -97,7 +121,10 @@ public class OrderServiceImpl implements OrderService {
         log.info("Order saved id={}", savedOrder.getId());
 
         PaymentResponse payment = paymentFeignClient.initiatePayment(
-                new PaymentRequest(savedOrder.getId(), userId, savedOrder.getOrderTotal()));
+                new PaymentRequest(savedOrder.getId(), userId, orderTotal));
+        if (payment == null) {
+            throw new InvalidRequestException("Payment initiation failed");
+        }
         log.info("Payment initiated id={} for order={}", payment.getId(), savedOrder.getId());
 
         savedOrder.setPaymentId(payment.getId());
@@ -131,6 +158,10 @@ public class OrderServiceImpl implements OrderService {
         log.info("Confirming order id={} for user={}", orderId, userId);
         Order order = orderRepository.findByIdAndUserId(orderId, userId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+        if (order.getStatus() == OrderStatus.CONFIRMED) {
+            paymentFeignClient.confirmPayment(order.getPaymentId());
+            return order;
+        }
         if (order.getStatus() != OrderStatus.PENDING) {
             throw new InvalidRequestException("Order is not in PENDING state");
         }

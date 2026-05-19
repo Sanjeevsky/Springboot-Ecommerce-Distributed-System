@@ -1,9 +1,11 @@
 package com.sanjeevsky.wishlistservice;
 
+import com.sanjeevsky.wishlistservice.clients.CartFeignClient;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -34,6 +36,9 @@ class WishlistIntegrationTest {
 
     @Autowired
     MockMvc mockMvc;
+
+    @MockBean
+    CartFeignClient cartFeignClient;
 
     private static final UUID PRODUCT_A = UUID.fromString("11111111-1111-1111-1111-111111111111");
     private static final UUID PRODUCT_B = UUID.fromString("22222222-2222-2222-2222-222222222222");

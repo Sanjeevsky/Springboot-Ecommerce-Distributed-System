@@ -1,6 +1,8 @@
 package com.sanjeevsky.shoppingcartservice.controller;
 
 import com.sanjeevsky.platform.response.ApiResponse;
+import com.sanjeevsky.platform.model.cart.CartItemSnapshot;
+import com.sanjeevsky.platform.model.cart.CartSnapshot;
 import com.sanjeevsky.shoppingcartservice.model.Cart;
 import com.sanjeevsky.shoppingcartservice.model.dto.AddItemRequest;
 import com.sanjeevsky.shoppingcartservice.services.CartService;
@@ -12,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 
+import java.util.stream.Collectors;
 import java.util.UUID;
 
 @Slf4j
@@ -61,8 +64,31 @@ public class CartController {
     }
 
     @GetMapping("/cart/checkout")
-    public ResponseEntity<ApiResponse<Cart>> getCheckoutSnapshot(@RequestHeader("X-User") String userId) {
+    public ResponseEntity<ApiResponse<CartSnapshot>> getCheckoutSnapshot(@RequestHeader("X-User") String userId) {
         log.info("GET /cart-service/cart/checkout for userId={}", userId);
-        return ResponseEntity.ok(ApiResponse.ok(cartService.getCheckoutSnapshot(userId)));
+        return ResponseEntity.ok(ApiResponse.ok(toSnapshot(cartService.getCheckoutSnapshot(userId))));
+    }
+
+    @GetMapping("/cart/checkout/raw")
+    public CartSnapshot getCheckoutSnapshotRaw(@RequestHeader("X-User") String userId) {
+        log.info("GET /cart-service/cart/checkout/raw for userId={}", userId);
+        return toSnapshot(cartService.getCheckoutSnapshot(userId));
+    }
+
+    private CartSnapshot toSnapshot(Cart cart) {
+        return CartSnapshot.builder()
+                .id(cart.getId())
+                .userId(cart.getUserId())
+                .totalAmount(cart.getTotalAmount())
+                .items(cart.getItems().stream()
+                        .map(item -> new CartItemSnapshot(
+                                item.getId(),
+                                item.getProductId(),
+                                item.getVariantId(),
+                                item.getProductName(),
+                                item.getUnitPrice(),
+                                item.getQty()))
+                        .collect(Collectors.toList()))
+                .build();
     }
 }

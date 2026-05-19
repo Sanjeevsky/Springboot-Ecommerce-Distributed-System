@@ -1,21 +1,103 @@
 {
   "info": {
-    "name": "Ecommerce Distributed System — API",
+    "name": "Ecommerce Distributed System \u2014 API",
     "_postman_id": "ecommerce-api-collection",
-    "description": "Full API reference for all 10 microservices. Set baseUrl to http://localhost:8081 (API Gateway). Token is auto-set by the Login request.",
+    "description": "Full API reference for all microservices. Set baseUrl to http://localhost:8081. Collection scripts seed and save token/IDs into both collection variables and environment variables during Runner execution.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    { "key": "baseUrl",    "value": "http://localhost:8081" },
-    { "key": "token",      "value": "" },
-    { "key": "brandId",    "value": "" },
-    { "key": "categoryId", "value": "" },
-    { "key": "subCategoryId", "value": "" },
-    { "key": "productId",  "value": "" },
-    { "key": "variantId",  "value": "" },
-    { "key": "addressId",  "value": "" },
-    { "key": "orderId",    "value": "" },
-    { "key": "paymentId",  "value": "" }
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "brandId",
+      "value": ""
+    },
+    {
+      "key": "categoryId",
+      "value": ""
+    },
+    {
+      "key": "subCategoryId",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": ""
+    },
+    {
+      "key": "variantId",
+      "value": ""
+    },
+    {
+      "key": "addressId",
+      "value": ""
+    },
+    {
+      "key": "orderId",
+      "value": ""
+    },
+    {
+      "key": "paymentId",
+      "value": ""
+    },
+    {
+      "key": "runId",
+      "value": ""
+    },
+    {
+      "key": "runnerEmail",
+      "value": ""
+    },
+    {
+      "key": "runnerPassword",
+      "value": "password123"
+    },
+    {
+      "key": "brandName",
+      "value": ""
+    },
+    {
+      "key": "categoryName",
+      "value": ""
+    },
+    {
+      "key": "subCategoryName",
+      "value": ""
+    },
+    {
+      "key": "productName",
+      "value": ""
+    },
+    {
+      "key": "couponCode",
+      "value": ""
+    },
+    {
+      "key": "couponId",
+      "value": ""
+    },
+    {
+      "key": "reviewId",
+      "value": ""
+    },
+    {
+      "key": "notificationId",
+      "value": ""
+    },
+    {
+      "key": "orderStatus",
+      "value": ""
+    },
+    {
+      "key": "paymentStatus",
+      "value": ""
+    }
   ],
   "item": [
     {
@@ -25,11 +107,25 @@
           "name": "Register",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/auth-service/signup", "host": ["{{baseUrl}}"], "path": ["auth-service","signup"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth-service/signup",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth-service",
+                "signup"
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"buyer@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"USER\"\n}"
+              "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"{{runnerEmail}}\",\n  \"password\": \"{{runnerPassword}}\",\n  \"role\": \"USER\"\n}"
             }
           }
         },
@@ -39,20 +135,40 @@
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
+                  "pm.test('Login: status 200', () => pm.response.to.have.status(200));",
                   "var json = pm.response.json();",
-                  "if (json.data) { pm.collectionVariables.set('token', json.data); }"
+                  "var token = json && json.data && (typeof json.data === 'string' ? json.data : json.data.token);",
+                  "pm.test('Token present', () => pm.expect(token).to.be.a('string').and.not.empty);",
+                  "pm.collectionVariables.set('token', token);",
+                  "try { pm.environment.set('token', token); } catch (e) {}",
+                  "console.log('Token saved:', token.substring(0, 30) + '...');"
                 ]
               }
             }
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
-            "url": { "raw": "{{baseUrl}}/auth-service/login", "host": ["{{baseUrl}}"], "path": ["auth-service","login"] },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth-service/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth-service",
+                "login"
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"buyer@example.com\",\n  \"password\": \"password123\"\n}"
+              "raw": "{\n  \"email\": \"{{runnerEmail}}\",\n  \"password\": \"{{runnerPassword}}\"\n}"
             }
           }
         },
@@ -61,20 +177,35 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/auth-service/updatePassword", "host": ["{{baseUrl}}"], "path": ["auth-service","updatePassword"] },
+            "url": {
+              "raw": "{{baseUrl}}/auth-service/updatePassword",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth-service",
+                "updatePassword"
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"buyer@example.com\",\n  \"oldPassword\": \"password123\",\n  \"newPassword\": \"newpass456\"\n}"
+              "raw": "{\n  \"email\": \"{{runnerEmail}}\",\n  \"oldPassword\": \"{{runnerPassword}}\",\n  \"newPassword\": \"{{runnerPassword}}\"\n}"
             }
           }
         }
       ]
     },
     {
-      "name": "Catalog — Brand",
+      "name": "Catalog \u2014 Brand",
       "item": [
         {
           "name": "Add Brand",
@@ -82,20 +213,41 @@
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
+                  "pm.test('Add Brand: status 201', () => pm.response.to.have.status(201));",
                   "var json = pm.response.json();",
-                  "if (json.data && json.data.id) { pm.collectionVariables.set('brandId', json.data.id); }"
+                  "pm.test('brandId present', () => pm.expect(json.data.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('brandId', json.data.id);",
+                  "try { pm.environment.set('brandId', json.data.id); } catch (e) {}",
+                  "console.log('brandId:', json.data.id);"
                 ]
               }
             }
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/catalog-service/add-brand?name=Samsung",
-              "host": ["{{baseUrl}}"], "path": ["catalog-service","add-brand"],
-              "query": [{ "key": "name", "value": "Samsung" }]
+              "raw": "{{baseUrl}}/catalog-service/add-brand?name={{brandName}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "add-brand"
+              ],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "{{brandName}}"
+                }
+              ]
             }
           }
         },
@@ -103,22 +255,51 @@
           "name": "Get All Brands",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/catalog-service/getBrands", "host": ["{{baseUrl}}"], "path": ["catalog-service","getBrands"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/catalog-service/getBrands",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "getBrands"
+              ]
+            }
           }
         },
         {
           "name": "Get Brand by ID",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/catalog-service/getBrand/{{brandId}}", "host": ["{{baseUrl}}"], "path": ["catalog-service","getBrand","{{brandId}}"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/catalog-service/getBrand/{{brandId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "getBrand",
+                "{{brandId}}"
+              ]
+            }
           }
         }
       ]
     },
     {
-      "name": "Catalog — Category",
+      "name": "Catalog \u2014 Category",
       "item": [
         {
           "name": "Add Category",
@@ -126,20 +307,41 @@
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
+                  "pm.test('Add Category: status 201', () => pm.response.to.have.status(201));",
                   "var json = pm.response.json();",
-                  "if (json.data && json.data.id) { pm.collectionVariables.set('categoryId', json.data.id); }"
+                  "pm.test('categoryId present', () => pm.expect(json.data.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('categoryId', json.data.id);",
+                  "try { pm.environment.set('categoryId', json.data.id); } catch (e) {}",
+                  "console.log('categoryId:', json.data.id);"
                 ]
               }
             }
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/catalog-service/addCategory?categoryName=Electronics",
-              "host": ["{{baseUrl}}"], "path": ["catalog-service","addCategory"],
-              "query": [{ "key": "categoryName", "value": "Electronics" }]
+              "raw": "{{baseUrl}}/catalog-service/addCategory?categoryName={{categoryName}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "addCategory"
+              ],
+              "query": [
+                {
+                  "key": "categoryName",
+                  "value": "{{categoryName}}"
+                }
+              ]
             }
           }
         },
@@ -149,45 +351,14 @@
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
+                  "pm.test('Add SubCategory: status 201', () => pm.response.to.have.status(201));",
                   "var json = pm.response.json();",
-                  "if (json.data && json.data.id) { pm.collectionVariables.set('subCategoryId', json.data.id); }"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": {
-              "raw": "{{baseUrl}}/catalog-service/add-subcategory/{{categoryId}}?subcategoryName=Smartphones",
-              "host": ["{{baseUrl}}"], "path": ["catalog-service","add-subcategory","{{categoryId}}"],
-              "query": [{ "key": "subcategoryName", "value": "Smartphones" }]
-            }
-          }
-        },
-        {
-          "name": "Get All Categories",
-          "request": {
-            "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/catalog-service/getCategories", "host": ["{{baseUrl}}"], "path": ["catalog-service","getCategories"] }
-          }
-        }
-      ]
-    },
-    {
-      "name": "Catalog — Product",
-      "item": [
-        {
-          "name": "Add Product",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "var json = pm.response.json();",
-                  "if (json.data && json.data.id) { pm.collectionVariables.set('productId', json.data.id); }"
+                  "pm.test('subCategoryId present', () => pm.expect(json.data.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('subCategoryId', json.data.id);",
+                  "try { pm.environment.set('subCategoryId', json.data.id); } catch (e) {}",
+                  "console.log('subCategoryId:', json.data.id);"
                 ]
               }
             }
@@ -195,21 +366,115 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/catalog-service/add-subcategory/{{categoryId}}?subcategoryName={{subCategoryName}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "add-subcategory",
+                "{{categoryId}}"
+              ],
+              "query": [
+                {
+                  "key": "subcategoryName",
+                  "value": "{{subCategoryName}}"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/catalog-service/getCategories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "getCategories"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Catalog \u2014 Product",
+      "item": [
+        {
+          "name": "Add Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Add Product: status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('productId present', () => pm.expect(json.data.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('productId', json.data.id);",
+                  "try { pm.environment.set('productId', json.data.id); } catch (e) {}",
+                  "console.log('productId:', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/product/addProduct?brandId={{brandId}}&categoryId={{categoryId}}&subCategoryId={{subCategoryId}}",
-              "host": ["{{baseUrl}}"], "path": ["catalog-service","product","addProduct"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "product",
+                "addProduct"
+              ],
               "query": [
-                { "key": "brandId", "value": "{{brandId}}" },
-                { "key": "categoryId", "value": "{{categoryId}}" },
-                { "key": "subCategoryId", "value": "{{subCategoryId}}" }
+                {
+                  "key": "brandId",
+                  "value": "{{brandId}}"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "{{categoryId}}"
+                },
+                {
+                  "key": "subCategoryId",
+                  "value": "{{subCategoryId}}"
+                }
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Samsung Galaxy S24\",\n  \"model\": \"SM-S921B\",\n  \"description\": \"Latest Samsung flagship smartphone\",\n  \"status\": 1\n}"
+              "raw": "{\n  \"name\": \"{{productName}}\",\n  \"description\": \"Flagship smartphone\",\n  \"model\": \"SPX-{{runId}}\",\n  \"mrpPrice\": 89999.00,\n  \"salePrice\": 79999.00,\n  \"gstValue\": 18,\n  \"status\": 1,\n  \"discount\": 10000.00,\n  \"images\": [],\n  \"hasVariant\": true\n}"
             }
           }
         },
@@ -219,9 +484,14 @@
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
+                  "pm.test('Add Variant: status 201', () => pm.response.to.have.status(201));",
                   "var json = pm.response.json();",
-                  "if (json.data && json.data.id) { pm.collectionVariables.set('variantId', json.data.id); }"
+                  "pm.test('variantId present', () => pm.expect(json.data.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('variantId', json.data.id);",
+                  "try { pm.environment.set('variantId', json.data.id); } catch (e) {}",
+                  "console.log('variantId:', json.data.id);"
                 ]
               }
             }
@@ -229,12 +499,26 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/variant/add/{{productId}}",
-              "host": ["{{baseUrl}}"], "path": ["catalog-service","variant","add","{{productId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "variant",
+                "add",
+                "{{productId}}"
+              ]
             },
             "body": {
               "mode": "raw",
@@ -248,7 +532,15 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/catalog-service/product/getProduct/{{productId}}",
-              "host": ["{{baseUrl}}"], "path": ["catalog-service","product","getProduct","{{productId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "product",
+                "getProduct",
+                "{{productId}}"
+              ]
             }
           }
         },
@@ -258,11 +550,27 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/catalog-service/product/list?page=0&size=20&sort=name",
-              "host": ["{{baseUrl}}"], "path": ["catalog-service","product","list"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "product",
+                "list"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "20" },
-                { "key": "sort", "value": "name" }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "sort",
+                  "value": "name"
+                }
               ]
             }
           }
@@ -273,13 +581,37 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/catalog-service/product/search?q=samsung&page=0&size=20",
-              "host": ["{{baseUrl}}"], "path": ["catalog-service","product","search"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "product",
+                "search"
+              ],
               "query": [
-                { "key": "q", "value": "samsung" },
-                { "key": "categoryId", "value": "", "disabled": true },
-                { "key": "brandId", "value": "", "disabled": true },
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "20" }
+                {
+                  "key": "q",
+                  "value": "samsung"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "brandId",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
               ]
             }
           }
@@ -288,10 +620,22 @@
           "name": "Get Variant",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/variant/{{variantId}}",
-              "host": ["{{baseUrl}}"], "path": ["catalog-service","variant","{{variantId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "variant",
+                "{{variantId}}"
+              ]
             }
           }
         }
@@ -304,8 +648,22 @@
           "name": "Get Cart",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/cart-service/cart", "host": ["{{baseUrl}}"], "path": ["cart-service","cart"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cart-service/cart",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart"
+              ]
+            }
           }
         },
         {
@@ -313,10 +671,26 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/cart-service/cart/add", "host": ["{{baseUrl}}"], "path": ["cart-service","cart","add"] },
+            "url": {
+              "raw": "{{baseUrl}}/cart-service/cart/add",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "add"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"qty\": 1\n}"
@@ -327,11 +701,29 @@
           "name": "Update Item Quantity",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/cart-service/cart/item/{{productId}}?qty=2",
-              "host": ["{{baseUrl}}"], "path": ["cart-service","cart","item","{{productId}}"],
-              "query": [{ "key": "qty", "value": "2" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "item",
+                "{{productId}}"
+              ],
+              "query": [
+                {
+                  "key": "qty",
+                  "value": "2"
+                }
+              ]
             }
           }
         },
@@ -339,10 +731,23 @@
           "name": "Remove Item from Cart",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/cart-service/cart/item/{{productId}}",
-              "host": ["{{baseUrl}}"], "path": ["cart-service","cart","item","{{productId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "item",
+                "{{productId}}"
+              ]
             }
           }
         },
@@ -350,22 +755,52 @@
           "name": "Checkout Snapshot",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/cart-service/cart/checkout", "host": ["{{baseUrl}}"], "path": ["cart-service","cart","checkout"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cart-service/cart/checkout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "checkout"
+              ]
+            }
           }
         },
         {
           "name": "Clear Cart",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/cart-service/cart/clear", "host": ["{{baseUrl}}"], "path": ["cart-service","cart","clear"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cart-service/cart/clear",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "clear"
+              ]
+            }
           }
         }
       ]
     },
     {
-      "name": "Customer — Address",
+      "name": "Customer \u2014 Address",
       "item": [
         {
           "name": "Add Address",
@@ -373,9 +808,14 @@
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
+                  "pm.test('Add Address: status 201', () => pm.response.to.have.status(201));",
                   "var json = pm.response.json();",
-                  "if (json.data && json.data.id) { pm.collectionVariables.set('addressId', json.data.id); }"
+                  "pm.test('addressId present', () => pm.expect(json.data.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('addressId', json.data.id);",
+                  "try { pm.environment.set('addressId', json.data.id); } catch (e) {}",
+                  "console.log('addressId:', json.data.id);"
                 ]
               }
             }
@@ -383,10 +823,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/customer-service/address", "host": ["{{baseUrl}}"], "path": ["customer-service","address"] },
+            "url": {
+              "raw": "{{baseUrl}}/customer-service/address",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer-service",
+                "address"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"street\": \"42 MG Road\",\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"pinCode\": \"560001\",\n  \"country\": \"India\"\n}"
@@ -397,16 +852,45 @@
           "name": "Get Address",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/customer-service/address/{{addressId}}", "host": ["{{baseUrl}}"], "path": ["customer-service","address","{{addressId}}"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customer-service/address/{{addressId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer-service",
+                "address",
+                "{{addressId}}"
+              ]
+            }
           }
         },
         {
           "name": "Get All Addresses",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/customer-service/addresses", "host": ["{{baseUrl}}"], "path": ["customer-service","addresses"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customer-service/addresses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer-service",
+                "addresses"
+              ]
+            }
           }
         },
         {
@@ -414,10 +898,26 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/customer-service/address/{{addressId}}", "host": ["{{baseUrl}}"], "path": ["customer-service","address","{{addressId}}"] },
+            "url": {
+              "raw": "{{baseUrl}}/customer-service/address/{{addressId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer-service",
+                "address",
+                "{{addressId}}"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"street\": \"100 Brigade Road\",\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"pinCode\": \"560025\",\n  \"country\": \"India\"\n}"
@@ -428,14 +928,29 @@
           "name": "Delete Address",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/customer-service/address/{{addressId}}", "host": ["{{baseUrl}}"], "path": ["customer-service","address","{{addressId}}"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customer-service/address/{{addressId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer-service",
+                "address",
+                "{{addressId}}"
+              ]
+            }
           }
         }
       ]
     },
     {
-      "name": "Customer — Order",
+      "name": "Customer \u2014 Order",
       "item": [
         {
           "name": "Place Order",
@@ -443,12 +958,21 @@
             {
               "listen": "test",
               "script": {
+                "type": "text/javascript",
                 "exec": [
+                  "pm.test('Place Order: status 201', () => pm.response.to.have.status(201));",
                   "var json = pm.response.json();",
-                  "if (json.data && json.data.id) {",
-                  "  pm.collectionVariables.set('orderId', json.data.id);",
-                  "  pm.collectionVariables.set('paymentId', json.data.paymentId);",
-                  "}"
+                  "pm.test('Order ID present', () => pm.expect(json.data.id).to.be.a('string'));",
+                  "pm.test('Payment ID present', () => pm.expect(json.data.paymentId).to.be.a('string'));",
+                  "pm.collectionVariables.set('orderId', json.data.id);",
+                  "try { pm.environment.set('orderId', json.data.id); } catch (e) {}",
+                  "pm.collectionVariables.set('paymentId', json.data.paymentId);",
+                  "try { pm.environment.set('paymentId', json.data.paymentId); } catch (e) {}",
+                  "pm.collectionVariables.set('orderStatus', json.data.status);",
+                  "try { pm.environment.set('orderStatus', json.data.status); } catch (e) {}",
+                  "console.log('orderId:', json.data.id);",
+                  "console.log('paymentId:', json.data.paymentId);",
+                  "console.log('status:', json.data.status);"
                 ]
               }
             }
@@ -456,10 +980,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/customer-service/order", "host": ["{{baseUrl}}"], "path": ["customer-service","order"] },
+            "url": {
+              "raw": "{{baseUrl}}/order-service/order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"addressId\": \"{{addressId}}\"\n}"
@@ -470,33 +1009,145 @@
           "name": "Get Order",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/customer-service/order/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["customer-service","order","{{orderId}}"] }
-          }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/order-service/order/{{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order",
+                "{{orderId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get Order: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.status) {",
+                  "  pm.collectionVariables.set('orderStatus', json.data.status);",
+                  "  try { pm.environment.set('orderStatus', json.data.status); } catch (e) {}",
+                  "  console.log('orderStatus:', json.data.status);",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Get My Orders",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/customer-service/orders", "host": ["{{baseUrl}}"], "path": ["customer-service","orders"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/order-service/orders",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "orders"
+              ]
+            }
           }
         },
         {
           "name": "Confirm Order",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/customer-service/order/{{orderId}}/confirm", "host": ["{{baseUrl}}"], "path": ["customer-service","order","{{orderId}}","confirm"] }
-          }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/order-service/order/{{orderId}}/confirm",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order",
+                "{{orderId}}",
+                "confirm"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Confirm Order: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.status) {",
+                  "  pm.collectionVariables.set('orderStatus', json.data.status);",
+                  "  try { pm.environment.set('orderStatus', json.data.status); } catch (e) {}",
+                  "  console.log('orderStatus:', json.data.status);",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Cancel Order",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/customer-service/order/{{orderId}}/cancel", "host": ["{{baseUrl}}"], "path": ["customer-service","order","{{orderId}}","cancel"] }
-          }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/order-service/order/{{orderId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order",
+                "{{orderId}}",
+                "cancel"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Cancel Order: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.status) {",
+                  "  pm.collectionVariables.set('orderStatus', json.data.status);",
+                  "  try { pm.environment.set('orderStatus', json.data.status); } catch (e) {}",
+                  "  console.log('orderStatus:', json.data.status);",
+                  "}"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -507,41 +1158,225 @@
           "name": "Get Payment",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/payment-service/{{paymentId}}", "host": ["{{baseUrl}}"], "path": ["payment-service","{{paymentId}}"] }
-          }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment-service/{{paymentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "{{paymentId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get Payment: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "var data = json.data;",
+                  "var status = typeof data === 'string' ? data : data && data.status;",
+                  "if (status) {",
+                  "  pm.collectionVariables.set('paymentStatus', status);",
+                  "  try { pm.environment.set('paymentStatus', status); } catch (e) {}",
+                  "  console.log('paymentStatus:', status);",
+                  "}",
+                  "if (data && data.id) {",
+                  "  pm.collectionVariables.set('paymentId', data.id);",
+                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Get Payment Status by Order",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/payment-service/status/{{orderId}}", "host": ["{{baseUrl}}"], "path": ["payment-service","status","{{orderId}}"] }
-          }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment-service/status/{{orderId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "status",
+                "{{orderId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get Payment Status by Order: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "var data = json.data;",
+                  "var status = typeof data === 'string' ? data : data && data.status;",
+                  "if (status) {",
+                  "  pm.collectionVariables.set('paymentStatus', status);",
+                  "  try { pm.environment.set('paymentStatus', status); } catch (e) {}",
+                  "  console.log('paymentStatus:', status);",
+                  "}",
+                  "if (data && data.id) {",
+                  "  pm.collectionVariables.set('paymentId', data.id);",
+                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Confirm Payment (direct)",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/payment-service/confirm/{{paymentId}}", "host": ["{{baseUrl}}"], "path": ["payment-service","confirm","{{paymentId}}"] }
-          }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment-service/confirm/{{paymentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "confirm",
+                "{{paymentId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Confirm Payment (direct): status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "var data = json.data;",
+                  "var status = typeof data === 'string' ? data : data && data.status;",
+                  "if (status) {",
+                  "  pm.collectionVariables.set('paymentStatus', status);",
+                  "  try { pm.environment.set('paymentStatus', status); } catch (e) {}",
+                  "  console.log('paymentStatus:', status);",
+                  "}",
+                  "if (data && data.id) {",
+                  "  pm.collectionVariables.set('paymentId', data.id);",
+                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Fail Payment",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/payment-service/fail/{{paymentId}}", "host": ["{{baseUrl}}"], "path": ["payment-service","fail","{{paymentId}}"] }
-          }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment-service/fail/{{paymentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "fail",
+                "{{paymentId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Fail Payment: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "var data = json.data;",
+                  "var status = typeof data === 'string' ? data : data && data.status;",
+                  "if (status) {",
+                  "  pm.collectionVariables.set('paymentStatus', status);",
+                  "  try { pm.environment.set('paymentStatus', status); } catch (e) {}",
+                  "  console.log('paymentStatus:', status);",
+                  "}",
+                  "if (data && data.id) {",
+                  "  pm.collectionVariables.set('paymentId', data.id);",
+                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Refund Payment",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/payment-service/refund/{{paymentId}}", "host": ["{{baseUrl}}"], "path": ["payment-service","refund","{{paymentId}}"] }
-          }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment-service/refund/{{paymentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "refund",
+                "{{paymentId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Refund Payment: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "var data = json.data;",
+                  "var status = typeof data === 'string' ? data : data && data.status;",
+                  "if (status) {",
+                  "  pm.collectionVariables.set('paymentStatus', status);",
+                  "  try { pm.environment.set('paymentStatus', status); } catch (e) {}",
+                  "  console.log('paymentStatus:', status);",
+                  "}",
+                  "if (data && data.id) {",
+                  "  pm.collectionVariables.set('paymentId', data.id);",
+                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -553,10 +1388,25 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/inventory-service/stock", "host": ["{{baseUrl}}"], "path": ["inventory-service","stock"] },
+            "url": {
+              "raw": "{{baseUrl}}/inventory-service/stock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory-service",
+                "stock"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"quantity\": 50\n}"
@@ -567,18 +1417,47 @@
           "name": "Get Stock by Product",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/inventory-service/stock/{{productId}}", "host": ["{{baseUrl}}"], "path": ["inventory-service","stock","{{productId}}"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/inventory-service/stock/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory-service",
+                "stock",
+                "{{productId}}"
+              ]
+            }
           }
         },
         {
           "name": "Get Stock by Product + Variant",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/inventory-service/stock/{{productId}}/variant/{{variantId}}",
-              "host": ["{{baseUrl}}"], "path": ["inventory-service","stock","{{productId}}","variant","{{variantId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory-service",
+                "stock",
+                "{{productId}}",
+                "variant",
+                "{{variantId}}"
+              ]
             }
           }
         }
@@ -592,34 +1471,94 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/coupon-service/coupon", "host": ["{{baseUrl}}"], "path": ["coupon-service","coupon"] },
+            "url": {
+              "raw": "{{baseUrl}}/coupon-service/coupon",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "coupon-service",
+                "coupon"
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"SAVE10\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10.0,\n  \"minOrderAmount\": 500.0,\n  \"maxUses\": 100,\n  \"expiryDate\": \"2026-12-31T23:59:59\",\n  \"active\": true\n}"
+              "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10.0,\n  \"minOrderAmount\": 500.0,\n  \"maxUses\": 100,\n  \"expiryDate\": \"2026-12-31T23:59:59\",\n  \"active\": true\n}"
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create Coupon: status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('couponId', json.data.id);",
+                  "  try { pm.environment.set('couponId', json.data.id); } catch (e) {}",
+                  "if (json.data && json.data.code) {",
+                  "  pm.collectionVariables.set('couponCode', json.data.code);",
+                  "  try { pm.environment.set('couponCode', json.data.code); } catch (e) {}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Get Active Coupons",
           "request": {
             "method": "GET",
-            "url": { "raw": "{{baseUrl}}/coupon-service/coupons", "host": ["{{baseUrl}}"], "path": ["coupon-service","coupons"] }
+            "url": {
+              "raw": "{{baseUrl}}/coupon-service/coupons",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "coupon-service",
+                "coupons"
+              ]
+            }
           }
         },
         {
           "name": "Validate Coupon",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/coupon-service/coupon/validate?code=SAVE10&amount=1000",
-              "host": ["{{baseUrl}}"], "path": ["coupon-service","coupon","validate"],
+              "raw": "{{baseUrl}}/coupon-service/coupon/validate?code={{couponCode}}&amount=1000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "coupon-service",
+                "coupon",
+                "validate"
+              ],
               "query": [
-                { "key": "code", "value": "SAVE10" },
-                { "key": "amount", "value": "1000" }
+                {
+                  "key": "code",
+                  "value": "{{couponCode}}"
+                },
+                {
+                  "key": "amount",
+                  "value": "1000"
+                }
               ]
             }
           }
@@ -628,11 +1567,28 @@
           "name": "Apply Coupon",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/coupon-service/coupon/apply?code=SAVE10",
-              "host": ["{{baseUrl}}"], "path": ["coupon-service","coupon","apply"],
-              "query": [{ "key": "code", "value": "SAVE10" }]
+              "raw": "{{baseUrl}}/coupon-service/coupon/apply?code={{couponCode}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "coupon-service",
+                "coupon",
+                "apply"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "{{couponCode}}"
+                }
+              ]
             }
           }
         }
@@ -646,15 +1602,47 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/review-service/review", "host": ["{{baseUrl}}"], "path": ["review-service","review"] },
+            "url": {
+              "raw": "{{baseUrl}}/review-service/review",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "review-service",
+                "review"
+              ]
+            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"rating\": 5,\n  \"comment\": \"Excellent phone! Great camera and battery life.\"\n}"
             }
-          }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Submit Review: status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('reviewId', json.data.id);",
+                  "  try { pm.environment.set('reviewId', json.data.id); } catch (e) {}",
+                  "  console.log('reviewId:', json.data.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Get Approved Reviews for Product",
@@ -662,7 +1650,15 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/review-service/review/product/{{productId}}",
-              "host": ["{{baseUrl}}"], "path": ["review-service","review","product","{{productId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "review-service",
+                "review",
+                "product",
+                "{{productId}}"
+              ]
             }
           }
         },
@@ -672,7 +1668,16 @@
             "method": "GET",
             "url": {
               "raw": "{{baseUrl}}/review-service/review/product/{{productId}}/summary",
-              "host": ["{{baseUrl}}"], "path": ["review-service","review","product","{{productId}}","summary"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "review-service",
+                "review",
+                "product",
+                "{{productId}}",
+                "summary"
+              ]
             }
           }
         },
@@ -680,19 +1685,52 @@
           "name": "Get My Reviews",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/review-service/review/my", "host": ["{{baseUrl}}"], "path": ["review-service","review","my"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/review-service/review/my",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "review-service",
+                "review",
+                "my"
+              ]
+            }
           }
         },
         {
           "name": "Moderate Review (Admin)",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/review-service/review/REVIEW_ID/moderate?status=APPROVED",
-              "host": ["{{baseUrl}}"], "path": ["review-service","review","REVIEW_ID","moderate"],
-              "query": [{ "key": "status", "value": "APPROVED" }]
+              "raw": "{{baseUrl}}/review-service/review/{{reviewId}}/moderate?status=APPROVED",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "review-service",
+                "review",
+                "{{reviewId}}",
+                "moderate"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "APPROVED"
+                }
+              ]
             }
           }
         }
@@ -706,13 +1744,28 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
-            "url": { "raw": "{{baseUrl}}/wishlist-service/wishlist", "host": ["{{baseUrl}}"], "path": ["wishlist-service","wishlist"] },
+            "url": {
+              "raw": "{{baseUrl}}/wishlist-service/wishlist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist-service",
+                "wishlist"
+              ]
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"productName\": \"Samsung Galaxy S24\",\n  \"salePrice\": 79999.00\n}"
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"productName\": \"{{productName}}\",\n  \"salePrice\": 79999.00\n}"
             }
           }
         },
@@ -720,18 +1773,44 @@
           "name": "Get My Wishlist",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/wishlist-service/wishlist", "host": ["{{baseUrl}}"], "path": ["wishlist-service","wishlist"] }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/wishlist-service/wishlist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist-service",
+                "wishlist"
+              ]
+            }
           }
         },
         {
           "name": "Remove from Wishlist",
           "request": {
             "method": "DELETE",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/wishlist-service/wishlist/{{productId}}",
-              "host": ["{{baseUrl}}"], "path": ["wishlist-service","wishlist","{{productId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist-service",
+                "wishlist",
+                "{{productId}}"
+              ]
             }
           }
         },
@@ -739,10 +1818,23 @@
           "name": "Move to Cart",
           "request": {
             "method": "POST",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": {
               "raw": "{{baseUrl}}/wishlist-service/wishlist/{{productId}}/move-to-cart",
-              "host": ["{{baseUrl}}"], "path": ["wishlist-service","wishlist","{{productId}}","move-to-cart"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist-service",
+                "wishlist",
+                "{{productId}}",
+                "move-to-cart"
+              ]
             }
           }
         }
@@ -755,30 +1847,206 @@
           "name": "Get All Notifications",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/notification-service/notifications", "host": ["{{baseUrl}}"], "path": ["notification-service","notifications"] }
-          }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notification-service/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-service",
+                "notifications"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get All Notifications: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "var notifications = Array.isArray(json.data) ? json.data : (json.data && Array.isArray(json.data.content) ? json.data.content : []);",
+                  "if (notifications.length && notifications[0].id) {",
+                  "  pm.collectionVariables.set('notificationId', notifications[0].id);",
+                  "  try { pm.environment.set('notificationId', notifications[0].id); } catch (e) {}",
+                  "  console.log('notificationId:', notifications[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Get Unread Notifications",
           "request": {
             "method": "GET",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
-            "url": { "raw": "{{baseUrl}}/notification-service/notifications/unread", "host": ["{{baseUrl}}"], "path": ["notification-service","notifications","unread"] }
-          }
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/notification-service/notifications/unread",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-service",
+                "notifications",
+                "unread"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get Unread Notifications: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "var notifications = Array.isArray(json.data) ? json.data : (json.data && Array.isArray(json.data.content) ? json.data.content : []);",
+                  "if (notifications.length && notifications[0].id) {",
+                  "  pm.collectionVariables.set('notificationId', notifications[0].id);",
+                  "  try { pm.environment.set('notificationId', notifications[0].id); } catch (e) {}",
+                  "  console.log('notificationId:', notifications[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Mark Notification as Read",
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/notification-service/notifications/NOTIFICATION_ID/read",
-              "host": ["{{baseUrl}}"], "path": ["notification-service","notifications","NOTIFICATION_ID","read"]
+              "raw": "{{baseUrl}}/notification-service/notifications/{{notificationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-service",
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
             }
           }
         }
       ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function setRunnerVar(key, value) {",
+          "  pm.collectionVariables.set(key, value);",
+          "  try { pm.environment.set(key, value); } catch (e) {}",
+          "}",
+          "",
+          "function seedRunnerVariables() {",
+          "  var runId = Date.now().toString();",
+          "  var suffix = runId.slice(-8);",
+          "  setRunnerVar('runId', runId);",
+          "  setRunnerVar('runnerEmail', 'buyer_' + suffix + '@example.com');",
+          "  setRunnerVar('runnerPassword', 'password123');",
+          "  setRunnerVar('brandName', 'Samsung_' + suffix);",
+          "  setRunnerVar('categoryName', 'Electronics_' + suffix);",
+          "  setRunnerVar('subCategoryName', 'Smartphones_' + suffix);",
+          "  setRunnerVar('productName', 'Galaxy S24 ' + suffix);",
+          "  setRunnerVar('couponCode', 'SAVE' + suffix);",
+          "}",
+          "",
+          "var requestName = pm.info.requestName || \"\";",
+          "if (requestName === 'Register' || requestName.indexOf('Register User') !== -1 || !pm.collectionVariables.get('runId')) {",
+          "  seedRunnerVariables();",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function responseJson() {",
+          "  try {",
+          "    return pm.response.json();",
+          "  } catch (e) {",
+          "    return {};",
+          "  }",
+          "}",
+          "",
+          "function responseData(json) {",
+          "  return json && Object.prototype.hasOwnProperty.call(json, 'data') ? json.data : json;",
+          "}",
+          "",
+          "function saveRunnerVar(key, value) {",
+          "  if (value === undefined || value === null || value === '') {",
+          "    return;",
+          "  }",
+          "  pm.collectionVariables.set(key, value);",
+          "  try { pm.environment.set(key, value); } catch (e) {}",
+          "  console.log('saved ' + key + ':', value);",
+          "}",
+          "",
+          "var json = responseJson();",
+          "var data = responseData(json);",
+          "var rawUrl = pm.request.url ? pm.request.url.toString() : \"\";",
+          "var method = pm.request.method || \"\";",
+          "",
+          "if (rawUrl.indexOf('/auth-service/login') !== -1) {",
+          "  var token = typeof data === 'string' ? data : data && (data.token || data.accessToken || data.jwt);",
+          "  saveRunnerVar('token', token);",
+          "}",
+          "",
+          "if (data && typeof data === \"object\") {",
+          "  if (rawUrl.indexOf('/catalog-service/add-brand') !== -1) { saveRunnerVar('brandId', data.id); }",
+          "  if (rawUrl.indexOf('/catalog-service/addCategory') !== -1) { saveRunnerVar('categoryId', data.id); }",
+          "  if (rawUrl.indexOf('/catalog-service/add-subcategory') !== -1) { saveRunnerVar('subCategoryId', data.id); }",
+          "  if (rawUrl.indexOf('/catalog-service/product/addProduct') !== -1) { saveRunnerVar('productId', data.id); }",
+          "  if (rawUrl.indexOf('/catalog-service/variant/add') !== -1) { saveRunnerVar('variantId', data.id); }",
+          "  if (method === 'POST' && rawUrl.indexOf('/customer-service/address') !== -1) { saveRunnerVar('addressId', data.id); }",
+          "  if (method === 'POST' && rawUrl.indexOf('/order-service/order') !== -1) {",
+          "    saveRunnerVar('orderId', data.id);",
+          "    saveRunnerVar('paymentId', data.paymentId);",
+          "  }",
+          "  if (rawUrl.indexOf('/order-service/order') !== -1) { saveRunnerVar('orderStatus', data.status); }",
+          "  if (rawUrl.indexOf('/payment-service/') !== -1) {",
+          "    saveRunnerVar('paymentId', data.id || data.paymentId);",
+          "    saveRunnerVar('paymentStatus', data.status);",
+          "  }",
+          "  if (method === 'POST' && rawUrl.indexOf('/coupon-service/coupon') !== -1) {",
+          "    saveRunnerVar('couponId', data.id);",
+          "    saveRunnerVar('couponCode', data.code || pm.collectionVariables.get('couponCode'));",
+          "  }",
+          "  if (method === 'POST' && rawUrl.indexOf('/review-service/review') !== -1) { saveRunnerVar('reviewId', data.id); }",
+          "}",
+          "",
+          "if (rawUrl.indexOf('/notification-service/notifications') !== -1) {",
+          "  var notifications = Array.isArray(data) ? data : (data && Array.isArray(data.content) ? data.content : []);",
+          "  saveRunnerVar('notificationId', notifications[0] && notifications[0].id);",
+          "}"
+        ]
+      }
     }
   ]
 }

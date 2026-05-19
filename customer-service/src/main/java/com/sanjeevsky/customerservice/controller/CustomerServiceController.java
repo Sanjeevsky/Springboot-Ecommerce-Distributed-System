@@ -45,6 +45,13 @@ public class CustomerServiceController {
         return ResponseEntity.ok(ApiResponse.ok(addressService.getAddress(id, user)));
     }
 
+    @GetMapping("/address/{id}/raw")
+    public Address getAddressRaw(
+            @PathVariable("id") UUID id,
+            @RequestHeader(name = "X-User") String user) {
+        return addressService.getAddress(id, user);
+    }
+
     @GetMapping("/addresses")
     public ResponseEntity<ApiResponse<?>> getAddresses(
             @RequestHeader(name = "X-User") String user) {

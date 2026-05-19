@@ -9,9 +9,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 
 import java.util.UUID;
 
-@FeignClient(name = "customer-service", fallbackFactory = CustomerFeignClientFallback.class)
+@FeignClient(name = "customer-service", url = "${clients.customer.url:}", fallbackFactory = CustomerFeignClientFallback.class)
 public interface CustomerFeignClient {
 
-    @GetMapping("/customer-service/address/{id}")
+    @GetMapping("/customer-service/address/{id}/raw")
     AddressDto getAddress(@RequestHeader("X-User") String userId, @PathVariable("id") UUID addressId);
 }

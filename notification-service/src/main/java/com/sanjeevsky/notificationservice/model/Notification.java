@@ -34,6 +34,7 @@ public class Notification {
     private String message;
 
     @Builder.Default
+    @Column(name = "read_flag")
     private boolean read = false;
 
     @CreationTimestamp

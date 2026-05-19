@@ -1,12 +1,14 @@
 package com.sanjeevsky.orderservice.service;
 
 import com.sanjeevsky.orderservice.clients.CartFeignClient;
+import com.sanjeevsky.orderservice.clients.CouponFeignClient;
 import com.sanjeevsky.orderservice.clients.CustomerFeignClient;
 import com.sanjeevsky.orderservice.clients.PaymentFeignClient;
 import com.sanjeevsky.orderservice.events.OrderEventPublisher;
 import com.sanjeevsky.orderservice.exceptions.InvalidRequestException;
 import com.sanjeevsky.orderservice.exceptions.OrderNotFoundException;
 import com.sanjeevsky.orderservice.model.AddressDto;
+import com.sanjeevsky.orderservice.model.CouponValidationResult;
 import com.sanjeevsky.orderservice.model.Order;
 import com.sanjeevsky.orderservice.model.ShippingAddress;
 import com.sanjeevsky.orderservice.repository.OrderRepository;
@@ -30,6 +32,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -40,6 +43,7 @@ class OrderServiceImplTest {
     @Mock CartFeignClient cartFeignClient;
     @Mock PaymentFeignClient paymentFeignClient;
     @Mock CustomerFeignClient customerFeignClient;
+    @Mock CouponFeignClient couponFeignClient;
     @Mock OrderEventPublisher eventPublisher;
 
     @InjectMocks OrderServiceImpl orderService;
@@ -79,43 +83,20 @@ class OrderServiceImplTest {
 
     @Test
     void createOrder_emptyCart_throws() {
-        CartSnapshot emptyCart = new CartSnapshot();
-        when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(emptyCart);
-        assertThatThrownBy(() -> orderService.createOrder(USER, ADDRESS_ID))
+        when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(new CartSnapshot());
+        assertThatThrownBy(() -> orderService.createOrder(USER, ADDRESS_ID, null))
                 .isInstanceOf(InvalidRequestException.class)
                 .hasMessageContaining("empty");
     }
 
     @Test
     void createOrder_success() {
-        CartItemSnapshot item = new CartItemSnapshot();
-        item.setProductId(UUID.randomUUID());
-        item.setProductName("Phone");
-        item.setUnitPrice(100.0);
-        item.setQty(1);
-
-        CartSnapshot cart = new CartSnapshot();
-        cart.setItems(List.of(item));
-        cart.setTotalAmount(100.0);
-
-        AddressDto address = new AddressDto();
-        address.setCity("NYC");
-        address.setState("NY");
-        address.setCountry("US");
-        address.setZipCode(10001);
-        address.setHome("5A");
-        address.setStreetLocality("Broadway");
-
-        PaymentResponse payment = new PaymentResponse();
-        payment.setId(PAYMENT_ID);
-        payment.setStatus(PaymentStatus.PENDING);
-
-        when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(cart);
-        when(customerFeignClient.getAddress(USER, ADDRESS_ID)).thenReturn(address);
+        when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(cart(List.of(cartItem(100.0)), 100.0));
+        when(customerFeignClient.getAddress(USER, ADDRESS_ID)).thenReturn(address());
         when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(paymentFeignClient.initiatePayment(any())).thenReturn(payment);
+        when(paymentFeignClient.initiatePayment(any())).thenReturn(payment());
 
-        Order result = orderService.createOrder(USER, ADDRESS_ID);
+        Order result = orderService.createOrder(USER, ADDRESS_ID, null);
 
         assertThat(result.getStatus()).isEqualTo(OrderStatus.PENDING);
         assertThat(result.getOrderTotal()).isEqualTo(100.0);
@@ -136,8 +117,20 @@ class OrderServiceImplTest {
     }
 
     @Test
-    void confirmOrder_notPending_throws() {
+    void confirmOrder_alreadyConfirmed_isIdempotent() {
+        // Re-confirming an already CONFIRMED order is a no-op (calls confirmPayment again, no exception)
         pendingOrder.setStatus(OrderStatus.CONFIRMED);
+        when(orderRepository.findByIdAndUserId(ORDER_ID, USER)).thenReturn(Optional.of(pendingOrder));
+
+        Order result = orderService.confirmOrder(USER, ORDER_ID);
+
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
+        verify(paymentFeignClient).confirmPayment(PAYMENT_ID);
+    }
+
+    @Test
+    void confirmOrder_cancelled_throws() {
+        pendingOrder.setStatus(OrderStatus.CANCELLED);
         when(orderRepository.findByIdAndUserId(ORDER_ID, USER)).thenReturn(Optional.of(pendingOrder));
         assertThatThrownBy(() -> orderService.confirmOrder(USER, ORDER_ID))
                 .isInstanceOf(InvalidRequestException.class);
@@ -168,5 +161,120 @@ class OrderServiceImplTest {
         when(orderRepository.findAllByUserId(USER)).thenReturn(List.of(pendingOrder));
         List<Order> orders = orderService.getOrdersByUser(USER);
         assertThat(orders).hasSize(1);
+    }
+
+    // ─── Coupon integration ───────────────────────────────────────────────────
+
+    @Test
+    void createOrder_validCoupon_appliesDiscount() {
+        CartItemSnapshot item = cartItem(100.0);
+        CartSnapshot cart = cart(List.of(item), 100.0);
+        AddressDto address = address();
+        PaymentResponse payment = payment();
+
+        when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(cart);
+        when(customerFeignClient.getAddress(USER, ADDRESS_ID)).thenReturn(address);
+        when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentFeignClient.initiatePayment(any())).thenReturn(payment);
+        when(couponFeignClient.validateCoupon("SAVE10", 100.0))
+                .thenReturn(new CouponValidationResult(true, "Valid", 10.0, "SAVE10"));
+
+        Order result = orderService.createOrder(USER, ADDRESS_ID, "SAVE10");
+
+        assertThat(result.getOrderTotal()).isEqualTo(90.0);
+        assertThat(result.getDiscount()).isEqualTo(10.0);
+        verify(couponFeignClient).applyCoupon("SAVE10");
+    }
+
+    @Test
+    void createOrder_invalidCoupon_noDiscount() {
+        CartItemSnapshot item = cartItem(100.0);
+        CartSnapshot cart = cart(List.of(item), 100.0);
+        AddressDto address = address();
+        PaymentResponse payment = payment();
+
+        when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(cart);
+        when(customerFeignClient.getAddress(USER, ADDRESS_ID)).thenReturn(address);
+        when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentFeignClient.initiatePayment(any())).thenReturn(payment);
+        when(couponFeignClient.validateCoupon("BADCODE", 100.0))
+                .thenReturn(new CouponValidationResult(false, "Expired", 0.0, "BADCODE"));
+
+        Order result = orderService.createOrder(USER, ADDRESS_ID, "BADCODE");
+
+        assertThat(result.getOrderTotal()).isEqualTo(100.0);
+        assertThat(result.getDiscount()).isEqualTo(0.0);
+        verify(couponFeignClient, org.mockito.Mockito.never()).applyCoupon(any());
+    }
+
+    @Test
+    void createOrder_nullCoupon_skipsValidation() {
+        CartItemSnapshot item = cartItem(100.0);
+        CartSnapshot cart = cart(List.of(item), 100.0);
+        AddressDto address = address();
+        PaymentResponse payment = payment();
+
+        when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(cart);
+        when(customerFeignClient.getAddress(USER, ADDRESS_ID)).thenReturn(address);
+        when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentFeignClient.initiatePayment(any())).thenReturn(payment);
+
+        Order result = orderService.createOrder(USER, ADDRESS_ID, null);
+
+        assertThat(result.getOrderTotal()).isEqualTo(100.0);
+        verify(couponFeignClient, org.mockito.Mockito.never()).validateCoupon(any(), anyDouble());
+    }
+
+    @Test
+    void createOrder_couponServiceDown_fallbackNoDiscount() {
+        CartItemSnapshot item = cartItem(100.0);
+        CartSnapshot cart = cart(List.of(item), 100.0);
+        AddressDto address = address();
+        PaymentResponse payment = payment();
+
+        when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(cart);
+        when(customerFeignClient.getAddress(USER, ADDRESS_ID)).thenReturn(address);
+        when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentFeignClient.initiatePayment(any())).thenReturn(payment);
+        // fallback returns valid=false
+        when(couponFeignClient.validateCoupon("SAVE10", 100.0))
+                .thenReturn(new CouponValidationResult(false, "Coupon service unavailable", 0.0, "SAVE10"));
+
+        Order result = orderService.createOrder(USER, ADDRESS_ID, "SAVE10");
+
+        assertThat(result.getOrderTotal()).isEqualTo(100.0);
+        verify(couponFeignClient, org.mockito.Mockito.never()).applyCoupon(any());
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    private CartItemSnapshot cartItem(double price) {
+        CartItemSnapshot item = new CartItemSnapshot();
+        item.setProductId(UUID.randomUUID());
+        item.setProductName("Phone");
+        item.setUnitPrice(price);
+        item.setQty(1);
+        return item;
+    }
+
+    private CartSnapshot cart(List<CartItemSnapshot> items, double total) {
+        CartSnapshot c = new CartSnapshot();
+        c.setItems(items);
+        c.setTotalAmount(total);
+        return c;
+    }
+
+    private AddressDto address() {
+        AddressDto a = new AddressDto();
+        a.setCity("NYC"); a.setState("NY"); a.setCountry("US");
+        a.setZipCode(10001); a.setHome("5A"); a.setStreetLocality("Broadway");
+        return a;
+    }
+
+    private PaymentResponse payment() {
+        PaymentResponse p = new PaymentResponse();
+        p.setId(PAYMENT_ID);
+        p.setStatus(PaymentStatus.PENDING);
+        return p;
     }
 }

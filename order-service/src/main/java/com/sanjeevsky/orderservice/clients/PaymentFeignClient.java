@@ -11,15 +11,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.UUID;
 
-@FeignClient(name = "payment-service", fallbackFactory = PaymentFeignClientFallback.class)
+@FeignClient(name = "payment-service", url = "${clients.payment.url:}", fallbackFactory = PaymentFeignClientFallback.class)
 public interface PaymentFeignClient {
 
-    @PostMapping("/payment-service/payment/initiate")
+    @PostMapping("/payment-service/initiate/raw")
     PaymentResponse initiatePayment(@RequestBody PaymentRequest request);
 
-    @PutMapping("/payment-service/payment/{id}/confirm")
+    @PutMapping("/payment-service/confirm/{id}/raw")
     void confirmPayment(@PathVariable("id") UUID paymentId);
 
-    @PutMapping("/payment-service/payment/{id}/refund")
+    @PutMapping("/payment-service/refund/{id}/raw")
     void refundPayment(@PathVariable("id") UUID paymentId);
 }

@@ -1,5 +1,6 @@
 package com.sanjeevsky.wishlistservice.service;
 
+import com.sanjeevsky.wishlistservice.clients.CartFeignClient;
 import com.sanjeevsky.wishlistservice.dto.AddToWishlistRequest;
 import com.sanjeevsky.wishlistservice.exceptions.WishlistItemAlreadyExistsException;
 import com.sanjeevsky.wishlistservice.exceptions.WishlistItemNotFoundException;
@@ -13,12 +14,14 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -26,6 +29,9 @@ class WishlistServiceImplTest {
 
     @Mock
     private WishlistRepository wishlistRepository;
+
+    @Mock
+    private CartFeignClient cartFeignClient;
 
     @InjectMocks
     private WishlistServiceImpl wishlistService;
@@ -128,10 +134,12 @@ class WishlistServiceImplTest {
     void moveToCart_returnsItemAndRemovesItFromWishlist() {
         WishlistItem item = existingItem();
         when(wishlistRepository.findByUserIdAndProductId(USER_ID, PRODUCT_ID)).thenReturn(Optional.of(item));
+        doNothing().when(cartFeignClient).addItem(any(), any(Map.class));
 
         WishlistItem result = wishlistService.moveToCart(USER_ID, PRODUCT_ID);
 
         assertThat(result).isSameAs(item);
+        verify(cartFeignClient).addItem(eq(USER_ID), any(Map.class));
         verify(wishlistRepository).deleteByUserIdAndProductId(USER_ID, PRODUCT_ID);
     }
 

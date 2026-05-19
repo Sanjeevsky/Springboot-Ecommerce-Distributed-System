@@ -1,447 +1,336 @@
-# Ecommerce Distributed System — Implementation Design
+# Ecommerce Distributed System — Advanced Implementation Plan
 
-## Platform Commons (Shared Library)
-
-A separate Maven module `platform-commons` (`com.sanjeevsky:platform-commons:1.0.0`) contains all POJOs shared across service boundaries. Services declare it as a dependency — no duplicated DTO classes.
+## Architecture Overview
 
 ```
-platform-commons/src/main/java/com/sanjeevsky/platform/
-  response/
-    ApiResponse<T>                   — standard {success, message, data} envelope
-  model/
-    product/ProductResponse          — catalog product data for Feign consumers
-    cart/CartSnapshot                — full cart for checkout (shopping-cart → customer)
-    cart/CartItemSnapshot            — individual cart line item
-    payment/PaymentStatus            — enum PENDING|SUCCESS|FAILED|REFUNDED
-    payment/PaymentRequest           — initiation DTO (customer → payment)
-    payment/PaymentResponse          — payment result (payment → customer via Feign)
-    order/OrderStatus                — enum PENDING|CONFIRMED|SHIPPED|DELIVERED|CANCELLED
-```
+                        ┌───────────────────────────────────────────┐
+                        │          API Gateway :8081                 │
+                        │  JWT filter · Sleuth tracing · Prometheus  │
+                        └─┬──────┬──────┬──────┬──────┬────────────┘
+                          │      │      │      │      │
+        ┌─────────────────┘  ┌───┘  ┌───┘  ┌───┘  ┌───┘
+        ▼                    ▼      ▼      ▼      ▼
+ ┌────────────┐  ┌──────────────┐  ┌────────────┐  ┌──────────────────┐
+ │ auth-server│  │catalog-svc   │  │ cart-svc   │  │  order-service   │
+ │  :8083     │  │  :8084       │  │  :8086     │  │    :8092         │
+ │            │  │ Redis cache  │  │            │  │ Feign → cart,    │
+ └────────────┘  └──────────────┘  └────────────┘  │ customer, pay,  │
+                                                    │ coupon, inv     │
+ ┌──────────────┐  ┌──────────────┐  ┌────────────┐└──────────────────┘
+ │customer-svc  │  │ payment-svc  │  │coupon-svc  │
+ │  :8082       │  │   :8085      │  │  :8089     │
+ │ addresses    │  │ Kafka pub    │  │ validate   │
+ └──────────────┘  └──────────────┘  └────────────┘
 
-**Build once, use everywhere:**
-```bash
-cd platform-commons && mvn install   # installs to ~/.m2 — run before any service build
-```
+ ┌──────────────┐  ┌──────────────┐  ┌────────────┐  ┌──────────────┐
+ │inventory-svc │  │notification  │  │review-svc  │  │wishlist-svc  │
+ │  :8088       │  │  -svc :8087  │  │  :8090     │  │  :8091       │
+ │ Kafka cons   │  │ Kafka cons   │  │ Kafka cons │  │ Feign→cart   │
+ └──────────────┘  └──────────────┘  └────────────┘  └──────────────┘
 
-Services that depend on it: `shopping-cart-service`, `customer-service`, `payment-service`.
+ ─────────────────── Kafka Event Bus ──────────────────────
+   order-events: order-service → inventory, notification, review
+   payment-events: payment-service → notification
+   inventory-events: inventory-service → order-service
 
----
-
-## Why Redesign
-
-The original structure conflates three bounded contexts inside `customer-service` (cart + orders + addresses) and leaves `shopping-cart-service` as a dead skeleton. This makes checkout a single-service blob with broken stream logic, no payment wiring, and no clean ownership boundary. The redesign separates concerns properly so each service owns exactly one domain.
-
----
-
-## Target Architecture
-
-```
-                          ┌─────────────────────────────────────────┐
-                          │              API Gateway :8081           │
-                          │   JWT filter on all routes except /auth  │
-                          └──┬──────────┬──────────┬────────────────┘
-                             │          │          │          │
-               ┌─────────────┘  ┌───────┘  ┌──────┘  ┌──────┘
-               ▼                ▼          ▼          ▼
-        ┌─────────────┐  ┌───────────┐ ┌────────┐ ┌──────────────────┐
-        │ auth-server │  │ catalog-  │ │ cart-  │ │ customer-service │
-        │    :8083    │  │  service  │ │service │ │      :8082       │
-        │             │  │   :8084   │ │ :8086  │ │                  │
-        │ signup      │  │           │ │        │ │ addresses        │
-        │ login       │  │ products  │ │ cart   │ │ orders           │
-        │ updatePwd   │  │ brands    │ │ items  │ │                  │
-        └──────┬──────┘  │ categories│ │ totals │ └────────┬─────────┘
-               │         │ variants  │ └───┬────┘          │
-               │         └─────┬─────┘     │ Feign         │ Feign
-               │               │           ▼               ▼
-               │               │    ┌─────────────┐  ┌─────────────┐
-               │               └───►│ cart-service│  │  payment-   │
-               │     Feign (price)  │  (catalog   │  │   service   │
-               │                    │   Feign)    │  │    :8085    │
-               │                    └─────────────┘  └─────────────┘
-               │
-        ┌──────┴──────┐   ┌──────────────┐   ┌──────────────┐
-        │   auth-db   │   │ catalog-db   │   │  cart-db     │
-        │ (MySQL)     │   │ (MySQL)      │   │ (MySQL)      │
-        └─────────────┘   └──────────────┘   └──────────────┘
-
-        ┌────────────────┐   ┌────────────────┐
-        │ customer-db    │   │  payment-db    │
-        │ (MySQL)        │   │  (MySQL)       │
-        └────────────────┘   └────────────────┘
-
-        ┌────────────────────────────────────────────────────┐
-        │         Infrastructure (unchanged)                 │
-        │  service-discovery :8761  cloud-config :8071       │
-        │  spring-server (Boot Admin) :9000                  │
-        └────────────────────────────────────────────────────┘
+ ─────────────────── Observability Stack ──────────────────
+   Zipkin :9411       — distributed traces (Sleuth B3 propagation)
+   Prometheus :9090   — metrics scrape from all /actuator/prometheus
+   Grafana :3000      — dashboards (provisioned automatically)
+   Kafka UI :8080     — topic / consumer group monitoring
 ```
 
 ---
 
-## Bounded Context Map
+## Service Completion Matrix
 
-| Service | Owns | Talks To |
-|---------|------|----------|
-| auth-server | User identity, JWT tokens | — |
-| catalog-service | Products, Variants, Brands, Categories, SubCategories | — |
-| shopping-cart-service | Cart lifecycle, CartItems, totals | catalog-service (Feign, product price) |
-| customer-service | Addresses, Orders, OrderItems (snapshot) | shopping-cart-service (Feign, get+clear cart), payment-service (Feign, initiate) |
-| payment-service | Payments, PaymentStatus | — |
-
----
-
-## Checkout Sequence
-
-```
-Client
-  │── POST /customer-service/order {addressId}
-  │     API Gateway (JWT → X-User header)
-  │       customer-service
-  │         ├── CartFeignClient.getCart(userId)       → shopping-cart-service
-  │         ├── Validate cart non-empty
-  │         ├── Map CartItems → OrderItems (price snapshot)
-  │         ├── Persist Order (status=PENDING)
-  │         ├── PaymentFeignClient.initiate(orderId, userId, total) → payment-service
-  │         └── CartFeignClient.clearCart(userId)     → shopping-cart-service
-  └── Order{id, status=PENDING, paymentId}
-```
+| Service | Port | Sleuth | Zipkin | Prometheus | Kafka | Feign | Status |
+|---------|------|--------|--------|------------|-------|-------|--------|
+| service-discovery | 8761 | — | — | — | — | — | ✅ |
+| cloud-config | 8071 | — | — | — | — | — | ✅ |
+| spring-server | 9000 | — | — | — | — | — | ✅ |
+| api-gateway | 8081 | ✅ | ✅ | ✅ | — | — | ✅ |
+| auth-server | 8083 | ✅ | ✅ | ✅ | — | — | ✅ |
+| catalog-service | 8084 | ✅ | ✅ | ✅ | — | — | ✅ |
+| customer-service | 8082 | ✅ | ✅ | ✅ | pub | feign | ✅ |
+| shopping-cart-service | 8086 | ✅ | ✅ | ✅ | — | feign | ✅ |
+| payment-service | 8085 | ✅ | ✅ | ✅ | pub | — | ✅ |
+| order-service | 8092 | ✅ | ✅ | ✅ | pub | feign | ✅ |
+| inventory-service | 8088 | ✅ | ⬛add | ⬛add | cons | — | 🔧 |
+| notification-service | 8087 | ✅ | ⬛add | ⬛add | cons | — | 🔧 |
+| coupon-service | 8089 | ✅ | ⬛add | ⬛add | — | — | 🔧 |
+| review-service | 8090 | ✅ | ⬛add | ⬛add | cons | — | 🔧 |
+| wishlist-service | 8091 | ✅ | ⬛add | ⬛add | — | ⬛cart | 🔧 |
 
 ---
 
-## Service Data Models
+## Advanced Implementation Phases
 
-### shopping-cart-service
+### Phase 1 — Complete Observability (all 12 business services)
 
-```java
-// CartItem — stores price snapshot at add-to-cart time
-@Entity CartItem {
-    UUID id
-    UUID cartId          // FK to Cart
-    UUID productId
-    UUID variantId       // nullable
-    String productName
-    double unitPrice     // snapshot from catalog at add time
-    int qty
-    LocalDateTime addedAt
-}
+**1.1 Add missing Maven deps (5 services)**
 
-// Cart — one per user
-@Entity Cart {
-    UUID id
-    String userId        // email from JWT X-User header
-    List<CartItem> items // OneToMany CASCADE ALL
-    double totalAmount   // recomputed on every mutation
-    LocalDateTime createdAt
-    LocalDateTime updatedAt
-}
+All 5 services (inventory, notification, coupon, review, wishlist) need:
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-sleuth-zipkin</artifactId>
+</dependency>
+<dependency>
+    <groupId>io.micrometer</groupId>
+    <artifactId>micrometer-registry-prometheus</artifactId>
+</dependency>
 ```
 
-**API** (`/cart-service/**`):
-```
-GET    /cart-service/cart              → get or create cart
-POST   /cart-service/cart/add          → add item {productId, variantId?, qty}
-PUT    /cart-service/cart/item/{productId}?qty=N   → update qty (0 = remove)
-DELETE /cart-service/cart/item/{productId}         → remove item
-DELETE /cart-service/cart/clear        → clear all items
-GET    /cart-service/cart/checkout     → snapshot for order creation (internal Feign)
+**1.2 Fix application.properties (all services)**
+
+All services need:
+```properties
+spring.zipkin.baseUrl=http://localhost:9411/
+spring.zipkin.enabled=false            # overridden to true in docker
+spring.sleuth.sampler.probability=1.0
+management.endpoint.health.show-details=always
+management.endpoints.web.exposure.include=*
 ```
 
-**Feign to catalog-service:**
-```java
-@FeignClient("catalog-service")
-CatalogFeignClient {
-    GET /catalog-service/product/getProduct/{id} → ProductResponse{id, name, salePrice}
-}
-```
+**1.3 Docker-compose**
+- Remove `profiles: ["observability"]` — observability always starts
+- Remove `profiles: ["optional-services"]` — all services start by default
+- Enable `SPRING_ZIPKIN_ENABLED=true` for all services in docker env
+- Add Kafka UI container
+- Add Grafana volume mounts for provisioning
+
+**1.4 Grafana provisioning**
+- `observability/grafana/provisioning/datasources/prometheus.yaml`
+- `observability/grafana/provisioning/dashboards/dashboard.yaml`
+- `observability/grafana/dashboards/ecommerce-overview.json`
 
 ---
 
-### customer-service (trimmed)
+### Phase 2 — Advanced Service Integration
 
-Cart domain is removed. Service owns addresses and orders only.
+**2.1 Coupon Integration in Order-Service**
 
-```java
-// OrderStatus
-enum OrderStatus { PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED }
+`CouponFeignClient` → `coupon-service` validate endpoint  
+`CreateOrderRequest` extended with optional `couponCode`  
+In `createOrder()`: if couponCode present → validate → apply discount
 
-// OrderItem — price snapshot at checkout time, no FK to Cart
-@Entity OrderItem {
-    UUID id
-    UUID productId
-    UUID variantId       // nullable
-    String productName
-    double unitPrice     // frozen at checkout
-    int qty
-}
+**2.2 Wishlist → Cart Move**
 
-// Order — updated: status field + orderItems
-@Entity Order {
-    UUID id
-    UUID userId
-    Address address      // OneToOne
-    List<OrderItem> orderItems  // OneToMany CASCADE ALL
-    OrderStatus status   // PENDING → CONFIRMED etc.
-    UUID paymentId       // returned from payment-service
-    double orderTotal
-    double discount
-    double shippingCharges
-    LocalDateTime createdAt
-    LocalDateTime updatedAt
-}
+`CartFeignClient` in wishlist-service  
+`moveToCart(userId, productId)` calls cart-service add endpoint
 
-// Address — unchanged
-@Entity Address { id, city, state, country, zipCode, home, streetLocality, landmark, user }
-```
+**2.3 Inventory Check before Order**
 
-**API** (`/customer-service/**`):
-```
-POST   /customer-service/address               → add address
-GET    /customer-service/address/{id}          → get address
-GET    /customer-service/addresses             → list addresses
-PUT    /customer-service/address/{id}          → update address
-DELETE /customer-service/address/{id}          → delete address
-
-POST   /customer-service/order {addressId}     → checkout (Feign cart + payment)
-GET    /customer-service/order/{id}            → get order
-GET    /customer-service/orders                → order history for user
-```
-
-**Feign clients added:**
-```java
-@FeignClient("shopping-cart-service")  CartFeignClient
-@FeignClient("payment-service")         PaymentFeignClient
-```
-
-**Cart domain removed:** CartController, CartService, CartServiceImpl, CartRepository, Cart entity, CartController all stripped. ProductItem → OrderItem renamed conceptually (class kept as OrderItem).
+`InventoryFeignClient` in order-service  
+Stock validation before creating order (non-blocking — continue with warning if inventory-service down)
 
 ---
 
-### payment-service
+### Phase 3 — Production Hardening
 
-```java
-enum PaymentStatus { PENDING, SUCCESS, FAILED, REFUNDED }
+**3.1 Resilience4j in Order-Service**
 
-@Entity Payment {
-    UUID id
-    UUID orderId
-    String userId
-    double amount
-    String currency      // default "INR"
-    PaymentStatus status
-    LocalDateTime createdAt
-    LocalDateTime updatedAt
-}
-```
+Circuit breakers on all Feign clients with graceful fallbacks:
+- `CartFeignClientFallback`, `PaymentFeignClientFallback`, `CustomerFeignClientFallback`
 
-**API** (`/payment-service/**`):
-```
-POST /payment-service/initiate {orderId, userId, amount}  → Payment{id, status=PENDING}
-PUT  /payment-service/confirm/{paymentId}                 → Payment{status=SUCCESS}
-PUT  /payment-service/fail/{paymentId}                    → Payment{status=FAILED}
-GET  /payment-service/status/{orderId}                    → PaymentStatus
-GET  /payment-service/{paymentId}                         → Payment
-```
+**3.2 Kafka Dead Letter Queue**
+
+Error handler in inventory, notification, review consumers → DLQ topic `{topic}-dlt`
+
+**3.3 Idempotency Keys**
+
+Order-service: unique constraint on `(userId, idempotencyKey)` to prevent duplicate orders
 
 ---
 
-### auth-server (fix only)
+### Phase 4 — E2E Verification
 
-```java
-// updatePassword — currently returns null
-updatePassword(String email, String oldPassword, String newPassword):
-    1. find user by email → throw NoSuchUserExistsException if absent
-    2. decode stored password → compare with oldPassword → throw CredentialsMismatchException if mismatch
-    3. encode newPassword → user.setPassword → repository.save
-    4. return "Password updated successfully"
-```
-
----
-
-### api-gateway (add routes)
-
-Add to `GatewayConfig.java`:
-```java
-.route("cart-service",    r -> r.path("/cart-service/**")    .filters(f -> f.filter(filter)).uri("lb://shopping-cart-service"))
-.route("payment-service", r -> r.path("/payment-service/**") .filters(f -> f.filter(filter)).uri("lb://payment-service"))
-.route("catalog-service", r -> r.path("/catalog-service/**") .filters(f -> f.filter(filter)).uri("lb://catalog-service"))
-```
-
----
-
-## Implementation Phases
-
-### Phase 1 — shopping-cart-service (full rebuild)
-1. `CartItem.java` — entity with price snapshot
-2. `Cart.java` — entity with OneToMany CartItems
-3. `CartRepository.java`, `CartItemRepository.java`
-4. `CatalogFeignClient.java` + `ProductResponse.java` (feign model)
-5. `CartService.java` interface (add, update, remove, get, clear, checkout)
-6. `CartServiceImpl.java` — full impl with total recalculation
-7. `CartController.java` — full REST endpoints
-8. `exceptions/` — CartNotFoundException, EmptyCartException
-9. `GlobalExceptionHandler.java`
-10. `pom.xml` — add spring-cloud-starter-openfeign
-11. `ShoppingCartServiceApplication.java` — @EnableFeignClients
-
-### Phase 2 — payment-service (full build)
-1. `PaymentStatus.java` enum
-2. `Payment.java` entity
-3. `PaymentRepository.java`
-4. `PaymentService.java` + `PaymentServiceImpl.java`
-5. `PaymentController.java`
-6. `PaymentRequest.java` DTO
-7. `GlobalExceptionHandler.java`
-8. `pom.xml` — add JPA + MySQL (already present)
-
-### Phase 3 — customer-service refactoring
-1. Remove cart domain: gut `CartController`, `CartService`, `CartServiceImpl`, `CartRepository`
-2. Add `OrderStatus.java` enum to Order
-3. Add `OrderItem.java` entity (replaces ProductItem for order context, stores price)
-4. Add `CartFeignClient.java` + `CartSnapshot.java` (feign response)
-5. Add `PaymentFeignClient.java` + `PaymentResponse.java`
-6. Implement `OrderService.createOrder(userId, addressId)`
-7. Wire `OrderController` POST /order
-8. Add GET /customer-service/orders (order history)
-9. Add PUT /customer-service/address/{id} and DELETE /customer-service/address/{id}
-10. Fix `getAddress` path variable bug (uuid vs id mismatch)
-
-### Phase 4 — auth-server fix
-1. Implement `updatePassword(email, oldPwd, newPwd)` in `UserServiceImp`
-2. Update `UserService` interface + `UserAuthController` endpoint
-
-### Phase 5 — api-gateway routes
-1. Add cart-service, payment-service, catalog-service routes in `GatewayConfig`
+Full smoke test (`e2e-smoke-test.sh`) covering:
+1. Auth: register → login → get JWT
+2. Catalog: add brand → category → product
+3. Cart: add item → update qty → verify total
+4. Coupon: create → validate (active coupons)
+5. Wishlist: add → move-to-cart
+6. Order: create (with coupon) → confirm → verify payment
+7. Inventory: verify stock reserved after order
+8. Notification: verify notifications created
+9. Review: verify purchase eligibility
 
 ---
 
 ## File Change Map
 
+### Phase 1 — Observability
+
 ```
-shopping-cart-service/
-  pom.xml                                              [modify — add openfeign]
-  src/main/java/com/sanjeevsky/shoppingcartservice/
-    ShoppingCartServiceApplication.java                [modify — @EnableFeignClients]
-    model/
-      Cart.java                                        [rewrite — full entity]
-      CartItem.java                                    [CREATE NEW]
-    repository/
-      CartRepository.java                              [rewrite — JpaRepository]
-      CartItemRepository.java                          [CREATE NEW]
-    clients/
-      CatalogFeignClient.java                          [CREATE NEW]
-      model/ProductResponse.java                       [CREATE NEW]
-    services/
-      CartService.java                                 [rewrite — full interface]
-      impl/CartServiceImpl.java                        [rewrite — full impl]
-    controller/
-      CartController.java                              [rewrite — full REST]
-    exceptions/
-      CartNotFoundException.java                       [CREATE NEW]
-      GlobalExceptionHandler.java                      [CREATE NEW]
-    config/
-      FeignConfig.java                                 [CREATE NEW]
+inventory-service/pom.xml                            [add sleuth-zipkin + micrometer]
+inventory-service/src/main/resources/application.properties  [add zipkin config]
 
-payment-service/
-  src/main/java/com/sanjeevsky/paymentservice/
-    model/
-      Payment.java                                     [CREATE NEW]
-      PaymentStatus.java                               [CREATE NEW]
-      PaymentRequest.java                              [CREATE NEW]
-    repository/
-      PaymentRepository.java                           [CREATE NEW]
-    service/
-      PaymentService.java                              [CREATE NEW]
-      impl/PaymentServiceImpl.java                     [CREATE NEW]
-    controller/
-      PaymentController.java                           [CREATE NEW]
-    exceptions/
-      PaymentNotFoundException.java                    [CREATE NEW]
-      GlobalExceptionHandler.java                      [CREATE NEW]
-    config/
-      SwaggerConfig.java                               [CREATE NEW]
+notification-service/pom.xml                         [add sleuth-zipkin + micrometer]
+notification-service/src/main/resources/application.properties [add zipkin config]
 
-customer-service/
-  src/main/java/com/sanjeevsky/customerservice/
-    model/
-      Order.java                                       [modify — add status, paymentId]
-      OrderItem.java                                   [CREATE NEW — price snapshot]
-      Cart.java                                        [gut — empty class, keep for DB compat]
-    service/
-      CartService.java                                 [gut — empty interface]
-      OrderService.java                                [modify — add createOrder, listOrders]
-      AddressService.java                              [modify — add updateAddress, deleteAddress]
-      impl/CartServiceImpl.java                        [gut — no-op]
-      impl/OrderServiceImpl.java                       [rewrite — implement createOrder]
-      impl/AddressServiceImpl.java                     [modify — add update/delete]
-    controller/
-      CartController.java                              [gut — remove all endpoints]
-      OrderController.java                             [modify — wire POST /order, add GET /orders]
-      CustomerServiceController.java                   [modify — fix path var bug, add update/delete]
-    clients/
-      ProductFeignClient.java                          [keep — catalog calls]
-      CartFeignClient.java                             [CREATE NEW]
-      PaymentFeignClient.java                          [CREATE NEW]
-      model/
-        CartSnapshot.java                              [CREATE NEW]
-        CartItemSnapshot.java                          [CREATE NEW]
-        PaymentResponse.java                           [CREATE NEW]
-    repository/
-      CartRepository.java                              [keep — leave for now, no endpoints call it]
+coupon-service/pom.xml                               [add sleuth-zipkin + micrometer]
+coupon-service/src/main/resources/application.properties [add zipkin config]
 
-auth-server/
-  src/main/java/com/sanjeevsky/authserver/
-    service/UserService.java                           [modify — updatePassword signature]
-    service/UserServiceImp.java                        [modify — implement updatePassword]
-    controller/UserAuthController.java                 [modify — add updatePassword endpoint]
-    modal/UpdatePasswordRequest.java                   [CREATE NEW]
+review-service/pom.xml                               [add sleuth-zipkin + micrometer]
+review-service/src/main/resources/application.properties [add zipkin config]
 
-api-gateway/
-  src/main/java/com/sanjeevsky/apigateway/config/
-    GatewayConfig.java                                 [modify — add 3 routes]
+wishlist-service/pom.xml                             [add sleuth-zipkin + micrometer]
+wishlist-service/src/main/resources/application.properties [add zipkin config]
+
+docker-compose.yml                                   [remove profiles, enable zipkin, add kafka-ui]
+
+observability/grafana/provisioning/datasources/prometheus.yaml  [CREATE]
+observability/grafana/provisioning/dashboards/dashboard.yaml    [CREATE]
+observability/grafana/dashboards/ecommerce-overview.json        [CREATE]
+```
+
+### Phase 2 — Advanced Integration
+
+```
+order-service/pom.xml                                [add openfeign for coupon/inventory]
+order-service/src/main/java/.../clients/
+  CouponFeignClient.java                             [CREATE]
+  InventoryFeignClient.java                          [CREATE]
+  fallback/CouponFeignClientFallback.java            [CREATE]
+order-service/src/main/java/.../controller/
+  OrderController.java                               [modify — add couponCode to request]
+order-service/src/main/java/.../service/impl/
+  OrderServiceImpl.java                              [modify — coupon validation + inventory check]
+
+wishlist-service/src/main/java/.../clients/
+  CartFeignClient.java                               [CREATE]
+wishlist-service/src/main/java/.../service/impl/
+  WishlistServiceImpl.java                           [modify — moveToCart calls cart Feign]
+wishlist-service/pom.xml                             [add openfeign]
+```
+
+### Phase 3 — Production Hardening
+
+```
+order-service/src/main/resources/application.properties  [add resilience4j config]
+inventory-service/src/main/java/.../events/
+  OrderEventConsumer.java                            [modify — add DLQ error handler]
+notification-service/src/main/java/.../events/
+  *Consumer.java                                     [modify — add DLQ error handler]
 ```
 
 ---
 
-## Verification Checklist
+## Checkout Flow (Advanced)
 
 ```
-docker-compose up -d   # MySQL instances
+POST /order-service/order {addressId, couponCode?}
+  │
+  ├── CartFeignClient.getCheckoutSnapshot(userId)        → cart-service
+  │     └── validate non-empty
+  ├── CustomerFeignClient.getAddress(userId, addressId)  → customer-service
+  ├── [if couponCode] CouponFeignClient.validate(code)   → coupon-service
+  │     └── apply discount to orderTotal
+  ├── [optional] InventoryFeignClient.checkStock(items)  → inventory-service
+  │     └── warn if unavailable (non-blocking CB fallback)
+  ├── Persist Order (status=PENDING, discount applied)
+  ├── PaymentFeignClient.initiate(orderId, userId, total) → payment-service
+  ├── CartFeignClient.clearCart(userId)
+  └── Publish OrderPlacedEvent → Kafka (order-events)
+        ├── inventory-service: reserve stock
+        ├── notification-service: send order confirmation
+        └── review-service: track purchase eligibility
+```
 
-# Start order: service-discovery → cloud-config → auth-server → catalog-service
-#              → shopping-cart-service → payment-service → customer-service → api-gateway
+---
 
-# 1. Auth
-POST /auth-service/signup  {email, password}              → 200 + User
-POST /auth-service/login   {email, password}              → 200 + {email, jwt}
-PUT  /auth-service/updatePassword {email, old, new}       → 200 + message
+## Kafka Event Flow
 
-# 2. Catalog (existing, verify still works)
-POST /catalog-service/add-brand     → 200
-POST /catalog-service/product/addProduct → 200
+```
+order-service      →  order-events topic
+  OrderPlacedEvent    → inventory-service (reserve), notification-service, review-service
+  OrderConfirmedEvent → notification-service
+  OrderCancelledEvent → inventory-service (release), notification-service
 
-# 3. Cart (JWT required)
-GET  /cart-service/cart             → empty cart created
-POST /cart-service/cart/add         → cart with item + total computed
-PUT  /cart-service/cart/item/{id}?qty=3 → qty updated, total recalculated
-DELETE /cart-service/cart/item/{id} → item removed
+payment-service    →  payment-events topic
+  PaymentConfirmedEvent → notification-service
+  PaymentFailedEvent    → notification-service
 
-# 4. Address
-POST /customer-service/address      → address created
-GET  /customer-service/addresses    → list
-PUT  /customer-service/address/{id} → updated
-DELETE /customer-service/address/{id} → deleted
+inventory-service  →  inventory-events topic
+  StockReservedEvent    → order-service (update order status)
+  StockUnavailableEvent → order-service (cancel order)
+```
 
-# 5. Checkout
-POST /customer-service/order {addressId} →
-     Order{id, status=PENDING, paymentId}
-     Payment record created in payment-service
-     Cart cleared in shopping-cart-service
+---
 
-# 6. Order history
-GET  /customer-service/orders       → list of orders for user
+## Observability Access
 
-# 7. Payment
-GET  /payment-service/status/{orderId} → PENDING
-PUT  /payment-service/confirm/{paymentId} → SUCCESS
+| Tool | URL | Credentials |
+|------|-----|-------------|
+| Eureka Dashboard | http://localhost:8761 | — |
+| Spring Boot Admin | http://localhost:9000 | admin/admin |
+| Zipkin (traces) | http://localhost:9411 | — |
+| Prometheus | http://localhost:9090 | — |
+| Grafana | http://localhost:3000 | admin/admin |
+| Kafka UI | http://localhost:8080 | — |
+| API Gateway | http://localhost:8081 | JWT token |
+
+---
+
+## API Documentation (Swagger UI)
+
+Each service exposes Swagger UI and OpenAPI spec:
+
+| Service | Swagger UI | API Docs |
+|---------|-----------|---------|
+| auth-server | http://localhost:8083/swagger-ui.html | /v3/api-docs |
+| catalog-service | http://localhost:8084/swagger-ui.html | /v3/api-docs |
+| customer-service | http://localhost:8082/swagger-ui.html | /v3/api-docs |
+| shopping-cart-service | http://localhost:8086/swagger-ui.html | /v3/api-docs |
+| payment-service | http://localhost:8085/swagger-ui.html | /v3/api-docs |
+| order-service | http://localhost:8092/swagger-ui.html | /v3/api-docs |
+| inventory-service | http://localhost:8088/swagger-ui.html | /v3/api-docs |
+| notification-service | http://localhost:8087/swagger-ui.html | /v3/api-docs |
+| coupon-service | http://localhost:8089/swagger-ui.html | /v3/api-docs |
+| review-service | http://localhost:8090/swagger-ui.html | /v3/api-docs |
+| wishlist-service | http://localhost:8091/swagger-ui.html | /v3/api-docs |
+
+All UIs include JWT Bearer auth — click **Authorize**, paste Bearer token from `/auth-service/login`.
+
+---
+
+## Load Tests (k6)
+
+```bash
+cd load-tests
+
+# Smoke (quick sanity — 2 VUs, 1 min)
+k6 run --env PRODUCT_ID=$PRODUCT_ID --env SCENARIO=smoke checkout-flow.js
+
+# Load (20 VUs sustained)
+k6 run --env PRODUCT_ID=$PRODUCT_ID --env SCENARIO=load checkout-flow.js
+
+# Stress (ramps to 100 VUs)
+k6 run --env PRODUCT_ID=$PRODUCT_ID --env SCENARIO=stress checkout-flow.js
+
+# Catalog reads (Redis cache)
+k6 run --env PRODUCT_ID=$PRODUCT_ID catalog-browse.js
+```
+
+Thresholds: p95 < 2s, error rate < 1%, order success > 95%.
+
+---
+
+## Build & Run
+
+```bash
+# 1. Build shared library
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home
+cd platform-commons && mvn install -q && cd ..
+
+# 2. Start full stack
+docker-compose up -d --build
+
+# 3. Verify all services registered in Eureka
+curl http://localhost:8761/eureka/apps | grep -o '<app>.*</app>'
+
+# 4. Run E2E smoke test
+chmod +x e2e-smoke-test.sh && ./e2e-smoke-test.sh
 ```

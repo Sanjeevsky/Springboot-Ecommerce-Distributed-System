@@ -27,10 +27,22 @@ public class PaymentController {
         return new ResponseEntity<>(ApiResponse.ok(paymentService.initiatePayment(request)), HttpStatus.CREATED);
     }
 
+    @PostMapping("/initiate/raw")
+    public Payment initiatePaymentRaw(@RequestBody PaymentRequest request) {
+        log.info("Received raw initiate payment request for orderId: {}", request.getOrderId());
+        return paymentService.initiatePayment(request);
+    }
+
     @PutMapping("/confirm/{paymentId}")
     public ResponseEntity<ApiResponse<Payment>> confirmPayment(@PathVariable("paymentId") UUID paymentId) {
         log.info("Received confirm payment request for paymentId: {}", paymentId);
         return ResponseEntity.ok(ApiResponse.ok("Payment confirmed", paymentService.confirmPayment(paymentId)));
+    }
+
+    @PutMapping("/confirm/{paymentId}/raw")
+    public Payment confirmPaymentRaw(@PathVariable("paymentId") UUID paymentId) {
+        log.info("Received raw confirm payment request for paymentId: {}", paymentId);
+        return paymentService.confirmPayment(paymentId);
     }
 
     @PutMapping("/fail/{paymentId}")
@@ -55,5 +67,11 @@ public class PaymentController {
     public ResponseEntity<ApiResponse<Payment>> refundPayment(@PathVariable("paymentId") UUID paymentId) {
         log.info("Received refund payment request for paymentId: {}", paymentId);
         return ResponseEntity.ok(ApiResponse.ok("Payment refunded", paymentService.refundPayment(paymentId)));
+    }
+
+    @PutMapping("/refund/{paymentId}/raw")
+    public Payment refundPaymentRaw(@PathVariable("paymentId") UUID paymentId) {
+        log.info("Received raw refund payment request for paymentId: {}", paymentId);
+        return paymentService.refundPayment(paymentId);
     }
 }

@@ -1,5 +1,6 @@
 package com.sanjeevsky.wishlistservice.service.impl;
 
+import com.sanjeevsky.wishlistservice.clients.CartFeignClient;
 import com.sanjeevsky.wishlistservice.dto.AddToWishlistRequest;
 import com.sanjeevsky.wishlistservice.exceptions.WishlistItemAlreadyExistsException;
 import com.sanjeevsky.wishlistservice.exceptions.WishlistItemNotFoundException;
@@ -10,7 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -19,6 +22,9 @@ public class WishlistServiceImpl implements WishlistService {
 
     @Autowired
     private WishlistRepository wishlistRepository;
+
+    @Autowired
+    private CartFeignClient cartFeignClient;
 
     @Override
     public WishlistItem addToWishlist(String userId, AddToWishlistRequest request) {
@@ -63,6 +69,20 @@ public class WishlistServiceImpl implements WishlistService {
         WishlistItem item = wishlistRepository.findByUserIdAndProductId(userId, productId)
                 .orElseThrow(() -> new WishlistItemNotFoundException(
                         "Product " + productId + " not found in wishlist for user " + userId));
+
+        try {
+            Map<String, Object> cartItem = new HashMap<>();
+            cartItem.put("productId", item.getProductId().toString());
+            cartItem.put("productName", item.getProductName());
+            cartItem.put("qty", 1);
+            cartItem.put("unitPrice", item.getSalePrice());
+            cartFeignClient.addItem(userId, cartItem);
+            log.info("ProductId: {} added to cart for userId: {}", productId, userId);
+        } catch (Exception e) {
+            log.warn("Failed to add item to cart during move-to-cart, item remains in wishlist: {}", e.getMessage());
+            throw e;
+        }
+
         wishlistRepository.deleteByUserIdAndProductId(userId, productId);
         log.info("ProductId: {} removed from wishlist after move-to-cart for userId: {}", productId, userId);
         return item;

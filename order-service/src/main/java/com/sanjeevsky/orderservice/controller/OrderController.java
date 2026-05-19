@@ -38,7 +38,7 @@ public class OrderController {
     public ResponseEntity<ApiResponse<Order>> createOrder(
             @RequestHeader("X-User") String userId,
             @RequestBody CreateOrderRequest request) {
-        Order order = orderService.createOrder(userId, request.getAddressId());
+        Order order = orderService.createOrder(userId, request.getAddressId(), request.getCouponCode());
         return new ResponseEntity<>(ApiResponse.ok("Order placed successfully", order), HttpStatus.CREATED);
     }
 
@@ -64,8 +64,11 @@ public class OrderController {
 
     public static class CreateOrderRequest {
         private UUID addressId;
+        private String couponCode;
 
         public UUID getAddressId() { return addressId; }
         public void setAddressId(UUID addressId) { this.addressId = addressId; }
+        public String getCouponCode() { return couponCode; }
+        public void setCouponCode(String couponCode) { this.couponCode = couponCode; }
     }
 }
