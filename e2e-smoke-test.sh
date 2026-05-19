@@ -25,8 +25,40 @@ for i in $(seq 1 30); do
   sleep 5
 done
 curl -sf "$BASE/actuator/health" | grep -q "UP" || { echo "Gateway never came up"; exit 1; }
-echo "Gateway is UP. Waiting 15s for Eureka registration..."
-sleep 15
+echo "Gateway is UP. Waiting for required Eureka registrations..."
+
+wait_for_eureka_app() {
+  local app="$1"
+  local app_url="http://localhost:8761/eureka/apps/$app"
+  for i in $(seq 1 60); do
+    if curl -sf "$app_url" | grep -q "<status>UP</status>"; then
+      return 0
+    fi
+    sleep 5
+  done
+  echo "Eureka app $app did not register as UP"
+  return 1
+}
+
+REQUIRED_EUREKA_APPS=(
+  "API-GATEWAY"
+  "AUTH-SERVICE"
+  "CATALOG-SERVICE"
+  "INVENTORY-SERVICE"
+  "SHOPPING-CART-SERVICE"
+  "CUSTOMER-SERVICE"
+  "ORDER-SERVICE"
+  "PAYMENT-SERVICE"
+  "NOTIFICATION-SERVICE"
+  "COUPON-SERVICE"
+  "WISHLIST-SERVICE"
+  "REVIEW-SERVICE"
+)
+
+for app in "${REQUIRED_EUREKA_APPS[@]}"; do
+  wait_for_eureka_app "$app"
+done
+echo "Required Eureka apps are UP."
 
 echo ""
 echo "══════════════════════════════════════════════════"
@@ -149,7 +181,7 @@ R=$(curl -sf "$BASE/inventory-service/stock/$PRODUCT_ID" -H "$AUTH" || echo '{"e
 check "20. Inventory check" '"success":true' "$R"
 
 # ── 21. Create coupon ──────────────────────────────────────────────────────────
-COUPON_CODE="SMOKE10"
+COUPON_CODE="SMOKE$(date +%s)"
 R=$(curl -sf -X POST "$BASE/coupon-service/coupon" \
   -H "$AUTH" -H "Content-Type: application/json" \
   -d "{\"code\":\"$COUPON_CODE\",\"discountType\":\"PERCENTAGE\",\"discountValue\":10,\"maxUsageCount\":100,\"active\":true,\"minOrderAmount\":0}" \
@@ -185,12 +217,16 @@ check "26. Get wishlist" '"success":true' "$R"
 
 # ── 27. Check reviews (eligibility driven by Kafka events) ────────────────────
 sleep 3
-R=$(curl -sf "$BASE/review-service/reviews/$PRODUCT_ID" -H "$AUTH" || echo '{"error":"failed"}')
+R=$(curl -sf "$BASE/review-service/review/product/$PRODUCT_ID" -H "$AUTH" || echo '{"error":"failed"}')
 check "27. Review endpoint reachable" '"success":true' "$R"
 
 # ── 28. Observability — Zipkin health ─────────────────────────────────────────
 R=$(curl -sf "http://localhost:9411/health" || echo '{"status":"down"}')
-check "28. Zipkin is UP" '"status":"UP"' "$R"
+if echo "$R" | grep -Eq '"status"[[:space:]]*:[[:space:]]*"UP"'; then
+  green "28. Zipkin is UP"; PASS=$((PASS+1))
+else
+  red "28. Zipkin is UP — expected status UP in: $(echo "$R" | head -c 200)"; FAIL=$((FAIL+1))
+fi
 
 # ── 29. Observability — Prometheus metrics ────────────────────────────────────
 R=$(curl -sf "http://localhost:9090/-/healthy" || echo 'down')
@@ -198,7 +234,11 @@ check "29. Prometheus is UP" 'Prometheus' "$R"
 
 # ── 30. Observability — Grafana health ────────────────────────────────────────
 R=$(curl -sf "http://localhost:3000/api/health" || echo '{"status":"failed"}')
-check "30. Grafana is UP" '"database":"ok"' "$R"
+if echo "$R" | grep -Eq '"database"[[:space:]]*:[[:space:]]*"ok"'; then
+  green "30. Grafana is UP"; PASS=$((PASS+1))
+else
+  red "30. Grafana is UP — expected database ok in: $(echo "$R" | head -c 200)"; FAIL=$((FAIL+1))
+fi
 
 # ── Summary ────────────────────────────────────────────────────────────────────
 echo ""

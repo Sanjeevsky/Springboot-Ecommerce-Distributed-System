@@ -1243,7 +1243,7 @@
       "item": [
 
         {
-          "name": "40 — Create Order → save orderId + paymentId",
+          "name": "40 — Create Order (plain) → save orderId + paymentId",
           "event": [
             {
               "listen": "test",
@@ -1271,6 +1271,44 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"addressId\": \"{{addressId}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/order-service/order",
+              "host": ["{{baseUrl}}"],
+              "path": ["order-service", "order"]
+            }
+          }
+        },
+
+        {
+          "name": "40b — Create Order with Coupon → verify discount applied",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create Order with Coupon: status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('Order ID present', () => pm.expect(json.data.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('orderId', json.data.id);",
+                  "try { pm.environment.set('orderId', json.data.id); } catch(e) {}",
+                  "if (json.data.paymentId) {",
+                  "  pm.collectionVariables.set('paymentId', json.data.paymentId);",
+                  "  try { pm.environment.set('paymentId', json.data.paymentId); } catch(e) {}",
+                  "}",
+                  "console.log('orderId:', json.data.id, '| discount:', json.data.discount, '| total:', json.data.totalAmount);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressId\": \"{{addressId}}\",\n  \"couponCode\": \"{{couponCode}}\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -1561,7 +1599,7 @@
               "path": ["payment-service", "refund", "{{paymentId}}"]
             }
           }
-        }
+        },
 
       ]
     },

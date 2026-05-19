@@ -1109,6 +1109,55 @@
           ]
         },
         {
+          "name": "Place Order (with Coupon)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Place Order with Coupon: status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('orderId', json.data.id);",
+                  "try { pm.environment.set('orderId', json.data.id); } catch (e) {}",
+                  "if (json.data.paymentId) {",
+                  "  pm.collectionVariables.set('paymentId', json.data.paymentId);",
+                  "  try { pm.environment.set('paymentId', json.data.paymentId); } catch (e) {}",
+                  "}",
+                  "console.log('orderId:', json.data.id, '| discount applied:', json.data.discount);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/order-service/order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressId\": \"{{addressId}}\",\n  \"couponCode\": \"{{couponCode}}\"\n}"
+            }
+          }
+        },
+        {
           "name": "Cancel Order",
           "request": {
             "method": "PUT",
@@ -1377,7 +1426,7 @@
               }
             }
           ]
-        }
+        },
       ]
     },
     {

@@ -14,12 +14,12 @@ import java.util.UUID;
 @FeignClient(name = "payment-service", url = "${clients.payment.url:}", fallbackFactory = PaymentFeignClientFallback.class)
 public interface PaymentFeignClient {
 
-    @PostMapping("/payment-service/initiate/raw")
+    @PostMapping("/payment-service/initiate")
     PaymentResponse initiatePayment(@RequestBody PaymentRequest request);
 
-    @PutMapping("/payment-service/confirm/{id}/raw")
+    @PutMapping("/payment-service/confirm/{id}")
     void confirmPayment(@PathVariable("id") UUID paymentId);
 
-    @PutMapping("/payment-service/refund/{id}/raw")
+    @PutMapping("/payment-service/refund/{id}")
     void refundPayment(@PathVariable("id") UUID paymentId);
 }

@@ -69,12 +69,6 @@ public class CartController {
         return ResponseEntity.ok(ApiResponse.ok(toSnapshot(cartService.getCheckoutSnapshot(userId))));
     }
 
-    @GetMapping("/cart/checkout/raw")
-    public CartSnapshot getCheckoutSnapshotRaw(@RequestHeader("X-User") String userId) {
-        log.info("GET /cart-service/cart/checkout/raw for userId={}", userId);
-        return toSnapshot(cartService.getCheckoutSnapshot(userId));
-    }
-
     private CartSnapshot toSnapshot(Cart cart) {
         return CartSnapshot.builder()
                 .id(cart.getId())

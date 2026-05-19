@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 @FeignClient(name = "shopping-cart-service", url = "${clients.cart.url:}", fallbackFactory = CartFeignClientFallback.class)
 public interface CartFeignClient {
 
-    @GetMapping("/cart-service/cart/checkout/raw")
+    @GetMapping("/cart-service/cart/checkout")
     CartSnapshot getCheckoutSnapshot(@RequestHeader("X-User") String userId);
 
     @DeleteMapping("/cart-service/cart/clear")
