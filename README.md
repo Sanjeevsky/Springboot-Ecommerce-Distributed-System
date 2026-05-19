@@ -14,7 +14,7 @@ A production-grade ecommerce platform built as a microservices architecture usin
 
 | Tier | Services |
 |------|----------|
-| Infrastructure | MySQL, Redis, Kafka + Zookeeper, Zipkin, Prometheus, Grafana |
+| Infrastructure | MySQL, Redis, Kafka + Zookeeper, Kafka UI, Zipkin, Prometheus, Grafana |
 | Spring Cloud | Eureka (service-discovery), Config Server (cloud-config), Spring Boot Admin (spring-server), API Gateway |
 | Business | auth, catalog, customer, order, shopping-cart, payment, inventory, notification, review, wishlist, coupon |
 
@@ -27,6 +27,7 @@ A production-grade ecommerce platform built as a microservices architecture usin
 | service-discovery | 8761 | Eureka server — service registry |
 | cloud-config | 8071 | Spring Cloud Config Server |
 | spring-server | 9000 | Spring Boot Admin UI |
+| kafka-ui | 8080 | Kafka topics, brokers, and consumer groups UI |
 | api-gateway | 8081 | JWT auth + routing to all services |
 | auth-server | 8083 | Register / login / JWT issuance |
 | catalog-service | 8084 | Products, categories, brands (Redis cached) |
@@ -105,10 +106,18 @@ docker-compose up -d
 |----|-----|
 | Eureka Dashboard | http://localhost:8761 |
 | Spring Boot Admin | http://localhost:9000 |
+| Kafka UI | http://localhost:8080 |
 | Zipkin Traces | http://localhost:9411 |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 (admin / admin) |
 | API Gateway | http://localhost:8081 |
+
+Kafka broker endpoints:
+
+| Use case | Endpoint |
+|----------|----------|
+| Docker-internal services and Kafka UI | `kafka:29092` |
+| Host machine clients and CLI tools | `localhost:9092` |
 
 ---
 
@@ -119,7 +128,7 @@ Import the Postman collection from `postman/` for all endpoints.
 ### Authentication
 
 ```
-POST /auth-service/register
+POST /auth-service/signup
 POST /auth-service/login         → returns JWT token
 ```
 

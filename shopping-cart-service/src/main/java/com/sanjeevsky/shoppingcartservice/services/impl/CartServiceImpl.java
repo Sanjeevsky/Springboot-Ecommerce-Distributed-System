@@ -54,7 +54,7 @@ public class CartServiceImpl implements CartService {
             existingItem.get().setQty(existingItem.get().getQty() + qty);
         } else {
             CartItem newItem = CartItem.builder()
-                    .cartId(cart.getId())
+                    .cart(cart)
                     .productId(productId)
                     .variantId(variantId)
                     .productName(product.getName())

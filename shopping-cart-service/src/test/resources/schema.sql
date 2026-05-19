@@ -1,4 +1,4 @@
--- Integration test schema for H2 (cart_id nullable to allow Hibernate's two-step FK insert)
+-- Integration test schema for H2
 CREATE TABLE IF NOT EXISTS cart (
     id           VARCHAR(255) NOT NULL,
     user_id      VARCHAR(255) NOT NULL UNIQUE,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS cart (
 
 CREATE TABLE IF NOT EXISTS cart_item (
     id           VARCHAR(255) NOT NULL,
-    cart_id      VARCHAR(255),
+    cart_id      VARCHAR(255) NOT NULL,
     product_id   VARCHAR(255) NOT NULL,
     variant_id   VARCHAR(255),
     product_name VARCHAR(255) NOT NULL,

@@ -844,7 +844,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"street\": \"42 MG Road\",\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"pinCode\": \"560001\",\n  \"country\": \"India\"\n}"
+              "raw": "{\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"country\": \"India\",\n  \"zipCode\": 560001,\n  \"home\": \"Flat 42B, Tower-C\",\n  \"streetLocality\": \"MG Road, Shivaji Nagar\",\n  \"landmark\": \"Near Metro Station\"\n}"
             }
           }
         },
@@ -920,7 +920,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"street\": \"100 Brigade Road\",\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"pinCode\": \"560025\",\n  \"country\": \"India\"\n}"
+              "raw": "{\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"country\": \"India\",\n  \"zipCode\": 560025,\n  \"home\": \"Flat 100A\",\n  \"streetLocality\": \"Brigade Road\",\n  \"landmark\": \"Near Metro Station\"\n}"
             }
           }
         },
@@ -1241,7 +1241,8 @@
                   "}",
                   "if (data && data.id) {",
                   "  pm.collectionVariables.set('paymentId', data.id);",
-                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}"
+                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}",
+                  "}"
                 ]
               }
             }
@@ -1286,7 +1287,8 @@
                   "}",
                   "if (data && data.id) {",
                   "  pm.collectionVariables.set('paymentId', data.id);",
-                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}"
+                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}",
+                  "}"
                 ]
               }
             }
@@ -1331,7 +1333,8 @@
                   "}",
                   "if (data && data.id) {",
                   "  pm.collectionVariables.set('paymentId', data.id);",
-                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}"
+                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}",
+                  "}"
                 ]
               }
             }
@@ -1376,7 +1379,8 @@
                   "}",
                   "if (data && data.id) {",
                   "  pm.collectionVariables.set('paymentId', data.id);",
-                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}"
+                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}",
+                  "}"
                 ]
               }
             }
@@ -1421,12 +1425,13 @@
                   "}",
                   "if (data && data.id) {",
                   "  pm.collectionVariables.set('paymentId', data.id);",
-                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}"
+                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}",
+                  "}"
                 ]
               }
             }
           ]
-        },
+        }
       ]
     },
     {
@@ -1541,7 +1546,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10.0,\n  \"minOrderAmount\": 500.0,\n  \"maxUses\": 100,\n  \"expiryDate\": \"2026-12-31T23:59:59\",\n  \"active\": true\n}"
+              "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10.0,\n  \"minOrderAmount\": 500.0,\n  \"maxUsageCount\": 100,\n  \"expiryDate\": \"2026-12-31\",\n  \"active\": true\n}"
             }
           },
           "event": [
@@ -1555,9 +1560,11 @@
                   "if (json.data && json.data.id) {",
                   "  pm.collectionVariables.set('couponId', json.data.id);",
                   "  try { pm.environment.set('couponId', json.data.id); } catch (e) {}",
+                  "}",
                   "if (json.data && json.data.code) {",
                   "  pm.collectionVariables.set('couponCode', json.data.code);",
-                  "  try { pm.environment.set('couponCode', json.data.code); } catch (e) {}"
+                  "  try { pm.environment.set('couponCode', json.data.code); } catch (e) {}",
+                  "}"
                 ]
               }
             }
@@ -1672,7 +1679,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"rating\": 5,\n  \"comment\": \"Excellent phone! Great camera and battery life.\"\n}"
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"rating\": 5,\n  \"title\": \"Excellent flagship phone\",\n  \"comment\": \"Excellent phone! Great camera and battery life.\"\n}"
             }
           },
           "event": [

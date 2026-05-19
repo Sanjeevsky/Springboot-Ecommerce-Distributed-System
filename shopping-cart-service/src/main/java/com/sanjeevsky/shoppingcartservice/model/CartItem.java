@@ -1,5 +1,6 @@
 package com.sanjeevsky.shoppingcartservice.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.hibernate.annotations.Type;
 
@@ -22,9 +23,14 @@ public class CartItem {
     @Type(type = "org.hibernate.type.UUIDCharType")
     private UUID id;
 
-    @Column(name = "cart_id", nullable = false)
-    @Type(type = "org.hibernate.type.UUIDCharType")
-    private UUID cartId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cart_id", nullable = false)
+    @JsonIgnore
+    private Cart cart;
+
+    public UUID getCartId() {
+        return cart == null ? null : cart.getId();
+    }
 
     @Column(name = "product_id", nullable = false)
     @Type(type = "org.hibernate.type.UUIDCharType")

@@ -48,14 +48,21 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "// Generate a unique email + coupon code per run so repeated executions don't collide",
-                  "var ts = Date.now();",
-                  "var email = 'e2e.' + ts + '@example.com';",
-                  "var coupon = 'SAVE' + ts.toString().slice(-5);",
-                  "pm.collectionVariables.set('runnerEmail', email);",
-                  "pm.collectionVariables.set('couponCode', coupon);",
-                  "try { pm.environment.set('runnerEmail', email); pm.environment.set('couponCode', coupon); } catch(e) {}",
-                  "console.log('Registering email:', email, '| couponCode will be:', coupon);"
+                  "// Generate unique runner data per run so repeated executions don't collide",
+                  "function setRunnerVar(key, value) {",
+                  "  pm.collectionVariables.set(key, value);",
+                  "  try { pm.environment.set(key, value); } catch(e) {}",
+                  "}",
+                  "var runId = Date.now().toString();",
+                  "var suffix = runId.slice(-8);",
+                  "setRunnerVar('runId', runId);",
+                  "setRunnerVar('runnerEmail', 'e2e_' + suffix + '@example.com');",
+                  "setRunnerVar('brandName', 'Samsung_' + suffix);",
+                  "setRunnerVar('categoryName', 'Electronics_' + suffix);",
+                  "setRunnerVar('subCategoryName', 'Smartphones_' + suffix);",
+                  "setRunnerVar('productName', 'Galaxy S24 Ultra ' + suffix);",
+                  "setRunnerVar('couponCode', 'SAVE' + suffix);",
+                  "console.log('Registering email:', pm.collectionVariables.get('runnerEmail'), '| couponCode will be:', pm.collectionVariables.get('couponCode'));"
                 ]
               }
             },
@@ -405,7 +412,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"{{productName}}\",\n  \"description\": \"Samsung Galaxy S24 Ultra flagship smartphone with AI features\",\n  \"model\": \"SM-S928B\",\n  \"mrpPrice\": 134999,\n  \"salePrice\": 119999,\n  \"gstValue\": 18,\n  \"status\": 1,\n  \"discount\": 10.99,\n  \"images\": [\"https://example.com/galaxy-s24-ultra-front.jpg\", \"https://example.com/galaxy-s24-ultra-back.jpg\"],\n  \"hasVariant\": true\n}",
+              "raw": "{\n  \"name\": \"{{productName}}\",\n  \"description\": \"Samsung Galaxy S24 Ultra flagship smartphone with AI features\",\n  \"model\": \"SM-S928B-{{runId}}\",\n  \"mrpPrice\": 134999,\n  \"salePrice\": 119999,\n  \"gstValue\": 18,\n  \"status\": 1,\n  \"discount\": 10.99,\n  \"images\": [\"https://example.com/galaxy-s24-ultra-front.jpg\", \"https://example.com/galaxy-s24-ultra-back.jpg\"],\n  \"hasVariant\": true\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -437,7 +444,6 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
             "url": {
@@ -465,7 +471,6 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
             "url": {
@@ -498,7 +503,6 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
             "url": {
@@ -1084,6 +1088,35 @@
         },
 
         {
+          "name": "34b — Re-add to Wishlist before delete",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Re-add to Wishlist: status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"productName\": \"{{productName}}\",\n  \"salePrice\": 119999\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/wishlist-service/wishlist",
+              "host": ["{{baseUrl}}"],
+              "path": ["wishlist-service", "wishlist"]
+            }
+          }
+        },
+
+        {
           "name": "35 — Remove from Wishlist",
           "event": [
             {
@@ -1282,6 +1315,35 @@
         },
 
         {
+          "name": "40a — Re-add Item for Coupon Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Re-add Item for Coupon Order: status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"qty\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cart-service/cart/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart-service", "cart", "add"]
+            }
+          }
+        },
+
+        {
           "name": "40b — Create Order with Coupon → verify discount applied",
           "event": [
             {
@@ -1439,6 +1501,18 @@
           "name": "45 — Initiate Payment → save paymentId",
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var directPaymentOrderId = pm.variables.replaceIn('{{$guid}}');",
+                  "pm.collectionVariables.set('directPaymentOrderId', directPaymentOrderId);",
+                  "try { pm.environment.set('directPaymentOrderId', directPaymentOrderId); } catch(e) {}",
+                  "console.log('directPaymentOrderId:', directPaymentOrderId);"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
@@ -1458,7 +1532,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"orderId\": \"{{orderId}}\",\n  \"userId\": \"{{runnerEmail}}\",\n  \"amount\": 119999\n}",
+              "raw": "{\n  \"orderId\": \"{{directPaymentOrderId}}\",\n  \"userId\": \"{{runnerEmail}}\",\n  \"amount\": 119999\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
@@ -1541,9 +1615,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/payment-service/status/{{orderId}}",
+              "raw": "{{baseUrl}}/payment-service/status/{{directPaymentOrderId}}",
               "host": ["{{baseUrl}}"],
-              "path": ["payment-service", "status", "{{orderId}}"]
+              "path": ["payment-service", "status", "{{directPaymentOrderId}}"]
             }
           }
         },
@@ -1599,7 +1673,7 @@
               "path": ["payment-service", "refund", "{{paymentId}}"]
             }
           }
-        },
+        }
 
       ]
     },
@@ -1689,7 +1763,6 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
             "url": {
@@ -1716,7 +1789,6 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
             "method": "GET",
             "header": [],
             "url": {

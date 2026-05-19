@@ -496,7 +496,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10.0,\n  \"minOrderAmount\": 500.0,\n  \"maxUses\": 100,\n  \"expiryDate\": \"2026-12-31T23:59:59\",\n  \"active\": true\n}"
+          "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10.0,\n  \"minOrderAmount\": 500.0,\n  \"maxUsageCount\": 100,\n  \"expiryDate\": \"2026-12-31\",\n  \"active\": true\n}"
         }
       }
     },
@@ -541,7 +541,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"street\": \"42 MG Road\",\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"pinCode\": \"560001\",\n  \"country\": \"India\"\n}"
+          "raw": "{\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"country\": \"India\",\n  \"zipCode\": 560001,\n  \"home\": \"Flat 42B, Tower-C\",\n  \"streetLocality\": \"MG Road, Shivaji Nagar\",\n  \"landmark\": \"Near Metro Station\"\n}"
         }
       }
     },
@@ -895,7 +895,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"rating\": 5,\n  \"comment\": \"Outstanding phone! Excellent camera and performance.\"\n}"
+          "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"rating\": 5,\n  \"title\": \"Excellent flagship phone\",\n  \"comment\": \"Outstanding phone! Excellent camera and performance.\"\n}"
         }
       }
     },

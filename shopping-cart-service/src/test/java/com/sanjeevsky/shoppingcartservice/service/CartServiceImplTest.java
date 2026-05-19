@@ -51,10 +51,10 @@ class CartServiceImplTest {
                 .build();
     }
 
-    private CartItem item(UUID productId, double price, int qty) {
+    private CartItem item(Cart cart, UUID productId, double price, int qty) {
         return CartItem.builder()
                 .id(UUID.randomUUID())
-                .cartId(CART_ID)
+                .cart(cart)
                 .productId(productId)
                 .productName("Widget")
                 .unitPrice(price)
@@ -110,8 +110,8 @@ class CartServiceImplTest {
 
     @Test
     void addItem_existingProduct_incrementsQty() {
-        CartItem existing = item(PRODUCT_ID, 10.0, 3);
         Cart cart = emptyCart();
+        CartItem existing = item(cart, PRODUCT_ID, 10.0, 3);
         cart.getItems().add(existing);
         when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
         when(catalogFeignClient.getProduct(PRODUCT_ID))
@@ -128,8 +128,8 @@ class CartServiceImplTest {
 
     @Test
     void updateItem_validQty_updatesQtyAndTotal() {
-        CartItem existingItem = item(PRODUCT_ID, 20.0, 1);
         Cart cart = emptyCart();
+        CartItem existingItem = item(cart, PRODUCT_ID, 20.0, 1);
         cart.getItems().add(existingItem);
         when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
 
@@ -141,8 +141,8 @@ class CartServiceImplTest {
 
     @Test
     void updateItem_zeroQty_delegatesToRemoveItem() {
-        CartItem existingItem = item(PRODUCT_ID, 20.0, 1);
         Cart cart = emptyCart();
+        CartItem existingItem = item(cart, PRODUCT_ID, 20.0, 1);
         cart.getItems().add(existingItem);
         when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
 
@@ -165,9 +165,9 @@ class CartServiceImplTest {
     @Test
     void removeItem_existingItem_removesAndRecomputesTotal() {
         UUID otherProductId = UUID.randomUUID();
-        CartItem toRemove = item(PRODUCT_ID, 15.0, 2);      // 30
-        CartItem toKeep = item(otherProductId, 10.0, 1);    // 10
         Cart cart = emptyCart();
+        CartItem toRemove = item(cart, PRODUCT_ID, 15.0, 2);      // 30
+        CartItem toKeep = item(cart, otherProductId, 10.0, 1);    // 10
         cart.getItems().addAll(List.of(toRemove, toKeep));
         when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
 
@@ -191,7 +191,7 @@ class CartServiceImplTest {
     @Test
     void clearCart_removesAllItemsAndZerosTotal() {
         Cart cart = emptyCart();
-        cart.getItems().add(item(PRODUCT_ID, 10.0, 3));
+        cart.getItems().add(item(cart, PRODUCT_ID, 10.0, 3));
         when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
 
         Cart result = cartService.clearCart(USER_ID);
@@ -213,8 +213,8 @@ class CartServiceImplTest {
     @Test
     void addItem_multipleItems_totalIsCorrect() {
         UUID p2 = UUID.randomUUID();
-        CartItem existing = item(PRODUCT_ID, 5.0, 2);   // 10
         Cart cart = emptyCart();
+        CartItem existing = item(cart, PRODUCT_ID, 5.0, 2);   // 10
         cart.getItems().add(existing);
         when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
         when(catalogFeignClient.getProduct(p2))
