@@ -191,6 +191,16 @@ if (gatewayConfigText.includes('.path("/shopping-cart-service/**")')) {
   fail("api-gateway GatewayConfig: raw /shopping-cart-service/** route must not be exposed");
 }
 
+const routerValidatorText = fs.readFileSync(
+  path.join(root, "api-gateway", "src", "main", "java", "com", "sanjeevsky", "apigateway", "filter", "RouterValidator.java"),
+  "utf8"
+);
+if (routerValidatorText.includes(".contains(")
+    || routerValidatorText.includes("/coupon-service/active")
+    || routerValidatorText.includes("/review-service/product/")) {
+  fail("api-gateway RouterValidator: open route allowlist must use exact standard paths without stale raw entries");
+}
+
 function composeServiceBlock(service) {
   const pattern = new RegExp(`^  ${service}:\\n([\\s\\S]*?)(?=^  [a-zA-Z0-9_-]+:|^volumes:|^networks:|(?![\\s\\S]))`, "m");
   const match = composeText.match(pattern);

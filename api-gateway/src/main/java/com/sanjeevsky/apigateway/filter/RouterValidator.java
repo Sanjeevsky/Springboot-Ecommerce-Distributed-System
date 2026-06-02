@@ -9,18 +9,16 @@ import java.util.function.Predicate;
 @Component
 public class RouterValidator {
 
-    public static final List<String> openApiEndpoints= List.of(
-            "/auth-service/",
-            "/catalog-service/product/list",
-            "/catalog-service/product/search",
-            "/catalog-service/product/getProduct/",
-            "/review-service/product/",
-            "/coupon-service/active"
+    private static final List<Predicate<String>> OPEN_API_ENDPOINTS = List.of(
+            path -> path.startsWith("/auth-service/"),
+            path -> path.equals("/catalog-service/product/list"),
+            path -> path.equals("/catalog-service/product/search"),
+            path -> path.startsWith("/catalog-service/product/getProduct/")
     );
 
     public Predicate<ServerHttpRequest> isSecured =
-            request -> openApiEndpoints
+            request -> OPEN_API_ENDPOINTS
                     .stream()
-                    .noneMatch(uri -> request.getURI().getPath().contains(uri));
+                    .noneMatch(openEndpoint -> openEndpoint.test(request.getURI().getPath()));
 
 }
