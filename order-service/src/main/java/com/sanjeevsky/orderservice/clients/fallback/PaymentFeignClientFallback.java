@@ -1,7 +1,7 @@
 package com.sanjeevsky.orderservice.clients.fallback;
 
 import com.sanjeevsky.orderservice.clients.PaymentFeignClient;
-import com.sanjeevsky.orderservice.exceptions.InvalidRequestException;
+import com.sanjeevsky.orderservice.exceptions.ServiceUnavailableException;
 import com.sanjeevsky.platform.model.payment.PaymentRequest;
 import com.sanjeevsky.platform.model.payment.PaymentResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +35,7 @@ public class PaymentFeignClientFallback implements FallbackFactory<PaymentFeignC
         };
     }
 
-    private InvalidRequestException paymentUnavailable(String operation) {
-        return new InvalidRequestException("Payment service unavailable during " + operation);
+    private ServiceUnavailableException paymentUnavailable(String operation) {
+        return new ServiceUnavailableException("Payment service unavailable during " + operation);
     }
 }

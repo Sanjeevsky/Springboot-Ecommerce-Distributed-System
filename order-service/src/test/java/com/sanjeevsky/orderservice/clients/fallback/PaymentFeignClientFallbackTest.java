@@ -1,7 +1,7 @@
 package com.sanjeevsky.orderservice.clients.fallback;
 
 import com.sanjeevsky.orderservice.clients.PaymentFeignClient;
-import com.sanjeevsky.orderservice.exceptions.InvalidRequestException;
+import com.sanjeevsky.orderservice.exceptions.ServiceUnavailableException;
 import com.sanjeevsky.platform.model.payment.PaymentRequest;
 import org.junit.jupiter.api.Test;
 
@@ -15,25 +15,25 @@ class PaymentFeignClientFallbackTest {
             .create(null);
 
     @Test
-    void initiatePayment_throwsInvalidRequest() {
+    void initiatePayment_throwsServiceUnavailable() {
         PaymentRequest request = new PaymentRequest(UUID.randomUUID(), "user@example.com", 100.0);
 
         assertThatThrownBy(() -> FALLBACK.initiatePayment(request))
-                .isInstanceOf(InvalidRequestException.class)
+                .isInstanceOf(ServiceUnavailableException.class)
                 .hasMessageContaining("initiate payment");
     }
 
     @Test
-    void confirmPayment_throwsInvalidRequest() {
+    void confirmPayment_throwsServiceUnavailable() {
         assertThatThrownBy(() -> FALLBACK.confirmPayment(UUID.randomUUID()))
-                .isInstanceOf(InvalidRequestException.class)
+                .isInstanceOf(ServiceUnavailableException.class)
                 .hasMessageContaining("confirm payment");
     }
 
     @Test
-    void refundPayment_throwsInvalidRequest() {
+    void refundPayment_throwsServiceUnavailable() {
         assertThatThrownBy(() -> FALLBACK.refundPayment(UUID.randomUUID()))
-                .isInstanceOf(InvalidRequestException.class)
+                .isInstanceOf(ServiceUnavailableException.class)
                 .hasMessageContaining("refund payment");
     }
 }

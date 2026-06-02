@@ -1,6 +1,7 @@
 package com.sanjeevsky.orderservice.clients.fallback;
 
 import com.sanjeevsky.orderservice.clients.CartFeignClient;
+import com.sanjeevsky.orderservice.exceptions.ServiceUnavailableException;
 import com.sanjeevsky.platform.model.cart.CartSnapshot;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
@@ -16,11 +17,12 @@ public class CartFeignClientFallback implements FallbackFactory<CartFeignClient>
         return new CartFeignClient() {
             @Override
             public CartSnapshot getCheckoutSnapshot(String userId) {
-                return new CartSnapshot();
+                throw new ServiceUnavailableException("Cart service unavailable during checkout");
             }
 
             @Override
             public void clearCart(String userId) {
+                throw new ServiceUnavailableException("Cart service unavailable during cart clear");
             }
         };
     }

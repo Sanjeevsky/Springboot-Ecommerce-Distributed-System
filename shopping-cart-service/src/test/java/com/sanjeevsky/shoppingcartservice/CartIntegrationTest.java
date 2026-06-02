@@ -2,6 +2,7 @@ package com.sanjeevsky.shoppingcartservice;
 
 import com.sanjeevsky.platform.model.product.ProductResponse;
 import com.sanjeevsky.shoppingcartservice.clients.CatalogFeignClient;
+import com.sanjeevsky.shoppingcartservice.exceptions.CatalogUnavailableException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -178,5 +179,18 @@ class CartIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(String.format("{\"productId\":\"%s\",\"qty\":0}", PRODUCT_A)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void addItem_catalogUnavailable_returns503() throws Exception {
+        when(catalogFeignClient.getProduct(PRODUCT_A))
+                .thenThrow(new CatalogUnavailableException("Catalog service is temporarily unavailable"));
+
+        mockMvc.perform(post("/cart-service/cart/add")
+                        .header("X-User", "catalog-down@example.com")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(String.format("{\"productId\":\"%s\",\"qty\":1}", PRODUCT_A)))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.success").value(false));
     }
 }
