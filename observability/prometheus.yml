@@ -3,6 +3,16 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
+  - job_name: 'service-discovery'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['service-discovery:8761']
+
+  - job_name: 'cloud-config'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['cloud-config:8071']
+
   - job_name: 'api-gateway'
     metrics_path: '/actuator/prometheus'
     static_configs:

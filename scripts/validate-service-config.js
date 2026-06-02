@@ -484,6 +484,30 @@ if (!implementationText.includes("| order-service | 8092 | ✅ | ✅ | ✅ | pub
   fail("implementation.md: service matrix must document order-service and inventory-service as Kafka pub/cons services");
 }
 
+const prometheusText = fs.readFileSync(path.join(root, "observability", "prometheus.yml"), "utf8");
+const grafanaOverviewText = fs.readFileSync(
+  path.join(root, "observability", "grafana", "dashboards", "ecommerce-overview.json"),
+  "utf8"
+);
+for (const [service, target] of [
+  ["service-discovery", "service-discovery:8761"],
+  ["cloud-config", "cloud-config:8071"],
+]) {
+  if (!prometheusText.includes(`job_name: '${service}'`) || !prometheusText.includes(`targets: ['${target}']`)) {
+    fail(`observability/prometheus.yml: missing ${service} scrape target ${target}`);
+  }
+  if (!grafanaOverviewText.includes(service)) {
+    fail(`observability/grafana/dashboards/ecommerce-overview.json: dashboard service totals must include ${service}`);
+  }
+}
+if (!propertiesFiles("service-discovery").some((file) => hasProperty(file, "management.endpoints.web.exposure.include"))) {
+  fail("service-discovery: Prometheus scrape requires management.endpoints.web.exposure.include=*");
+}
+if (!implementationText.includes("| service-discovery | 8761 | ✅ | ✅ | ✅ | — | — | ✅ |")
+    || !implementationText.includes("| cloud-config | 8071 | ✅ | ✅ | ✅ | — | — | ✅ |")) {
+  fail("implementation.md: service matrix must reflect observability coverage for service-discovery and cloud-config");
+}
+
 const shoppingCartProperties = propertiesFiles("shopping-cart-service");
 if (!shoppingCartProperties.some((file) => hasProperty(file, "clients.catalog.url"))) {
   fail("shopping-cart-service: expected clients.catalog.url property for Docker catalog dependency override");

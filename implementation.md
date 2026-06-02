@@ -46,8 +46,8 @@
 
 | Service | Port | Sleuth | Zipkin | Prometheus | Kafka | Feign | Status |
 |---------|------|--------|--------|------------|-------|-------|--------|
-| service-discovery | 8761 | — | — | — | — | — | ✅ |
-| cloud-config | 8071 | — | — | — | — | — | ✅ |
+| service-discovery | 8761 | ✅ | ✅ | ✅ | — | — | ✅ |
+| cloud-config | 8071 | ✅ | ✅ | ✅ | — | — | ✅ |
 | spring-server | 9000 | — | — | — | — | — | ✅ |
 | api-gateway | 8081 | ✅ | ✅ | ✅ | — | — | ✅ |
 | auth-server | 8083 | ✅ | ✅ | ✅ | — | — | ✅ |
@@ -66,7 +66,7 @@
 
 ## Advanced Implementation Phases
 
-### Phase 1 — Complete Observability (all 12 business services)
+### Phase 1 — Complete Observability
 
 **1.1 Add observability Maven deps (completed for all business services)**
 

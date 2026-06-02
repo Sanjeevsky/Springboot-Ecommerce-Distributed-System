@@ -24,7 +24,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "count(up{job=~\"api-gateway|auth-server|catalog-service|customer-service|payment-service|shopping-cart-service|order-service|inventory-service|notification-service|coupon-service|review-service|wishlist-service\"} == 1)",
+          "expr": "count(up{job=~\"service-discovery|cloud-config|api-gateway|auth-server|catalog-service|customer-service|payment-service|shopping-cart-service|order-service|inventory-service|notification-service|coupon-service|review-service|wishlist-service\"} == 1)",
           "legendFormat": "UP",
           "refId": "A"
         }
@@ -43,7 +43,7 @@
       "type": "stat",
       "targets": [
         {
-          "expr": "count(up{job=~\"api-gateway|auth-server|catalog-service|customer-service|payment-service|shopping-cart-service|order-service|inventory-service|notification-service|coupon-service|review-service|wishlist-service\"} == 0) or vector(0)",
+          "expr": "count(up{job=~\"service-discovery|cloud-config|api-gateway|auth-server|catalog-service|customer-service|payment-service|shopping-cart-service|order-service|inventory-service|notification-service|coupon-service|review-service|wishlist-service\"} == 0) or vector(0)",
           "legendFormat": "DOWN",
           "refId": "A"
         }
