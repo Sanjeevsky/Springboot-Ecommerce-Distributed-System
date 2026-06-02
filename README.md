@@ -136,12 +136,12 @@ Postman collections:
 
 | Collection | Purpose |
 |------------|---------|
-| `Ecommerce-API.postman_collection.json` | Endpoint reference collection |
+| `Ecommerce-API.postman_collection.json` | Runner-safe endpoint reference/application collection with global non-2xx checks |
 | `Ecommerce-DataSeed.postman_collection.json` | Runner-safe seed flow for local data |
 | `Ecommerce-E2E-Complete.postman_collection.json` | Runner-safe application E2E flow |
 | `Ecommerce-Local.postman_environment.json` | Local gateway environment |
 
-The runner-safe collections use collection-level scripts to generate and save run values such as token, IDs, coupon code, and idempotency keys. The environment file is only the local value store. Kafka-backed review eligibility and notification requests include runner retries so asynchronous consumers can catch up before later requests use `reviewId` or `notificationId`.
+The collections use collection-level scripts to generate and save run values such as token, IDs, coupon code, and idempotency keys. The environment file is only the local value store. Kafka-backed review eligibility and notification requests include runner retries so asynchronous consumers can catch up before later requests use `reviewId` or `notificationId`. The API collection also fails unexpected non-2xx responses and asserts key semantics such as coupon discounts, cancelled-order refunds, and review moderation before approved-review reads.
 
 ### Authentication
 
@@ -200,6 +200,12 @@ GATEWAY_DISCOVERY_STABILIZE_SECONDS=0 scripts/verify-local.sh  # disable post-Eu
 Local runner checks after the Docker stack is up:
 
 ```bash
+newman run postman/Ecommerce-API.postman_collection.json \
+  -e postman/Ecommerce-Local.postman_environment.json \
+  --bail failure \
+  --timeout-request 30000 \
+  --delay-request 100
+
 newman run postman/Ecommerce-DataSeed.postman_collection.json \
   -e postman/Ecommerce-Local.postman_environment.json
 

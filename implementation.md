@@ -157,6 +157,8 @@ Full smoke verification uses `scripts/verify-local.sh`; `e2e-smoke-test.sh` is a
 8. Notification: verify notifications created
 9. Review: verify purchase eligibility
 
+The API Postman collection is also runner-safe for targeted application checks. It asserts that all non-retry requests return 2xx and verifies business outcomes for coupon orders, cancelled-order refunds, and review moderation before approved-review reads.
+
 ---
 
 ## File Change Map
