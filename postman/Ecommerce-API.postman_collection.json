@@ -115,6 +115,10 @@
       "value": ""
     },
     {
+      "key": "insufficientOrderIdempotencyKey",
+      "value": ""
+    },
+    {
       "key": "paymentIdempotencyKey",
       "value": ""
     },
@@ -1617,6 +1621,204 @@
               }
             }
           ]
+        },
+        {
+          "name": "Re-add Item for Insufficient Inventory Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var retryKey = '_cartAddRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 5;",
+                  "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Cart add dependency not ready; retrying Re-add Item for Insufficient Inventory Order ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(retryKey);",
+                  "  try { pm.environment.unset(retryKey); } catch (e) {}",
+                  "  pm.test('Re-add Item for Insufficient Inventory Order: status 200', () => pm.response.to.have.status(200));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cart-service/cart/add",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "add"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"qty\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Set Insufficient Inventory Quantity",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Set Insufficient Inventory Quantity: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "var data = json.data || {};",
+                  "var items = Array.isArray(data.items) ? data.items : [];",
+                  "var item = items.find(function (entry) { return entry.productId === pm.collectionVariables.get('productId'); });",
+                  "pm.test('Cart quantity set to 9999', () => pm.expect(item && item.qty).to.eql(9999));",
+                  "console.log('Insufficient inventory check quantity:', item && item.qty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cart-service/cart/item/{{productId}}?qty=9999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "item",
+                "{{productId}}"
+              ],
+              "query": [
+                {
+                  "key": "qty",
+                  "value": "9999"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reject Order with Insufficient Inventory",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var retryKey = '_orderCreateRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 5;",
+                  "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Order dependencies not ready; retrying Reject Order with Insufficient Inventory ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(retryKey);",
+                  "  try { pm.environment.unset(retryKey); } catch (e) {}",
+                  "  pm.test('Reject Order with Insufficient Inventory: status 400', () => pm.response.to.have.status(400));",
+                  "  var json = pm.response.json();",
+                  "  var message = json.message || json.error || JSON.stringify(json);",
+                  "  pm.test('Insufficient stock message returned', () => pm.expect(message).to.include('Insufficient stock'));",
+                  "  console.log('Insufficient inventory rejection:', message);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{insufficientOrderIdempotencyKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/order-service/order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressId\": \"{{addressId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Clear Cart after Insufficient Inventory Check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Clear Cart after Insufficient Inventory Check: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "var data = json.data || {};",
+                  "var items = Array.isArray(data.items) ? data.items : [];",
+                  "pm.test('Cart cleared after insufficient inventory check', () => pm.expect(items.length).to.eql(0));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cart-service/cart/clear",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "clear"
+              ]
+            }
+          }
         }
       ]
     },
@@ -2771,12 +2973,13 @@
           "  setRunnerVar('couponCode', 'SAVE' + suffix);",
           "  setRunnerVar('orderIdempotencyKey', 'order-' + runId);",
           "  setRunnerVar('couponOrderIdempotencyKey', 'coupon-order-' + runId);",
+          "  setRunnerVar('insufficientOrderIdempotencyKey', 'insufficient-order-' + runId);",
           "  setRunnerVar('paymentIdempotencyKey', 'payment-' + runId);",
           "  setRunnerVar('failedPaymentIdempotencyKey', 'payment-fail-' + runId);",
           "}",
           "",
           "function missingRunnerVariables() {",
-          "  return ['runId', 'runnerEmail', 'couponCode', 'orderIdempotencyKey', 'couponOrderIdempotencyKey', 'paymentIdempotencyKey', 'failedPaymentIdempotencyKey'].some(function (key) {",
+          "  return ['runId', 'runnerEmail', 'couponCode', 'orderIdempotencyKey', 'couponOrderIdempotencyKey', 'insufficientOrderIdempotencyKey', 'paymentIdempotencyKey', 'failedPaymentIdempotencyKey'].some(function (key) {",
           "    return !pm.collectionVariables.get(key);",
           "  });",
           "}",
@@ -2827,7 +3030,11 @@
           "      || rawUrl.indexOf('/inventory-service/stock') !== -1;",
           "}",
           "",
-          "if (!isTransientRunnerRetry(pm.response.code)) {",
+          "function isExpectedRunnerNon2xx(code) {",
+          "  return pm.info.requestName === 'Reject Order with Insufficient Inventory' && code === 400;",
+          "}",
+          "",
+          "if (!isTransientRunnerRetry(pm.response.code) && !isExpectedRunnerNon2xx(pm.response.code)) {",
           "  pm.test('Runner request returned 2xx', function () {",
           "    pm.expect(pm.response.code, pm.info.requestName + ' status').to.be.within(200, 299);",
           "  });",

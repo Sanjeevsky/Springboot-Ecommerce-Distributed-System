@@ -318,6 +318,12 @@ function hasRequestHeader(item, key) {
     .some((header) => header && header.key === key);
 }
 
+function requestHeaderValue(item, key) {
+  const header = ((item && item.request && item.request.header) || [])
+    .find((entry) => entry && entry.key === key);
+  return header && header.value || "";
+}
+
 function validateApiCollectionGuards(relativePath, collection) {
   if (relativePath !== apiCollectionFile) {
     return;
@@ -331,6 +337,10 @@ function validateApiCollectionGuards(relativePath, collection) {
   if (!collectionTestCode.includes("Runner request returned 2xx")
       || !collectionTestCode.includes("isTransientRunnerRetry")) {
     fail(`${relativePath}: collection-level test must fail non-2xx API responses while preserving bounded retry flows`);
+  }
+  if (!collectionTestCode.includes("isExpectedRunnerNon2xx")
+      || !collectionTestCode.includes("Reject Order with Insufficient Inventory")) {
+    fail(`${relativePath}: collection-level test must allow only the expected insufficient-inventory 400 response`);
   }
 
   const protectedRequests = [
@@ -376,6 +386,57 @@ function validateApiCollectionGuards(relativePath, collection) {
   if (!paymentStatusByOrder || !requestEventCode(paymentStatusByOrder).includes("Cancelled order payment is REFUNDED")) {
     fail(`${relativePath}: payment status by order must assert cancelled order refund state`);
   }
+}
+
+function validateInsufficientInventoryCoverage(relativePath, collection) {
+  const expectations = {
+    [apiCollectionFile]: {
+      add: "Re-add Item for Insufficient Inventory Order",
+      qty: "Set Insufficient Inventory Quantity",
+      reject: "Reject Order with Insufficient Inventory",
+      clear: "Clear Cart after Insufficient Inventory Check",
+    },
+    [e2eCollectionFile]: {
+      add: "44b — Re-add Item for Insufficient Inventory Check",
+      qty: "44c — Set Cart Quantity beyond Stock",
+      reject: "44d — Reject Order with Insufficient Inventory",
+      clear: "44e — Clear Cart after Insufficient Inventory Check",
+    },
+  }[relativePath];
+
+  if (!expectations) {
+    return;
+  }
+
+  const qtyRequest = requestByName(collection, expectations.qty);
+  if (!qtyRequest
+      || requestMethod(qtyRequest) !== "PUT"
+      || !requestUrl(qtyRequest).includes("/cart-service/cart/item/{{productId}}?qty=9999")
+      || !requestEventCode(qtyRequest).includes("Cart quantity set to 9999")) {
+    fail(`${relativePath}: ${expectations.qty} must set cart quantity beyond seeded inventory`);
+  }
+
+  const rejectRequest = requestByName(collection, expectations.reject);
+  if (!rejectRequest
+      || requestMethod(rejectRequest) !== "POST"
+      || requestUrl(rejectRequest) !== "{{baseUrl}}/order-service/order"
+      || requestHeaderValue(rejectRequest, "Idempotency-Key") !== "{{insufficientOrderIdempotencyKey}}"
+      || !requestEventCode(rejectRequest).includes("status 400")
+      || !requestEventCode(rejectRequest).includes("Insufficient stock")) {
+    fail(`${relativePath}: ${expectations.reject} must assert order-service rejects insufficient inventory with 400`);
+  }
+
+  const clearRequest = requestByName(collection, expectations.clear);
+  if (!clearRequest || !requestEventCode(clearRequest).includes("Cart cleared after insufficient inventory check")) {
+    fail(`${relativePath}: ${expectations.clear} must clear cart state after the negative inventory check`);
+  }
+
+  validateRequestOrder(relativePath, collection, [
+    expectations.add,
+    expectations.qty,
+    expectations.reject,
+    expectations.clear,
+  ]);
 }
 
 function validateDataSeedCollectionGuards(relativePath, collection) {
@@ -458,6 +519,14 @@ function validateRunnerStateRepairs(relativePath, collection) {
     validateRequestOrder(relativePath, collection, ["Seed Inventory for Orders", "Place Order"]);
     validateRequestOrder(relativePath, collection, ["Create Coupon for Coupon Order", "Place Order (with Coupon)"]);
     validateRequestOrder(relativePath, collection, ["Place Order", "Re-add Item for Coupon Order", "Place Order (with Coupon)"]);
+    validateRequestOrder(relativePath, collection, [
+      "Cancel Order",
+      "Re-add Item for Insufficient Inventory Order",
+      "Set Insufficient Inventory Quantity",
+      "Reject Order with Insufficient Inventory",
+      "Clear Cart after Insufficient Inventory Check",
+      "Initiate Payment",
+    ]);
     validateRequestOrder(relativePath, collection, ["Submit Review", "Moderate Review (Admin)", "Get Approved Reviews for Product", "Get Review Summary for Product"]);
     validateRequestOrder(relativePath, collection, ["Add to Wishlist", "Remove from Wishlist", "Re-add to Wishlist for Move", "Move to Cart"]);
   }
@@ -491,6 +560,10 @@ function validateRunnerStateRepairs(relativePath, collection) {
     validateRequestOrder(relativePath, collection, [
       "44 — Cancel Order",
       "44a — Verify Cancel Refund",
+      "44b — Re-add Item for Insufficient Inventory Check",
+      "44c — Set Cart Quantity beyond Stock",
+      "44d — Reject Order with Insufficient Inventory",
+      "44e — Clear Cart after Insufficient Inventory Check",
       "45 — Initiate Payment → save paymentId",
     ]);
   }
@@ -528,6 +601,7 @@ for (const relativePath of collectionFiles) {
   validateCollectionRunnerSeeding(relativePath, collection);
   validateApiCollectionGuards(relativePath, collection);
   validateDataSeedCollectionGuards(relativePath, collection);
+  validateInsufficientInventoryCoverage(relativePath, collection);
   validateAsyncRunnerRetries(relativePath, collection);
   validateGatewayRoutedRequests(relativePath, collection);
   validateRunnerStateRepairs(relativePath, collection);

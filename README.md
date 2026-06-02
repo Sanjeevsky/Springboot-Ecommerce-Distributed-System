@@ -143,7 +143,7 @@ Postman collections:
 | `Ecommerce-E2E-Complete.postman_collection.json` | Runner-safe application E2E flow |
 | `Ecommerce-Local.postman_environment.json` | Local gateway environment |
 
-The collections use collection-level scripts to generate and save run values such as token, IDs, coupon code, and idempotency keys. The environment file is only the local value store. Kafka-backed review eligibility and notification requests include runner retries so asynchronous consumers can catch up before later requests use `reviewId` or `notificationId`. The DataSeed collection moderates and verifies an approved review, and the API collection fails unexpected non-2xx responses while asserting key semantics such as coupon discounts, cancelled-order refunds, and review moderation before approved-review reads.
+The collections use collection-level scripts to generate and save run values such as token, IDs, coupon code, and idempotency keys. The environment file is only the local value store. Kafka-backed review eligibility and notification requests include runner retries so asynchronous consumers can catch up before later requests use `reviewId` or `notificationId`. The DataSeed collection moderates and verifies an approved review, and the application collections fail unexpected non-2xx responses while asserting key semantics such as coupon discounts, cancelled-order refunds, insufficient-inventory checkout rejection, and review moderation before approved-review reads.
 
 ### Authentication
 
@@ -173,6 +173,8 @@ GET    /order-service/orders
 ```
 
 `POST /order-service/order` and `POST /payment-service/initiate` accept an optional `Idempotency-Key` header. Retries with the same key for the same user return the existing order/payment and do not replay side effects such as payment initiation, cart clearing, coupon application, or Kafka event publication. The Postman runner collections generate per-run idempotency keys automatically.
+
+Order creation pre-checks the current inventory entry for the exact product variant in the cart and returns `400 Bad Request` with an insufficient-stock message when requested quantity exceeds available stock.
 
 ---
 
