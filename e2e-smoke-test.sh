@@ -72,7 +72,7 @@ ORDER_IDEMPOTENCY_KEY="smoke-order-${RUN_ID}"
 COUPON_ORDER_IDEMPOTENCY_KEY="smoke-coupon-order-${RUN_ID}"
 R=$(curl -sf -X POST "$BASE/auth-service/signup" \
   -H "Content-Type: application/json" \
-  -d "{\"email\":\"$EMAIL\",\"password\":\"Test@1234\",\"firstName\":\"Smoke\",\"lastName\":\"Test\",\"role\":\"USER\"}" || echo '{"error":"failed"}')
+  -d "{\"email\":\"$EMAIL\",\"password\":\"Test@1234\"}" || echo '{"error":"failed"}')
 check "1. Register user" '"success":true' "$R"
 
 # ── 2. Login ───────────────────────────────────────────────────────────────────
@@ -188,7 +188,7 @@ check "20. Inventory check" '"success":true' "$R"
 COUPON_CODE="SMOKE$(date +%s)"
 R=$(curl -sf -X POST "$BASE/coupon-service/coupon" \
   -H "$AUTH" -H "Content-Type: application/json" \
-  -d "{\"code\":\"$COUPON_CODE\",\"discountType\":\"PERCENTAGE\",\"discountValue\":10,\"maxUsageCount\":100,\"active\":true,\"minOrderAmount\":0}" \
+  -d "{\"code\":\"$COUPON_CODE\",\"type\":\"PERCENTAGE\",\"value\":10.0,\"minOrderAmount\":500.0,\"maxUsageCount\":100,\"expiryDate\":\"2099-12-31\",\"active\":true}" \
   || echo '{"error":"failed"}')
 check "21. Create coupon" '"success":true' "$R"
 
