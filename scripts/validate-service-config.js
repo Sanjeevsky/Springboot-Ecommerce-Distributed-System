@@ -253,13 +253,31 @@ if (!wishlistComposeBlock.includes("CLIENTS_CART_URL=http://shopping-cart-servic
 }
 
 const orderProperties = propertiesFiles("order-service");
-if (!orderProperties.some((file) => hasProperty(file, "clients.inventory.url"))) {
-  fail("order-service: expected clients.inventory.url property for Docker inventory dependency override");
-}
-
 const orderComposeBlock = composeServiceBlock("order-service");
-if (!orderComposeBlock.includes("CLIENTS_INVENTORY_URL=http://inventory-service:8088")) {
-  fail("docker-compose.yml: order-service must define CLIENTS_INVENTORY_URL=http://inventory-service:8088");
+const orderClientOverrides = [
+  ["cart", "CartFeignClient.java", "CLIENTS_CART_URL=http://shopping-cart-service:8086"],
+  ["customer", "CustomerFeignClient.java", "CLIENTS_CUSTOMER_URL=http://customer-service:8082"],
+  ["payment", "PaymentFeignClient.java", "CLIENTS_PAYMENT_URL=http://payment-service:8085"],
+  ["coupon", "CouponFeignClient.java", "CLIENTS_COUPON_URL=http://coupon-service:8089"],
+  ["inventory", "InventoryFeignClient.java", "CLIENTS_INVENTORY_URL=http://inventory-service:8088"],
+];
+for (const [client, feignClientFile, composeEnv] of orderClientOverrides) {
+  const propertyName = `clients.${client}.url`;
+  if (!orderProperties.some((file) => hasProperty(file, propertyName))) {
+    fail(`order-service: expected ${propertyName} property for Docker dependency override`);
+  }
+
+  const feignClientText = fs.readFileSync(
+    path.join(root, "order-service", "src", "main", "java", "com", "sanjeevsky", "orderservice", "clients", feignClientFile),
+    "utf8"
+  );
+  if (!feignClientText.includes(`url = "\${${propertyName}:}"`)) {
+    fail(`order-service: ${feignClientFile} must use ${propertyName} for Docker dependency override`);
+  }
+
+  if (!orderComposeBlock.includes(composeEnv)) {
+    fail(`docker-compose.yml: order-service must define ${composeEnv}`);
+  }
 }
 
 function requireMavenTestFlags(relativePath, text) {
