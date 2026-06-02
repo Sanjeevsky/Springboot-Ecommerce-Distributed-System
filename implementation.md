@@ -55,8 +55,8 @@
 | customer-service | 8082 | ✅ | ✅ | ✅ | — | feign | ✅ |
 | shopping-cart-service | 8086 | ✅ | ✅ | ✅ | — | feign | ✅ |
 | payment-service | 8085 | ✅ | ✅ | ✅ | pub | — | ✅ |
-| order-service | 8092 | ✅ | ✅ | ✅ | pub | feign | ✅ |
-| inventory-service | 8088 | ✅ | ✅ | ✅ | cons | — | ✅ |
+| order-service | 8092 | ✅ | ✅ | ✅ | pub/cons | feign | ✅ |
+| inventory-service | 8088 | ✅ | ✅ | ✅ | pub/cons | — | ✅ |
 | notification-service | 8087 | ✅ | ✅ | ✅ | cons | — | ✅ |
 | coupon-service | 8089 | ✅ | ✅ | ✅ | — | — | ✅ |
 | review-service | 8090 | ✅ | ✅ | ✅ | cons | — | ✅ |

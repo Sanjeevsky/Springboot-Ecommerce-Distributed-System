@@ -221,6 +221,7 @@ const readmeCoverageServices = [
   "notification-service",
 ];
 const readmeText = fs.readFileSync(path.join(root, "README.md"), "utf8");
+const implementationText = fs.readFileSync(path.join(root, "implementation.md"), "utf8");
 const readmeCoverageStart = readmeText.indexOf("## Test Coverage");
 const readmeCoverageText = readmeCoverageStart === -1 ? "" : readmeText.slice(readmeCoverageStart);
 if (!readmeCoverageText) {
@@ -466,6 +467,10 @@ if (readmeText.includes("customer-service ──► order-events")
     || !readmeText.includes("order-service    ──► order-events")
     || !readmeText.includes("inventory-service ─► inventory-events ─► order-service")) {
   fail("README.md: Kafka event flow must document order-service and inventory-service as event publishers");
+}
+if (!implementationText.includes("| order-service | 8092 | ✅ | ✅ | ✅ | pub/cons | feign | ✅ |")
+    || !implementationText.includes("| inventory-service | 8088 | ✅ | ✅ | ✅ | pub/cons | — | ✅ |")) {
+  fail("implementation.md: service matrix must document order-service and inventory-service as Kafka pub/cons services");
 }
 
 const shoppingCartProperties = propertiesFiles("shopping-cart-service");
