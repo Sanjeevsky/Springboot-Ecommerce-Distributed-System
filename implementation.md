@@ -281,7 +281,7 @@ inventory-service  →  inventory-events topic
 
 ## API Documentation (Swagger UI)
 
-Each service exposes Swagger UI and OpenAPI spec:
+Each service hosts Swagger UI and an OpenAPI spec on its local port. The OpenAPI server metadata advertises only the API Gateway (`http://localhost:8081`), so Swagger "Try it out" requests use the standard gateway routes instead of direct service-port endpoints.
 
 | Service | Swagger UI | API Docs |
 |---------|-----------|---------|
