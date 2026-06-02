@@ -215,7 +215,11 @@ public class OrderServiceImpl implements OrderService {
         log.info("Cancelling order id={} for user={}", orderId, userId);
         Order order = orderRepository.findByIdAndUserId(orderId, userId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
-        if (order.getStatus() == OrderStatus.DELIVERED || order.getStatus() == OrderStatus.CANCELLED) {
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            log.info("Order already cancelled id={} for user={}", orderId, userId);
+            return order;
+        }
+        if (order.getStatus() == OrderStatus.DELIVERED) {
             throw new InvalidRequestException("Order cannot be cancelled in state: " + order.getStatus());
         }
         if (order.getPaymentId() != null) {

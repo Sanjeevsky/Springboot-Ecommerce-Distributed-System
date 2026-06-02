@@ -214,6 +214,18 @@ class OrderServiceImplTest {
     }
 
     @Test
+    void cancelOrder_alreadyCancelled_returnsExistingOrderWithoutSideEffects() {
+        pendingOrder.setStatus(OrderStatus.CANCELLED);
+        when(orderRepository.findByIdAndUserId(ORDER_ID, USER)).thenReturn(Optional.of(pendingOrder));
+
+        Order result = orderService.cancelOrder(USER, ORDER_ID);
+
+        assertThat(result).isSameAs(pendingOrder);
+        verify(orderRepository, never()).save(any());
+        verifyNoInteractions(paymentFeignClient, eventPublisher);
+    }
+
+    @Test
     void cancelOrder_delivered_throws() {
         pendingOrder.setStatus(OrderStatus.DELIVERED);
         when(orderRepository.findByIdAndUserId(ORDER_ID, USER)).thenReturn(Optional.of(pendingOrder));
