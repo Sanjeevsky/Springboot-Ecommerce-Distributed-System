@@ -10,7 +10,8 @@ import java.util.function.Predicate;
 public class RouterValidator {
 
     private static final List<Predicate<String>> OPEN_API_ENDPOINTS = List.of(
-            path -> path.startsWith("/auth-service/"),
+            path -> path.equals("/auth-service/signup"),
+            path -> path.equals("/auth-service/login"),
             path -> path.equals("/catalog-service/product/list"),
             path -> path.equals("/catalog-service/product/search"),
             path -> path.startsWith("/catalog-service/product/getProduct/")

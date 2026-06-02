@@ -259,9 +259,11 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
             "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Authorization", "value": "Bearer {{token}}" }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{runnerEmail}}\",\n  \"oldPassword\": \"{{runnerPassword}}\",\n  \"newPassword\": \"newPassword456\"\n}",

@@ -57,7 +57,7 @@ public class AuthenticationFilter implements GatewayFilter {
         if (header == null || header.trim().isEmpty()) {
             return null;
         }
-        if (header != null && header.startsWith("Bearer ")) {
+        if (header.startsWith("Bearer ")) {
             return header.substring(7).trim();
         }
         return header.trim();

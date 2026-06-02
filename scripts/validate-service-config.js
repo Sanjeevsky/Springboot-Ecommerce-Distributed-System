@@ -361,9 +361,14 @@ const routerValidatorText = fs.readFileSync(
   "utf8"
 );
 if (routerValidatorText.includes(".contains(")
+    || routerValidatorText.includes('path.startsWith("/auth-service/")')
     || routerValidatorText.includes("/coupon-service/active")
     || routerValidatorText.includes("/review-service/product/")) {
   fail("api-gateway RouterValidator: open route allowlist must use exact standard paths without stale raw entries");
+}
+if (!routerValidatorText.includes('path.equals("/auth-service/signup")')
+    || !routerValidatorText.includes('path.equals("/auth-service/login")')) {
+  fail("api-gateway RouterValidator: only signup and login auth routes may be public");
 }
 
 const gatewayJwtUtilText = fs.readFileSync(

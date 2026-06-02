@@ -22,6 +22,7 @@ class RouterValidatorTest {
     @Test
     void securesStaleRawAndLookalikeRoutes() {
         assertSecured("/shopping-cart-service/cart");
+        assertSecured("/auth-service/updatePassword");
         assertSecured("/catalog-service/product/list-extra");
         assertSecured("/review-service/product/5f8882c1-88a7-4ca6-898b-92f9417b5275");
         assertSecured("/coupon-service/active");

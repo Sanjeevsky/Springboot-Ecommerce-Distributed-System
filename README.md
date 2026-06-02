@@ -157,7 +157,7 @@ POST /auth-service/signup
 POST /auth-service/login         → returns JWT token
 ```
 
-Auth routes and catalog product browsing routes are public:
+Signup, login, and catalog product browsing routes are public:
 
 ```
 GET /catalog-service/product/list
@@ -165,7 +165,7 @@ GET /catalog-service/product/search
 GET /catalog-service/product/getProduct/{id}
 ```
 
-All other standard gateway routes require `Authorization: Bearer <token>`.
+All other standard gateway routes, including `/auth-service/updatePassword`, require `Authorization: Bearer <token>`.
 
 ### Order flow
 

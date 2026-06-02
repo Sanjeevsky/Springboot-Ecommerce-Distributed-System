@@ -324,6 +324,30 @@ function requestHeaderValue(item, key) {
   return header && header.value || "";
 }
 
+function requestAuthType(item) {
+  return item && item.request && item.request.auth && item.request.auth.type || "";
+}
+
+function hasAuthorization(item, collection) {
+  return hasRequestHeader(item, "Authorization")
+    || requestAuthType(item) === "bearer"
+    || (!requestAuthType(item) && collection && collection.auth && collection.auth.type === "bearer");
+}
+
+function validateProtectedRequestAuth(relativePath, collection, requestName) {
+  const item = requestByName(collection, requestName);
+  if (!item) {
+    fail(`${relativePath}: missing protected request "${requestName}"`);
+    return;
+  }
+  if (requestAuthType(item) === "noauth") {
+    fail(`${relativePath}: ${requestName}: protected request must not override auth with noauth`);
+  }
+  if (!hasAuthorization(item, collection)) {
+    fail(`${relativePath}: ${requestName}: protected request must include Authorization or inherit bearer auth`);
+  }
+}
+
 function validateApiCollectionGuards(relativePath, collection) {
   if (relativePath !== apiCollectionFile) {
     return;
@@ -344,18 +368,14 @@ function validateApiCollectionGuards(relativePath, collection) {
   }
 
   const protectedRequests = [
+    "Update Password",
     "Product Service Status",
     "Get Active Coupons",
     "Get Approved Reviews for Product",
     "Get Review Summary for Product",
   ];
   for (const requestName of protectedRequests) {
-    const item = requestByName(collection, requestName);
-    if (!item) {
-      fail(`${relativePath}: missing protected API request "${requestName}"`);
-    } else if (!hasRequestHeader(item, "Authorization")) {
-      fail(`${relativePath}: ${requestName}: protected API request must include Authorization header`);
-    }
+    validateProtectedRequestAuth(relativePath, collection, requestName);
   }
 
   const couponOrder = requestByName(collection, "Place Order (with Coupon)");
@@ -386,6 +406,14 @@ function validateApiCollectionGuards(relativePath, collection) {
   if (!paymentStatusByOrder || !requestEventCode(paymentStatusByOrder).includes("Cancelled order payment is REFUNDED")) {
     fail(`${relativePath}: payment status by order must assert cancelled order refund state`);
   }
+}
+
+function validateE2eCollectionGuards(relativePath, collection) {
+  if (relativePath !== e2eCollectionFile) {
+    return;
+  }
+
+  validateProtectedRequestAuth(relativePath, collection, "03 — Update Password");
 }
 
 function validateInsufficientInventoryCoverage(relativePath, collection) {
@@ -600,6 +628,7 @@ for (const relativePath of collectionFiles) {
   }
   validateCollectionRunnerSeeding(relativePath, collection);
   validateApiCollectionGuards(relativePath, collection);
+  validateE2eCollectionGuards(relativePath, collection);
   validateDataSeedCollectionGuards(relativePath, collection);
   validateInsufficientInventoryCoverage(relativePath, collection);
   validateAsyncRunnerRetries(relativePath, collection);
