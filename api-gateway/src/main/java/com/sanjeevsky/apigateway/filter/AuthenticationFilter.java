@@ -1,7 +1,6 @@
 package com.sanjeevsky.apigateway.filter;
 
 import io.jsonwebtoken.Claims;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -16,23 +15,23 @@ import reactor.core.publisher.Mono;
 @Component
 public class AuthenticationFilter implements GatewayFilter {
 
-    @Autowired
-    private RouterValidator routerValidator;
-    @Autowired
-    private JwtUtil jwtUtil;
+    private final RouterValidator routerValidator;
+    private final JwtUtil jwtUtil;
+
+    public AuthenticationFilter(RouterValidator routerValidator, JwtUtil jwtUtil) {
+        this.routerValidator = routerValidator;
+        this.jwtUtil = jwtUtil;
+    }
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         ServerHttpRequest request = exchange.getRequest();
 
         if (routerValidator.isSecured.test(request)) {
-            if (this.isAuthMissing(request))
-                return this.onError(exchange, "Authorization header is missing in request", HttpStatus.UNAUTHORIZED);
-
             final String token = this.getAuthHeader(request);
-
-            if (jwtUtil.isInvalid(token))
-                return this.onError(exchange, "Authorization header is invalid", HttpStatus.UNAUTHORIZED);
+            if (token == null) {
+                return this.onError(exchange, HttpStatus.UNAUTHORIZED);
+            }
 
             try {
                 Claims claims = jwtUtil.getAllClaimsFromToken(token);
@@ -41,27 +40,26 @@ public class AuthenticationFilter implements GatewayFilter {
                         .build();
                 return chain.filter(exchange.mutate().request(mutated).build());
             } catch (Exception e) {
-                return this.onError(exchange, e.getMessage(), HttpStatus.BAD_REQUEST);
+                return this.onError(exchange, HttpStatus.UNAUTHORIZED);
             }
         }
         return chain.filter(exchange);
     }
 
-    private Mono<Void> onError(ServerWebExchange exchange, String err, HttpStatus httpStatus) {
+    private Mono<Void> onError(ServerWebExchange exchange, HttpStatus httpStatus) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(httpStatus);
         return response.setComplete();
     }
 
     private String getAuthHeader(ServerHttpRequest request) {
-        String header = request.getHeaders().getOrEmpty("Authorization").get(0);
-        if (header != null && header.startsWith("Bearer ")) {
-            return header.substring(7);
+        String header = request.getHeaders().getFirst("Authorization");
+        if (header == null || header.trim().isEmpty()) {
+            return null;
         }
-        return header;
-    }
-
-    private boolean isAuthMissing(ServerHttpRequest request) {
-        return !request.getHeaders().containsKey("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7).trim();
+        }
+        return header.trim();
     }
 }

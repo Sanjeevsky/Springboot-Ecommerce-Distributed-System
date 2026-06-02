@@ -348,6 +348,15 @@ if (fs.existsSync(gatewayConstantsPath)
   fail("api-gateway Constants: JWT secrets must come from configuration, not hard-coded constants");
 }
 
+const gatewayAuthFilterText = fs.readFileSync(
+  path.join(root, "api-gateway", "src", "main", "java", "com", "sanjeevsky", "apigateway", "filter", "AuthenticationFilter.java"),
+  "utf8"
+);
+if (gatewayAuthFilterText.includes("jwtUtil.isInvalid(")
+    || !gatewayAuthFilterText.includes('getFirst("Authorization")')) {
+  fail("api-gateway AuthenticationFilter: JWT validation must parse once and read Authorization safely");
+}
+
 for (const service of ["api-gateway", "auth-server"]) {
   const jwtProperties = propertiesFiles(service);
   if (!jwtProperties.some((file) => propertyValues(file, "jwt.secret")
