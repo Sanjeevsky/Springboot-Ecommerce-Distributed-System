@@ -906,6 +906,48 @@
               ]
             }
           }
+        },
+        {
+          "name": "Re-add Item for Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Re-add Item for Order: status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cart-service/cart/add",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "add"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"qty\": 1\n}"
+            }
+          }
         }
       ]
     },
@@ -1054,6 +1096,52 @@
                 "address",
                 "{{addressId}}"
               ]
+            }
+          }
+        },
+        {
+          "name": "Re-add Address for Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Re-add Address for Order: status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('addressId present', () => pm.expect(json.data.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('addressId', json.data.id);",
+                  "try { pm.environment.set('addressId', json.data.id); } catch (e) {}",
+                  "console.log('addressId:', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/customer-service/address",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer-service",
+                "address"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"country\": \"India\",\n  \"zipCode\": 560001,\n  \"home\": \"Flat 42B, Tower-C\",\n  \"streetLocality\": \"MG Road, Shivaji Nagar\",\n  \"landmark\": \"Near Metro Station\"\n}"
             }
           }
         }
@@ -1221,6 +1309,48 @@
               }
             }
           ]
+        },
+        {
+          "name": "Re-add Item for Coupon Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Re-add Item for Coupon Order: status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cart-service/cart/add",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "add"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"qty\": 1\n}"
+            }
+          }
         },
         {
           "name": "Place Order (with Coupon)",
