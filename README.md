@@ -90,16 +90,13 @@ Kafka consumers retry failed records twice with a 1 second backoff, then publish
 ### 1. Build all services
 
 ```bash
-JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home \
-  mvn clean package -DskipTests --file platform-commons/pom.xml
+scripts/build-docker-jars.sh
+```
 
-for svc in auth-server catalog-service customer-service order-service \
-           shopping-cart-service payment-service inventory-service \
-           notification-service review-service wishlist-service coupon-service \
-           api-gateway service-discovery cloud-config spring-server; do
-  JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home \
-    mvn clean package -DskipTests -f $svc/pom.xml
-done
+For a focused rebuild before Docker, pass module names:
+
+```bash
+scripts/build-docker-jars.sh api-gateway order-service
 ```
 
 ### 2. Run the full stack
