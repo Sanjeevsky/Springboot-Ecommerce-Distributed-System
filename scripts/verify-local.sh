@@ -74,6 +74,10 @@ SERVICE_HEALTH_CHECKS=(
   "review-service|http://$LOCAL_SERVICE_HOST:${REVIEW_SERVICE_PORT:-8090}/actuator/health"
 )
 
+GATEWAY_ROUTE_CHECKS=(
+  "catalog-service route|$BASE_URL/catalog-service/product/list"
+)
+
 log() {
   printf '\n==> %s\n' "$1"
 }
@@ -165,6 +169,26 @@ wait_for_health_check() {
   wait_for_url "$name" "$url"
 }
 
+wait_for_gateway_route() {
+  local check="$1"
+  local name="${check%%|*}"
+  local url="${check#*|}"
+  local status
+
+  for _ in $(seq 1 "$WAIT_RETRIES"); do
+    status="$(curl -sS -o /dev/null -w "%{http_code}" "$url" || true)"
+    if [[ "$status" == "200" ]]; then
+      return 0
+    fi
+    sleep "$WAIT_SLEEP_SECONDS"
+  done
+
+  echo "Gateway route $name did not become ready at $url; last status was ${status:-<none>}" >&2
+  print_url_diagnostics "$name" "$url"
+  print_eureka_registry_snapshot
+  return 1
+}
+
 expect_http_status() {
   local name="$1"
   local url="$2"
@@ -239,6 +263,10 @@ if [[ "$RUN_POSTMAN" == "1" ]]; then
     log "Allowing gateway discovery cache to refresh"
     sleep "$GATEWAY_DISCOVERY_STABILIZE_SECONDS"
   fi
+  log "Waiting for API gateway service routes"
+  for check in "${GATEWAY_ROUTE_CHECKS[@]}"; do
+    wait_for_gateway_route "$check"
+  done
   verify_gateway_standard_routes
 
   if [[ "$RUN_API_COLLECTION" == "1" ]]; then

@@ -617,6 +617,12 @@ if (!verifyLocalText.includes("RUN_DIRECT_HEALTH_CHECKS")
   fail("scripts/verify-local.sh: local smoke verifier must wait for direct service actuator health before Postman runs");
 }
 
+if (!verifyLocalText.includes("GATEWAY_ROUTE_CHECKS")
+    || !verifyLocalText.includes("wait_for_gateway_route")
+    || !verifyLocalText.includes("/catalog-service/product/list")) {
+  fail("scripts/verify-local.sh: local smoke verifier must wait for gateway route readiness before Postman runs");
+}
+
 if (!verifyLocalText.includes("RUN_API_COLLECTION")
     || !verifyLocalText.includes("Ecommerce-API.postman_collection.json")) {
   fail("scripts/verify-local.sh: local smoke verifier must include the API Postman collection");
