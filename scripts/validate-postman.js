@@ -10,6 +10,7 @@ const collectionFiles = [
   "postman/Ecommerce-E2E-Complete.postman_collection.json",
 ];
 const apiCollectionFile = "postman/Ecommerce-API.postman_collection.json";
+const e2eCollectionFile = "postman/Ecommerce-E2E-Complete.postman_collection.json";
 const environmentFiles = ["postman/Ecommerce-Local.postman_environment.json"];
 
 const bannedMarkers = [
@@ -272,6 +273,69 @@ function validateAsyncRunnerRetries(relativePath, collection) {
   }
 }
 
+function validateGatewayRoutedRequests(relativePath, collection) {
+  for (const { path: requestPath, item } of walkItems(collection.item)) {
+    const url = requestUrl(item);
+    if (url && !url.startsWith("{{baseUrl}}/")) {
+      fail(`${relativePath}: ${requestPath}: request URL must route through {{baseUrl}} instead of ${url}`);
+    }
+  }
+}
+
+function requestIndexesByName(collection) {
+  const indexes = new Map();
+  walkItems(collection.item).forEach(({ item }, index) => {
+    if (item.name && !indexes.has(item.name)) {
+      indexes.set(item.name, index);
+    }
+  });
+  return indexes;
+}
+
+function validateRequestOrder(relativePath, collection, requiredOrder) {
+  const indexes = requestIndexesByName(collection);
+  for (const requestName of requiredOrder) {
+    if (!indexes.has(requestName)) {
+      fail(`${relativePath}: missing runner-order request "${requestName}"`);
+      return;
+    }
+  }
+
+  for (let i = 1; i < requiredOrder.length; i += 1) {
+    const previous = requiredOrder[i - 1];
+    const current = requiredOrder[i];
+    if (indexes.get(previous) >= indexes.get(current)) {
+      fail(`${relativePath}: "${previous}" must run before "${current}"`);
+    }
+  }
+}
+
+function validateRunnerStateRepairs(relativePath, collection) {
+  if (relativePath === apiCollectionFile) {
+    validateRequestOrder(relativePath, collection, ["Clear Cart", "Re-add Item for Order", "Place Order"]);
+    validateRequestOrder(relativePath, collection, ["Delete Address", "Re-add Address for Order", "Place Order"]);
+    validateRequestOrder(relativePath, collection, ["Place Order", "Re-add Item for Coupon Order", "Place Order (with Coupon)"]);
+  }
+
+  if (relativePath === e2eCollectionFile) {
+    validateRequestOrder(relativePath, collection, [
+      "30 — Remove Item from Cart",
+      "31 — Re-add Item (before order)",
+      "40 — Create Order (plain) → save orderId + paymentId",
+    ]);
+    validateRequestOrder(relativePath, collection, [
+      "34 — Move to Cart",
+      "34b — Re-add to Wishlist before delete",
+      "35 — Remove from Wishlist",
+    ]);
+    validateRequestOrder(relativePath, collection, [
+      "40 — Create Order (plain) → save orderId + paymentId",
+      "40a — Re-add Item for Coupon Order",
+      "40b — Create Order with Coupon → verify discount applied",
+    ]);
+  }
+}
+
 function validateBannedMarkers(relativePath) {
   const text = fs.readFileSync(path.join(root, relativePath), "utf8");
   for (const { pattern, reason } of bannedMarkers) {
@@ -303,6 +367,8 @@ for (const relativePath of collectionFiles) {
   }
   validateCollectionRunnerSeeding(relativePath, collection);
   validateAsyncRunnerRetries(relativePath, collection);
+  validateGatewayRoutedRequests(relativePath, collection);
+  validateRunnerStateRepairs(relativePath, collection);
 
   const declaredVariables = new Set(environmentVariables);
   const collectionVariables = new Set();
