@@ -306,6 +306,47 @@ function validateGatewayRoutedRequests(relativePath, collection) {
   }
 }
 
+function requestByName(collection, name) {
+  const match = walkItems(collection.item).find(({ item }) => item.name === name);
+  return match && match.item;
+}
+
+function hasRequestHeader(item, key) {
+  return ((item && item.request && item.request.header) || [])
+    .some((header) => header && header.key === key);
+}
+
+function validateApiCollectionGuards(relativePath, collection) {
+  if (relativePath !== apiCollectionFile) {
+    return;
+  }
+
+  const collectionTestCode = (collection.event || [])
+    .filter((event) => event.listen === "test")
+    .map((event) => scriptLines(event.script))
+    .join("\n");
+
+  if (!collectionTestCode.includes("Runner request returned 2xx")
+      || !collectionTestCode.includes("isTransientRunnerRetry")) {
+    fail(`${relativePath}: collection-level test must fail non-2xx API responses while preserving bounded retry flows`);
+  }
+
+  const protectedRequests = [
+    "Product Service Status",
+    "Get Active Coupons",
+    "Get Approved Reviews for Product",
+    "Get Review Summary for Product",
+  ];
+  for (const requestName of protectedRequests) {
+    const item = requestByName(collection, requestName);
+    if (!item) {
+      fail(`${relativePath}: missing protected API request "${requestName}"`);
+    } else if (!hasRequestHeader(item, "Authorization")) {
+      fail(`${relativePath}: ${requestName}: protected API request must include Authorization header`);
+    }
+  }
+}
+
 function requestIndexesByName(collection) {
   const indexes = new Map();
   walkItems(collection.item).forEach(({ item }, index) => {
@@ -339,6 +380,7 @@ function validateRunnerStateRepairs(relativePath, collection) {
     validateRequestOrder(relativePath, collection, ["Clear Cart", "Re-add Item for Order", "Place Order"]);
     validateRequestOrder(relativePath, collection, ["Delete Address", "Re-add Address for Order", "Place Order"]);
     validateRequestOrder(relativePath, collection, ["Place Order", "Re-add Item for Coupon Order", "Place Order (with Coupon)"]);
+    validateRequestOrder(relativePath, collection, ["Add to Wishlist", "Remove from Wishlist", "Re-add to Wishlist for Move", "Move to Cart"]);
   }
 
   if (relativePath === e2eCollectionFile) {
@@ -395,6 +437,7 @@ for (const relativePath of collectionFiles) {
     validateRouteCoverage(relativePath, collection);
   }
   validateCollectionRunnerSeeding(relativePath, collection);
+  validateApiCollectionGuards(relativePath, collection);
   validateAsyncRunnerRetries(relativePath, collection);
   validateGatewayRoutedRequests(relativePath, collection);
   validateRunnerStateRepairs(relativePath, collection);
