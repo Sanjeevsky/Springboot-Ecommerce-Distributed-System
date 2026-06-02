@@ -7,6 +7,8 @@ cd "$ROOT_DIR"
 
 BASE_URL="${BASE_URL:-http://localhost:8081}"
 EUREKA_URL="${EUREKA_URL:-http://localhost:8761}"
+BASE_URL="${BASE_URL%/}"
+EUREKA_URL="${EUREKA_URL%/}"
 LOCAL_SERVICE_HOST="${LOCAL_SERVICE_HOST:-localhost}"
 POSTMAN_ENV="${POSTMAN_ENV:-postman/Ecommerce-Local.postman_environment.json}"
 RUN_POSTMAN="${RUN_POSTMAN:-1}"
@@ -120,6 +122,25 @@ wait_for_health_check() {
   wait_for_url "$name" "$url"
 }
 
+expect_http_status() {
+  local name="$1"
+  local url="$2"
+  local expected="$3"
+  local actual
+
+  actual="$(curl -sS -o /dev/null -w "%{http_code}" "$url")"
+  if [[ "$actual" != "$expected" ]]; then
+    echo "$name returned HTTP $actual at $url; expected $expected" >&2
+    return 1
+  fi
+}
+
+verify_gateway_standard_routes() {
+  log "Verifying gateway standard routes"
+  expect_http_status "Standard cart route auth guard" "$BASE_URL/cart-service/cart" "401"
+  expect_http_status "Raw shopping-cart service route" "$BASE_URL/shopping-cart-service/cart" "404"
+}
+
 if [[ -z "${JAVA_HOME:-}" && -d /Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home ]]; then
   export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home
 fi
@@ -160,6 +181,7 @@ if [[ "$RUN_POSTMAN" == "1" ]]; then
     log "Allowing gateway discovery cache to refresh"
     sleep "$GATEWAY_DISCOVERY_STABILIZE_SECONDS"
   fi
+  verify_gateway_standard_routes
 
   if [[ "$RUN_API_COLLECTION" == "1" ]]; then
     log "Running Postman API reference flow"

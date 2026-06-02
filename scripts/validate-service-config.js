@@ -257,6 +257,12 @@ if (!verifyLocalText.includes("RUN_API_COLLECTION")
   fail("scripts/verify-local.sh: local smoke verifier must include the API Postman collection");
 }
 
+if (!verifyLocalText.includes("verify_gateway_standard_routes")
+    || !verifyLocalText.includes("/cart-service/cart")
+    || !verifyLocalText.includes("/shopping-cart-service/cart")) {
+  fail("scripts/verify-local.sh: local smoke verifier must assert standard gateway routes and reject raw service-id routes");
+}
+
 const smokeScriptText = fs.readFileSync(path.join(root, "e2e-smoke-test.sh"), "utf8");
 if (!smokeScriptText.includes("exec scripts/verify-local.sh") || !smokeScriptText.includes("RUN_MAVEN_TESTS")) {
   fail("e2e-smoke-test.sh: legacy smoke entrypoint must delegate to scripts/verify-local.sh");
