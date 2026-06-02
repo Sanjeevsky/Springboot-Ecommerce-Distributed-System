@@ -361,6 +361,88 @@ for (const [client, feignClientFile, composeEnv] of orderClientOverrides) {
   }
 }
 
+const kafkaRetryConfigs = [
+  {
+    service: "inventory-service",
+    configPath: ["src", "main", "java", "com", "sanjeevsky", "inventoryservice", "config", "KafkaRetryConfig.java"],
+    consumerPaths: [
+      ["src", "main", "java", "com", "sanjeevsky", "inventoryservice", "events", "OrderEventConsumer.java"],
+    ],
+    dltTopics: ["order-events-dlt"],
+  },
+  {
+    service: "notification-service",
+    configPath: ["src", "main", "java", "com", "sanjeevsky", "notificationservice", "config", "KafkaRetryConfig.java"],
+    consumerPaths: [
+      ["src", "main", "java", "com", "sanjeevsky", "notificationservice", "consumer", "OrderEventConsumer.java"],
+      ["src", "main", "java", "com", "sanjeevsky", "notificationservice", "consumer", "PaymentEventConsumer.java"],
+    ],
+    dltTopics: ["order-events-dlt", "payment-events-dlt"],
+  },
+  {
+    service: "review-service",
+    configPath: ["src", "main", "java", "com", "sanjeevsky", "reviewservice", "config", "KafkaRetryConfig.java"],
+    consumerPaths: [
+      ["src", "main", "java", "com", "sanjeevsky", "reviewservice", "kafka", "OrderEventConsumer.java"],
+    ],
+    dltTopics: ["order-events-dlt"],
+  },
+  {
+    service: "order-service",
+    configPath: ["src", "main", "java", "com", "sanjeevsky", "orderservice", "config", "KafkaRetryConfig.java"],
+    consumerPaths: [
+      ["src", "main", "java", "com", "sanjeevsky", "orderservice", "events", "InventoryEventConsumer.java"],
+    ],
+    dltTopics: ["inventory-events-dlt"],
+  },
+];
+
+for (const kafkaRetryConfig of kafkaRetryConfigs) {
+  const relativeConfigPath = path.join(kafkaRetryConfig.service, ...kafkaRetryConfig.configPath);
+  const absoluteConfigPath = path.join(root, relativeConfigPath);
+  if (!fs.existsSync(absoluteConfigPath)) {
+    fail(`${relativeConfigPath}: Kafka retry/DLT config is missing`);
+    continue;
+  }
+
+  const configText = fs.readFileSync(absoluteConfigPath, "utf8");
+  const requiredConfigSnippets = [
+    "DeadLetterPublishingRecoverer",
+    "SeekToCurrentErrorHandler",
+    "FixedBackOff",
+    'record.topic() + "-dlt"',
+    "MAX_RETRY_ATTEMPTS = 2L",
+  ];
+  for (const snippet of requiredConfigSnippets) {
+    if (!configText.includes(snippet)) {
+      fail(`${relativeConfigPath}: Kafka retry/DLT config must include ${snippet}`);
+    }
+  }
+
+  for (const dltTopic of kafkaRetryConfig.dltTopics) {
+    if (!configText.includes(`TopicBuilder.name("${dltTopic}")`)) {
+      fail(`${relativeConfigPath}: expected DLT topic ${dltTopic}`);
+    }
+  }
+
+  for (const consumerPathParts of kafkaRetryConfig.consumerPaths) {
+    const relativeConsumerPath = path.join(kafkaRetryConfig.service, ...consumerPathParts);
+    const absoluteConsumerPath = path.join(root, relativeConsumerPath);
+    if (!fs.existsSync(absoluteConsumerPath)) {
+      fail(`${relativeConsumerPath}: Kafka consumer is missing`);
+      continue;
+    }
+
+    const consumerText = fs.readFileSync(absoluteConsumerPath, "utf8");
+    if (!consumerText.includes("@KafkaListener")) {
+      fail(`${relativeConsumerPath}: expected Kafka listener annotation`);
+    }
+    if (!consumerText.includes("throw new IllegalStateException")) {
+      fail(`${relativeConsumerPath}: Kafka consumer must rethrow processing failures so retry/DLT handling can run`);
+    }
+  }
+}
+
 function requireMavenTestFlags(relativePath, text) {
   for (const requiredFlag of mavenTestConfigFlags) {
     if (!text.includes(requiredFlag)) {

@@ -56,11 +56,11 @@
 | shopping-cart-service | 8086 | ✅ | ✅ | ✅ | — | feign | ✅ |
 | payment-service | 8085 | ✅ | ✅ | ✅ | pub | — | ✅ |
 | order-service | 8092 | ✅ | ✅ | ✅ | pub | feign | ✅ |
-| inventory-service | 8088 | ✅ | ⬛add | ⬛add | cons | — | 🔧 |
-| notification-service | 8087 | ✅ | ⬛add | ⬛add | cons | — | 🔧 |
-| coupon-service | 8089 | ✅ | ⬛add | ⬛add | — | — | 🔧 |
-| review-service | 8090 | ✅ | ⬛add | ⬛add | cons | — | 🔧 |
-| wishlist-service | 8091 | ✅ | ⬛add | ⬛add | — | ⬛cart | 🔧 |
+| inventory-service | 8088 | ✅ | ✅ | ✅ | cons | — | ✅ |
+| notification-service | 8087 | ✅ | ✅ | ✅ | cons | — | ✅ |
+| coupon-service | 8089 | ✅ | ✅ | ✅ | — | — | ✅ |
+| review-service | 8090 | ✅ | ✅ | ✅ | cons | — | ✅ |
+| wishlist-service | 8091 | ✅ | ✅ | ✅ | — | ✅ | ✅ |
 
 ---
 
@@ -68,9 +68,9 @@
 
 ### Phase 1 — Complete Observability (all 12 business services)
 
-**1.1 Add missing Maven deps (5 services)**
+**1.1 Add observability Maven deps (completed for all business services)**
 
-All 5 services (inventory, notification, coupon, review, wishlist) need:
+All business services include:
 ```xml
 <dependency>
     <groupId>org.springframework.cloud</groupId>
@@ -82,9 +82,9 @@ All 5 services (inventory, notification, coupon, review, wishlist) need:
 </dependency>
 ```
 
-**1.2 Fix application.properties (all services)**
+**1.2 Standardize application.properties (completed)**
 
-All services need:
+Business services include:
 ```properties
 spring.zipkin.baseUrl=http://localhost:9411/
 spring.zipkin.enabled=false            # overridden to true in docker
@@ -93,12 +93,12 @@ management.endpoint.health.show-details=always
 management.endpoints.web.exposure.include=*
 ```
 
-**1.3 Docker-compose**
-- Remove `profiles: ["observability"]` — observability always starts
-- Remove `profiles: ["optional-services"]` — all services start by default
-- Enable `SPRING_ZIPKIN_ENABLED=true` for all services in docker env
-- Add Kafka UI container
-- Add Grafana volume mounts for provisioning
+**1.3 Docker-compose (completed)**
+- Observability starts with the default stack.
+- Business services run by default.
+- Docker overrides enable Zipkin and point Kafka clients at `kafka:29092`.
+- Kafka UI is available at `http://localhost:8080`.
+- Grafana provisioning is mounted from `observability/grafana`.
 
 **1.4 Grafana provisioning**
 - `observability/grafana/provisioning/datasources/prometheus.yaml`
@@ -136,7 +136,7 @@ Circuit breakers on all Feign clients with graceful fallbacks:
 
 **3.2 Kafka Dead Letter Queue**
 
-Error handler in inventory, notification, review consumers → DLQ topic `{topic}-dlt`
+Inventory, order, notification, and review consumers use retry + dead-letter handling. Consumer processing failures are rethrown to the listener container and published to `{topic}-dlt` after bounded retries.
 
 **3.3 Idempotency Keys**
 
@@ -166,56 +166,60 @@ The DataSeed collection leaves an approved review available for the seeded produ
 ### Phase 1 — Observability
 
 ```
-inventory-service/pom.xml                            [add sleuth-zipkin + micrometer]
-inventory-service/src/main/resources/application.properties  [add zipkin config]
+inventory-service/pom.xml                            [done: sleuth-zipkin + micrometer]
+inventory-service/src/main/resources/application.properties  [done: zipkin config]
 
-notification-service/pom.xml                         [add sleuth-zipkin + micrometer]
-notification-service/src/main/resources/application.properties [add zipkin config]
+notification-service/pom.xml                         [done: sleuth-zipkin + micrometer]
+notification-service/src/main/resources/application.properties [done: zipkin config]
 
-coupon-service/pom.xml                               [add sleuth-zipkin + micrometer]
-coupon-service/src/main/resources/application.properties [add zipkin config]
+coupon-service/pom.xml                               [done: sleuth-zipkin + micrometer]
+coupon-service/src/main/resources/application.properties [done: zipkin config]
 
-review-service/pom.xml                               [add sleuth-zipkin + micrometer]
-review-service/src/main/resources/application.properties [add zipkin config]
+review-service/pom.xml                               [done: sleuth-zipkin + micrometer]
+review-service/src/main/resources/application.properties [done: zipkin config]
 
-wishlist-service/pom.xml                             [add sleuth-zipkin + micrometer]
-wishlist-service/src/main/resources/application.properties [add zipkin config]
+wishlist-service/pom.xml                             [done: sleuth-zipkin + micrometer]
+wishlist-service/src/main/resources/application.properties [done: zipkin config]
 
-docker-compose.yml                                   [remove profiles, enable zipkin, add kafka-ui]
+docker-compose.yml                                   [done: default observability, zipkin, kafka-ui]
 
-observability/grafana/provisioning/datasources/prometheus.yaml  [CREATE]
-observability/grafana/provisioning/dashboards/dashboard.yaml    [CREATE]
-observability/grafana/dashboards/ecommerce-overview.json        [CREATE]
+observability/grafana/provisioning/datasources/prometheus.yaml  [done]
+observability/grafana/provisioning/dashboards/dashboard.yaml    [done]
+observability/grafana/dashboards/ecommerce-overview.json        [done]
 ```
 
 ### Phase 2 — Advanced Integration
 
 ```
-order-service/pom.xml                                [add openfeign for coupon/inventory]
+order-service/pom.xml                                [done: openfeign for coupon/inventory]
 order-service/src/main/java/.../clients/
-  CouponFeignClient.java                             [CREATE]
-  InventoryFeignClient.java                          [CREATE]
-  fallback/CouponFeignClientFallback.java            [CREATE]
+  CouponFeignClient.java                             [done]
+  InventoryFeignClient.java                          [done]
+  fallback/CouponFeignClientFallback.java            [done]
 order-service/src/main/java/.../controller/
-  OrderController.java                               [modify — add couponCode to request]
+  OrderController.java                               [done: couponCode request support]
 order-service/src/main/java/.../service/impl/
-  OrderServiceImpl.java                              [modify — coupon validation + inventory check]
+  OrderServiceImpl.java                              [done: coupon validation + inventory check]
 
 wishlist-service/src/main/java/.../clients/
-  CartFeignClient.java                               [CREATE]
+  CartFeignClient.java                               [done]
 wishlist-service/src/main/java/.../service/impl/
-  WishlistServiceImpl.java                           [modify — moveToCart calls cart Feign]
-wishlist-service/pom.xml                             [add openfeign]
+  WishlistServiceImpl.java                           [done: moveToCart calls cart Feign]
+wishlist-service/pom.xml                             [done: openfeign]
 ```
 
 ### Phase 3 — Production Hardening
 
 ```
-order-service/src/main/resources/application.properties  [add resilience4j config]
+order-service/src/main/resources/application.properties  [done: resilience4j config]
 inventory-service/src/main/java/.../events/
-  OrderEventConsumer.java                            [modify — add DLQ error handler]
+  OrderEventConsumer.java                            [done: retry/DLQ handler]
+order-service/src/main/java/.../events/
+  InventoryEventConsumer.java                        [done: retry/DLQ handler]
 notification-service/src/main/java/.../events/
-  *Consumer.java                                     [modify — add DLQ error handler]
+  *Consumer.java                                     [done: retry/DLQ handler]
+review-service/src/main/java/.../kafka/
+  OrderEventConsumer.java                            [done: retry/DLQ handler]
 ```
 
 ---
@@ -231,7 +235,7 @@ POST /order-service/order {addressId, couponCode?}
   ├── [if couponCode] CouponFeignClient.validate(code)   → coupon-service
   │     └── apply discount to orderTotal
   ├── [optional] InventoryFeignClient.checkStock(items)  → inventory-service
-  │     └── warn if unavailable (non-blocking CB fallback)
+  │     └── reject insufficient exact-variant stock; warn and continue if unavailable
   ├── Persist Order (status=PENDING, discount applied)
   ├── PaymentFeignClient.initiate(orderId, userId, total) → payment-service
   ├── CartFeignClient.clearCart(userId)
