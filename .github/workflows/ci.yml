@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  postman-static-validation:
+    name: Postman static validation
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Validate Postman collections
+        run: node scripts/validate-postman.js
+
+  java-tests:
+    name: Java tests - ${{ matrix.module }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - api-gateway
+          - auth-server
+          - catalog-service
+          - cloud-config
+          - coupon-service
+          - customer-service
+          - inventory-service
+          - notification-service
+          - order-service
+          - payment-service
+          - review-service
+          - service-discovery
+          - shopping-cart-service
+          - spring-server
+          - wishlist-service
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 11
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "11"
+          cache: maven
+
+      - name: Install shared platform commons
+        run: mvn -B -f platform-commons/pom.xml install -DskipTests
+
+      - name: Run module tests
+        env:
+          MODULE: ${{ matrix.module }}
+        run: |
+          mvn -B -f "$MODULE/pom.xml" test \
+            -DfailIfNoTests=false \
+            "-Dtest=!*ApplicationTests"

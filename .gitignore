@@ -4,6 +4,8 @@
 *.jar
 *.war
 *.ear
+build/
+out/
 
 # IDE files
 .idea/
@@ -18,10 +20,19 @@ Thumbs.db
 
 # Logs
 *.log
+hs_err_pid*
+replay_pid*
 
 # Local config / secrets
 *.env
 application-local.properties
+
+# Local test and load-test output
+.newman/
+newman/
+results.json
+results-*.json
+load-tests/results*.json
 
 # Graphify output
 graphify-out/

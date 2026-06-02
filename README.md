@@ -125,6 +125,15 @@ Kafka broker endpoints:
 
 Import the Postman collection from `postman/` for all endpoints.
 
+Postman collections:
+
+| Collection | Purpose |
+|------------|---------|
+| `Ecommerce-API.postman_collection.json` | Endpoint reference collection |
+| `Ecommerce-DataSeed.postman_collection.json` | Runner-safe seed flow for local data |
+| `Ecommerce-E2E-Complete.postman_collection.json` | Runner-safe application E2E flow |
+| `Ecommerce-Local.postman_environment.json` | Local gateway environment |
+
 ### Authentication
 
 ```
@@ -143,6 +152,48 @@ PUT    /order-service/order/{id}/cancel
 GET    /order-service/order/{id}
 GET    /order-service/orders
 ```
+
+---
+
+## Verification
+
+Static validation for Postman collections:
+
+```bash
+node scripts/validate-postman.js
+```
+
+Full local verification:
+
+```bash
+scripts/verify-local.sh
+```
+
+Useful switches:
+
+```bash
+RUN_POSTMAN=0 scripts/verify-local.sh       # skip Docker-stack Postman runner checks
+RUN_MAVEN_TESTS=0 scripts/verify-local.sh   # skip Maven module tests
+```
+
+Local runner checks after the Docker stack is up:
+
+```bash
+newman run postman/Ecommerce-DataSeed.postman_collection.json \
+  -e postman/Ecommerce-Local.postman_environment.json
+
+newman run postman/Ecommerce-E2E-Complete.postman_collection.json \
+  -e postman/Ecommerce-Local.postman_environment.json
+```
+
+Targeted Java test example:
+
+```bash
+JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home \
+  mvn -B -f auth-server/pom.xml test -DfailIfNoTests=false "-Dtest=!*ApplicationTests"
+```
+
+GitHub Actions runs Postman static validation and Java 11 module tests on pushes and pull requests.
 
 ---
 
