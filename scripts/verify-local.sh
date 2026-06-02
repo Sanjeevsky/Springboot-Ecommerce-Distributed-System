@@ -12,6 +12,7 @@ RUN_POSTMAN="${RUN_POSTMAN:-1}"
 RUN_MAVEN_TESTS="${RUN_MAVEN_TESTS:-1}"
 WAIT_RETRIES="${WAIT_RETRIES:-60}"
 WAIT_SLEEP_SECONDS="${WAIT_SLEEP_SECONDS:-5}"
+GATEWAY_DISCOVERY_STABILIZE_SECONDS="${GATEWAY_DISCOVERY_STABILIZE_SECONDS:-10}"
 
 MAVEN_TEST_MODULES=(
   api-gateway
@@ -114,6 +115,10 @@ if [[ "$RUN_POSTMAN" == "1" ]]; then
   for app in "${REQUIRED_EUREKA_APPS[@]}"; do
     wait_for_eureka_app "$app"
   done
+  if [[ "$GATEWAY_DISCOVERY_STABILIZE_SECONDS" -gt 0 ]]; then
+    log "Allowing gateway discovery cache to refresh"
+    sleep "$GATEWAY_DISCOVERY_STABILIZE_SECONDS"
+  fi
 
   log "Running Postman data seed flow"
   newman run postman/Ecommerce-DataSeed.postman_collection.json \

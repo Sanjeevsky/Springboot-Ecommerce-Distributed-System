@@ -117,6 +117,8 @@ docker-compose up -d
 | Grafana | http://localhost:3000 (admin / admin) |
 | API Gateway | http://localhost:8081 |
 
+Zipkin runs in the Docker stack, but service tracing is disabled by default to keep full-stack local verification within typical Docker Desktop memory limits. Set `SPRING_ZIPKIN_ENABLED=true` before `docker compose up` to emit spans.
+
 Kafka broker endpoints:
 
 | Use case | Endpoint |
@@ -184,6 +186,7 @@ Useful switches:
 ```bash
 RUN_POSTMAN=0 scripts/verify-local.sh       # skip Docker-stack Postman runner checks
 RUN_MAVEN_TESTS=0 scripts/verify-local.sh   # skip Maven module tests
+GATEWAY_DISCOVERY_STABILIZE_SECONDS=0 scripts/verify-local.sh  # disable post-Eureka gateway cache wait
 ```
 
 Local runner checks after the Docker stack is up:

@@ -977,10 +977,22 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Add to Cart: status 200', () => pm.response.to.have.status(200));",
-                  "var json = pm.response.json();",
-                  "pm.test('Cart has at least 1 item', () => pm.expect(json.data.items.length).to.be.above(0));",
-                  "console.log('Cart items:', json.data.items.length, '| total:', json.data.totalAmount);"
+                  "var retryKey = '_cartAddRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 5;",
+                  "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Cart add dependency not ready; retrying Add Item to Cart ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  postman.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(retryKey);",
+                  "  try { pm.environment.unset(retryKey); } catch (e) {}",
+                  "  pm.test('Add to Cart: status 200', () => pm.response.to.have.status(200));",
+                  "  var json = pm.response.json();",
+                  "  pm.test('Cart response has data', () => pm.expect(json.data).to.be.an('object'));",
+                  "  pm.test('Cart has at least 1 item', () => pm.expect(json.data.items.length).to.be.above(0));",
+                  "  console.log('Cart items:', json.data.items.length, '| total:', json.data.totalAmount);",
+                  "}"
                 ]
               }
             }
@@ -1087,7 +1099,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Re-add Item: status 200', () => pm.response.to.have.status(200));"
+                  "var retryKey = '_cartAddRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 5;",
+                  "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Cart add dependency not ready; retrying Re-add Item ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  postman.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(retryKey);",
+                  "  try { pm.environment.unset(retryKey); } catch (e) {}",
+                  "  pm.test('Re-add Item: status 200', () => pm.response.to.have.status(200));",
+                  "}"
                 ]
               }
             }
@@ -1395,17 +1418,29 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Create Order: status 201', () => pm.response.to.have.status(201));",
-                  "var json = pm.response.json();",
-                  "pm.test('Order ID present', () => pm.expect(json.data.id).to.be.a('string'));",
-                  "pm.collectionVariables.set('orderId', json.data.id);",
-                  "try { pm.environment.set('orderId', json.data.id); } catch(e) {}",
-                  "if (json.data.paymentId) {",
-                  "  pm.collectionVariables.set('paymentId', json.data.paymentId);",
-                  "  try { pm.environment.set('paymentId', json.data.paymentId); } catch(e) {}",
-                  "  console.log('paymentId:', json.data.paymentId);",
-                  "}",
-                  "console.log('orderId:', json.data.id, '| status:', json.data.status);"
+                  "var retryKey = '_orderCreateRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 5;",
+                  "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Order dependencies not ready; retrying Create Order ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  postman.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(retryKey);",
+                  "  try { pm.environment.unset(retryKey); } catch(e) {}",
+                  "  pm.test('Create Order: status 201', () => pm.response.to.have.status(201));",
+                  "  var json = pm.response.json();",
+                  "  pm.test('Order response has data', () => pm.expect(json.data).to.be.an('object'));",
+                  "  pm.test('Order ID present', () => pm.expect(json.data.id).to.be.a('string'));",
+                  "  pm.collectionVariables.set('orderId', json.data.id);",
+                  "  try { pm.environment.set('orderId', json.data.id); } catch(e) {}",
+                  "  if (json.data.paymentId) {",
+                  "    pm.collectionVariables.set('paymentId', json.data.paymentId);",
+                  "    try { pm.environment.set('paymentId', json.data.paymentId); } catch(e) {}",
+                  "    console.log('paymentId:', json.data.paymentId);",
+                  "  }",
+                  "  console.log('orderId:', json.data.id, '| status:', json.data.status);",
+                  "}"
                 ]
               }
             }
@@ -1437,7 +1472,18 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Re-add Item for Coupon Order: status 200', () => pm.response.to.have.status(200));"
+                  "var retryKey = '_cartAddRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 5;",
+                  "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Cart add dependency not ready; retrying Re-add Item for Coupon Order ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  postman.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(retryKey);",
+                  "  try { pm.environment.unset(retryKey); } catch (e) {}",
+                  "  pm.test('Re-add Item for Coupon Order: status 200', () => pm.response.to.have.status(200));",
+                  "}"
                 ]
               }
             }
@@ -1466,16 +1512,28 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('Create Order with Coupon: status 201', () => pm.response.to.have.status(201));",
-                  "var json = pm.response.json();",
-                  "pm.test('Order ID present', () => pm.expect(json.data.id).to.be.a('string'));",
-                  "pm.collectionVariables.set('orderId', json.data.id);",
-                  "try { pm.environment.set('orderId', json.data.id); } catch(e) {}",
-                  "if (json.data.paymentId) {",
-                  "  pm.collectionVariables.set('paymentId', json.data.paymentId);",
-                  "  try { pm.environment.set('paymentId', json.data.paymentId); } catch(e) {}",
-                  "}",
-                  "console.log('orderId:', json.data.id, '| discount:', json.data.discount, '| total:', json.data.totalAmount);"
+                  "var retryKey = '_orderCreateRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 5;",
+                  "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Order dependencies not ready; retrying Create Order with Coupon ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  postman.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(retryKey);",
+                  "  try { pm.environment.unset(retryKey); } catch(e) {}",
+                  "  pm.test('Create Order with Coupon: status 201', () => pm.response.to.have.status(201));",
+                  "  var json = pm.response.json();",
+                  "  pm.test('Order response has data', () => pm.expect(json.data).to.be.an('object'));",
+                  "  pm.test('Order ID present', () => pm.expect(json.data.id).to.be.a('string'));",
+                  "  pm.collectionVariables.set('orderId', json.data.id);",
+                  "  try { pm.environment.set('orderId', json.data.id); } catch(e) {}",
+                  "  if (json.data.paymentId) {",
+                  "    pm.collectionVariables.set('paymentId', json.data.paymentId);",
+                  "    try { pm.environment.set('paymentId', json.data.paymentId); } catch(e) {}",
+                  "  }",
+                  "  console.log('orderId:', json.data.id, '| discount:', json.data.discount, '| total:', json.data.orderTotal);",
+                  "}"
                 ]
               }
             }

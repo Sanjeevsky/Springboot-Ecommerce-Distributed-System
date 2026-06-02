@@ -270,6 +270,18 @@ function validateAsyncRunnerRetries(relativePath, collection) {
         fail(`${relativePath}: ${requestPath}: notification list must retry before notificationId is used later`);
       }
     }
+
+    if (method === "POST" && url.endsWith("/cart-service/cart/add")) {
+      if (!code.includes("postman.setNextRequest") || !code.includes("_cartAddRetryCount")) {
+        fail(`${relativePath}: ${requestPath}: cart add must retry transient catalog/cart cold-start failures`);
+      }
+    }
+
+    if (method === "POST" && url.endsWith("/order-service/order")) {
+      if (!code.includes("postman.setNextRequest") || !code.includes("_orderCreateRetryCount")) {
+        fail(`${relativePath}: ${requestPath}: order create must retry transient checkout/payment cold-start failures`);
+      }
+    }
   }
 }
 

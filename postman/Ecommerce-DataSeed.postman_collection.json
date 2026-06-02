@@ -564,9 +564,21 @@
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('Add to Cart: status 200', () => pm.response.to.have.status(200));",
-              "var json = pm.response.json();",
-              "console.log('Cart total:', json.data.totalAmount, 'items:', json.data.items.length);"
+              "var retryKey = '_cartAddRetryCount';",
+              "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+              "var maxRetries = 5;",
+              "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+              "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+              "  console.log('Cart add dependency not ready; retrying Add Product to Cart ' + (retryCount + 1) + '/' + maxRetries);",
+              "  postman.setNextRequest(pm.info.requestName);",
+              "} else {",
+              "  pm.collectionVariables.unset(retryKey);",
+              "  try { pm.environment.unset(retryKey); } catch (e) {}",
+              "  pm.test('Add to Cart: status 200', () => pm.response.to.have.status(200));",
+              "  var json = pm.response.json();",
+              "  pm.test('Cart response has data', () => pm.expect(json.data).to.be.an('object'));",
+              "  console.log('Cart total:', json.data.totalAmount, 'items:', json.data.items.length);",
+              "}"
             ]
           }
         }
@@ -686,17 +698,29 @@
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('Place Order: status 201', () => pm.response.to.have.status(201));",
-              "var json = pm.response.json();",
-              "pm.test('Order ID present', () => pm.expect(json.data.id).to.be.a('string'));",
-              "pm.test('Payment ID present', () => pm.expect(json.data.paymentId).to.be.a('string'));",
-              "pm.collectionVariables.set('orderId', json.data.id);",
-              "try { pm.environment.set('orderId', json.data.id); } catch (e) {}",
-              "pm.collectionVariables.set('paymentId', json.data.paymentId);",
-              "try { pm.environment.set('paymentId', json.data.paymentId); } catch (e) {}",
-              "console.log('orderId:', json.data.id);",
-              "console.log('paymentId:', json.data.paymentId);",
-              "console.log('status:', json.data.status);"
+              "var retryKey = '_orderCreateRetryCount';",
+              "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+              "var maxRetries = 5;",
+              "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+              "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+              "  console.log('Order dependencies not ready; retrying Place Order ' + (retryCount + 1) + '/' + maxRetries);",
+              "  postman.setNextRequest(pm.info.requestName);",
+              "} else {",
+              "  pm.collectionVariables.unset(retryKey);",
+              "  try { pm.environment.unset(retryKey); } catch (e) {}",
+              "  pm.test('Place Order: status 201', () => pm.response.to.have.status(201));",
+              "  var json = pm.response.json();",
+              "  pm.test('Order response has data', () => pm.expect(json.data).to.be.an('object'));",
+              "  pm.test('Order ID present', () => pm.expect(json.data.id).to.be.a('string'));",
+              "  pm.test('Payment ID present', () => pm.expect(json.data.paymentId).to.be.a('string'));",
+              "  pm.collectionVariables.set('orderId', json.data.id);",
+              "  try { pm.environment.set('orderId', json.data.id); } catch (e) {}",
+              "  pm.collectionVariables.set('paymentId', json.data.paymentId);",
+              "  try { pm.environment.set('paymentId', json.data.paymentId); } catch (e) {}",
+              "  console.log('orderId:', json.data.id);",
+              "  console.log('paymentId:', json.data.paymentId);",
+              "  console.log('status:', json.data.status);",
+              "}"
             ]
           }
         }
