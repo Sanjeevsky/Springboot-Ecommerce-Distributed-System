@@ -23,6 +23,9 @@ jobs:
       - name: Validate Postman collections
         run: node scripts/validate-postman.js
 
+      - name: Validate service configuration
+        run: node scripts/validate-service-config.js
+
   java-tests:
     name: Java tests - ${{ matrix.module }}
     runs-on: ubuntu-latest

@@ -105,6 +105,9 @@ fi
 log "Validating Postman collections"
 node scripts/validate-postman.js
 
+log "Validating service configuration"
+node scripts/validate-service-config.js
+
 if [[ "$RUN_POSTMAN" == "1" ]]; then
   log "Waiting for gateway and Eureka registrations"
   wait_for_url "API gateway" "$BASE_URL/actuator/health"

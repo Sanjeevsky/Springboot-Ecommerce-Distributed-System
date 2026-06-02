@@ -167,10 +167,11 @@ GET    /order-service/orders
 
 ## Verification
 
-Static validation for Postman collections:
+Static validation for Postman collections and service configuration:
 
 ```bash
 node scripts/validate-postman.js
+node scripts/validate-service-config.js
 ```
 
 Full local verification:
