@@ -237,8 +237,7 @@ POST /order-service/order {addressId, couponCode?}
   ├── CartFeignClient.clearCart(userId)
   └── Publish OrderPlacedEvent → Kafka (order-events)
         ├── inventory-service: reserve stock
-        ├── notification-service: send order confirmation
-        └── review-service: track purchase eligibility
+        └── notification-service: send order placed notification
 ```
 
 ---
@@ -247,8 +246,8 @@ POST /order-service/order {addressId, couponCode?}
 
 ```
 order-service      →  order-events topic
-  OrderPlacedEvent    → inventory-service (reserve), notification-service, review-service
-  OrderConfirmedEvent → notification-service
+  OrderPlacedEvent    → inventory-service (reserve), notification-service
+  OrderConfirmedEvent → notification-service, review-service (purchase eligibility)
   OrderCancelledEvent → inventory-service (release), notification-service
 
 payment-service    →  payment-events topic
@@ -256,8 +255,8 @@ payment-service    →  payment-events topic
   PaymentFailedEvent    → notification-service
 
 inventory-service  →  inventory-events topic
-  StockReservedEvent    → order-service (update order status)
-  StockUnavailableEvent → order-service (cancel order)
+  StockReservedEvent     → order-service (leave order PENDING until explicit confirmation)
+  StockInsufficientEvent → order-service (cancel order)
 ```
 
 ---
