@@ -307,6 +307,26 @@ if (fs.existsSync(gatewayConstantsPath)
   fail("api-gateway Constants: JWT secrets must come from configuration, not hard-coded constants");
 }
 
+for (const service of ["api-gateway", "auth-server"]) {
+  const jwtProperties = propertiesFiles(service);
+  if (!jwtProperties.some((file) => propertyValues(file, "jwt.secret")
+    .some((value) => value.startsWith("${JWT_SECRET:")))) {
+    fail(`${service}: jwt.secret must read from JWT_SECRET with a local fallback`);
+  }
+  for (const file of jwtProperties) {
+    if (/^jwt\.secret\s*=\s*secret\s*$/m.test(fs.readFileSync(file, "utf8"))) {
+      fail(`${service}: jwt.secret must not be hard-coded to secret`);
+    }
+  }
+}
+
+if (composeText.includes("JWT_SECRET=secret")) {
+  fail("docker-compose.yml: JWT_SECRET must use an overridable local default, not a hard-coded secret");
+}
+if ((composeText.match(/JWT_SECRET=\$\{JWT_SECRET:-local-dev-secret\}/g) || []).length !== 2) {
+  fail("docker-compose.yml: auth-server and api-gateway must share JWT_SECRET=${JWT_SECRET:-local-dev-secret}");
+}
+
 function composeServiceBlock(service) {
   const pattern = new RegExp(`^  ${service}:\\n([\\s\\S]*?)(?=^  [a-zA-Z0-9_-]+:|^volumes:|^networks:|(?![\\s\\S]))`, "m");
   const match = composeText.match(pattern);

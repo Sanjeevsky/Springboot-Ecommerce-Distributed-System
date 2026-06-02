@@ -191,7 +191,7 @@ services:
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
       - SPRING_PROFILES_ACTIVE=dev
-      - JWT_SECRET=secret
+      - JWT_SECRET=${JWT_SECRET:-local-dev-secret}
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
@@ -335,7 +335,7 @@ services:
       - SPRING_CONFIG_IMPORT=optional:classpath:/docker-no-config.properties
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
-      - JWT_SECRET=secret
+      - JWT_SECRET=${JWT_SECRET:-local-dev-secret}
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:

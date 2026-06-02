@@ -119,6 +119,8 @@ docker-compose up -d
 
 Zipkin runs in the Docker stack, but service tracing is disabled by default to keep full-stack local verification within typical Docker Desktop memory limits. Set `SPRING_ZIPKIN_ENABLED=true` before `docker compose up` to emit spans.
 
+Auth tokens are signed by `auth-server` and verified by `api-gateway`; both read the same `JWT_SECRET` value. Docker Compose defaults it to `local-dev-secret` for local runs, and you can override it before starting the stack.
+
 The API Gateway uses explicit standard-prefix routes such as `/cart-service/**`, `/order-service/**`, and `/catalog-service/**`. Spring Cloud Gateway discovery-locator routes are disabled so raw service-id paths such as `/shopping-cart-service/**` are not exposed alongside the standard application routes.
 
 Kafka broker endpoints:
