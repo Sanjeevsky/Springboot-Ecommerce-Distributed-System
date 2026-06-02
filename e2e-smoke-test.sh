@@ -66,7 +66,10 @@ echo " E2E Smoke Test — $(date)"
 echo "══════════════════════════════════════════════════"
 
 # ── 1. Register ────────────────────────────────────────────────────────────────
-EMAIL="smoke_$(date +%s)@test.com"
+RUN_ID="$(date +%s)"
+EMAIL="smoke_${RUN_ID}@test.com"
+ORDER_IDEMPOTENCY_KEY="smoke-order-${RUN_ID}"
+COUPON_ORDER_IDEMPOTENCY_KEY="smoke-coupon-order-${RUN_ID}"
 R=$(curl -sf -X POST "$BASE/auth-service/signup" \
   -H "Content-Type: application/json" \
   -d "{\"email\":\"$EMAIL\",\"password\":\"Test@1234\",\"firstName\":\"Smoke\",\"lastName\":\"Test\",\"role\":\"USER\"}" || echo '{"error":"failed"}')
@@ -141,6 +144,7 @@ ADDR_ID=$(echo "$R" | python3 -c "import sys,json; d=json.load(sys.stdin); print
 # ── 12. Place order ────────────────────────────────────────────────────────────
 R=$(curl -sf -X POST "$BASE/order-service/order" \
   -H "$AUTH" -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $ORDER_IDEMPOTENCY_KEY" \
   -d "{\"addressId\":\"$ADDR_ID\"}" || echo '{"error":"failed"}')
 check "12. Place order" '"success":true' "$R"
 ORDER_ID=$(echo "$R" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('id',''))" 2>/dev/null || echo "")
@@ -201,6 +205,7 @@ curl -sf -X POST "$BASE/cart-service/cart/add" -H "$AUTH" -H "Content-Type: appl
   -d "{\"productId\":\"$PRODUCT_ID\",\"variantId\":\"$VARIANT_ID\",\"qty\":1}" > /dev/null 2>&1 || true
 R=$(curl -sf -X POST "$BASE/order-service/order" \
   -H "$AUTH" -H "Content-Type: application/json" \
+  -H "Idempotency-Key: $COUPON_ORDER_IDEMPOTENCY_KEY" \
   -d "{\"addressId\":\"$ADDR_ID\",\"couponCode\":\"$COUPON_CODE\"}" || echo '{"error":"failed"}')
 check "24. Place order with coupon" '"success":true' "$R"
 
