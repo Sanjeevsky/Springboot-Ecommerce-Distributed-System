@@ -67,6 +67,37 @@ class PaymentServiceImplTest {
         assertThat(result.getStatus()).isEqualTo(PaymentStatus.PENDING);
     }
 
+    @Test
+    void initiatePayment_withIdempotencyKey_savesTrimmedKey() {
+        PaymentRequest req = new PaymentRequest(ORDER_ID, USER_ID, 250.0);
+        req.setIdempotencyKey(" payment-1 ");
+        when(paymentRepository.findByUserIdAndIdempotencyKey(USER_ID, "payment-1")).thenReturn(Optional.empty());
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Payment result = paymentService.initiatePayment(req);
+
+        ArgumentCaptor<Payment> captor = ArgumentCaptor.forClass(Payment.class);
+        verify(paymentRepository).save(captor.capture());
+        assertThat(captor.getValue().getIdempotencyKey()).isEqualTo("payment-1");
+        assertThat(result.getIdempotencyKey()).isEqualTo("payment-1");
+        verify(eventPublisher).publishPaymentInitiated(any());
+    }
+
+    @Test
+    void initiatePayment_withSameIdempotencyKey_returnsExistingPaymentWithoutPublishing() {
+        Payment existing = pendingPayment();
+        existing.setIdempotencyKey("payment-1");
+        PaymentRequest req = new PaymentRequest(ORDER_ID, USER_ID, 250.0);
+        req.setIdempotencyKey("payment-1");
+        when(paymentRepository.findByUserIdAndIdempotencyKey(USER_ID, "payment-1")).thenReturn(Optional.of(existing));
+
+        Payment result = paymentService.initiatePayment(req);
+
+        assertThat(result).isSameAs(existing);
+        verify(paymentRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
     // ─── confirmPayment ────────────────────────────────────────────────────────
 
     @Test

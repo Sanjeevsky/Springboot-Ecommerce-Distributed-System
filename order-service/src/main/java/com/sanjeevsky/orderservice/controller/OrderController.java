@@ -37,8 +37,9 @@ public class OrderController {
     @PostMapping("/order")
     public ResponseEntity<ApiResponse<Order>> createOrder(
             @RequestHeader("X-User") String userId,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @RequestBody CreateOrderRequest request) {
-        Order order = orderService.createOrder(userId, request.getAddressId(), request.getCouponCode());
+        Order order = orderService.createOrder(userId, request.getAddressId(), request.getCouponCode(), idempotencyKey);
         return new ResponseEntity<>(ApiResponse.ok("Order placed successfully", order), HttpStatus.CREATED);
     }
 

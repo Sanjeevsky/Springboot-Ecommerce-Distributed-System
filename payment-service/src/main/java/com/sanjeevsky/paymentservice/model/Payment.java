@@ -10,6 +10,9 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Table(uniqueConstraints = @UniqueConstraint(
+        name = "uk_payments_user_idempotency_key",
+        columnNames = {"user_id", "idempotency_key"}))
 @Getter
 @Setter
 @NoArgsConstructor
@@ -26,7 +29,11 @@ public class Payment {
     @Type(type = "org.hibernate.type.UUIDCharType")
     private UUID orderId;
 
+    @Column(name = "user_id")
     private String userId;
+
+    @Column(name = "idempotency_key", length = 255)
+    private String idempotencyKey;
 
     private double amount;
 

@@ -22,7 +22,12 @@ public class PaymentController {
     private PaymentService paymentService;
 
     @PostMapping("/initiate")
-    public ResponseEntity<ApiResponse<Payment>> initiatePayment(@RequestBody PaymentRequest request) {
+    public ResponseEntity<ApiResponse<Payment>> initiatePayment(
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestBody PaymentRequest request) {
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            request.setIdempotencyKey(idempotencyKey.trim());
+        }
         log.info("Received initiate payment request for orderId: {}", request.getOrderId());
         return new ResponseEntity<>(ApiResponse.ok(paymentService.initiatePayment(request)), HttpStatus.CREATED);
     }

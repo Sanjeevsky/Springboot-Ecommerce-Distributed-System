@@ -52,7 +52,34 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Order createOrder(String userId, UUID addressId, String couponCode) {
-        log.info("Creating order for user={}, addressId={}, couponCode={}", userId, addressId, couponCode);
+        return createOrder(userId, addressId, couponCode, null);
+    }
+
+    @Override
+    public Order createOrder(String userId, UUID addressId, String couponCode, String idempotencyKey) {
+        String normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
+        log.info("Creating order for user={}, addressId={}, couponCode={}, idempotencyKey={}",
+                userId, addressId, couponCode, normalizedIdempotencyKey);
+
+        if (normalizedIdempotencyKey != null) {
+            return orderRepository.findByUserIdAndIdempotencyKey(userId, normalizedIdempotencyKey)
+                    .map(existing -> {
+                        if (existing.getPaymentId() == null) {
+                            log.info("Completing existing order id={} for user={}, idempotencyKey={}",
+                                    existing.getId(), userId, normalizedIdempotencyKey);
+                            return completeOrderCheckout(existing, userId, addressId, normalizedIdempotencyKey);
+                        }
+                        log.info("Returning existing order id={} for user={}, idempotencyKey={}",
+                                existing.getId(), userId, normalizedIdempotencyKey);
+                        return existing;
+                    })
+                    .orElseGet(() -> createNewOrder(userId, addressId, couponCode, normalizedIdempotencyKey));
+        }
+
+        return createNewOrder(userId, addressId, couponCode, null);
+    }
+
+    private Order createNewOrder(String userId, UUID addressId, String couponCode, String idempotencyKey) {
 
         CartSnapshot cart = cartFeignClient.getCheckoutSnapshot(userId);
         if (cart == null) {
@@ -114,14 +141,19 @@ public class OrderServiceImpl implements OrderService {
                 .status(OrderStatus.PENDING)
                 .discount(discount)
                 .shippingCharges(0)
+                .idempotencyKey(idempotencyKey)
                 .build();
 
         orderItems.forEach(item -> item.setOrder(order));
         Order savedOrder = orderRepository.save(order);
         log.info("Order saved id={}", savedOrder.getId());
 
+        return completeOrderCheckout(savedOrder, userId, addressId, idempotencyKey);
+    }
+
+    private Order completeOrderCheckout(Order savedOrder, String userId, UUID addressId, String idempotencyKey) {
         PaymentResponse payment = paymentFeignClient.initiatePayment(
-                new PaymentRequest(savedOrder.getId(), userId, orderTotal));
+                new PaymentRequest(savedOrder.getId(), userId, savedOrder.getOrderTotal(), paymentIdempotencyKey(idempotencyKey)));
         if (payment == null) {
             throw new InvalidRequestException("Payment initiation failed");
         }
@@ -146,7 +178,7 @@ public class OrderServiceImpl implements OrderService {
                 .orderId(finalOrder.getId())
                 .userId(userId)
                 .totalAmount(finalOrder.getOrderTotal())
-                .addressId(addressId)
+                .addressId(orderAddressId(finalOrder, addressId))
                 .items(itemEvents)
                 .build());
 
@@ -205,5 +237,24 @@ public class OrderServiceImpl implements OrderService {
     public List<Order> getOrdersByUser(String userId) {
         log.info("Fetching all orders for user={}", userId);
         return orderRepository.findAllByUserId(userId);
+    }
+
+    private String normalizeIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null) {
+            return null;
+        }
+        String trimmed = idempotencyKey.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String paymentIdempotencyKey(String idempotencyKey) {
+        return idempotencyKey == null ? null : "order:" + idempotencyKey;
+    }
+
+    private UUID orderAddressId(Order order, UUID fallbackAddressId) {
+        if (order.getShippingAddress() != null && order.getShippingAddress().getOriginalAddressId() != null) {
+            return order.getShippingAddress().getOriginalAddressId();
+        }
+        return fallbackAddressId;
     }
 }

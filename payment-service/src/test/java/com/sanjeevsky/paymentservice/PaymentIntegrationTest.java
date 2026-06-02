@@ -70,6 +70,25 @@ class PaymentIntegrationTest {
                 .andExpect(jsonPath("$.data.userId").value(USER));
     }
 
+    @Test
+    void initiatePayment_withSameIdempotencyKey_returnsExistingPayment() throws Exception {
+        UUID oid = UUID.fromString("99999999-9999-9999-9999-999999999999");
+        MvcResult init = mockMvc.perform(post("/payment-service/initiate")
+                        .header("Idempotency-Key", "payment-retry-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(initiateBody(oid)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String paymentId = extractPaymentId(init);
+
+        mockMvc.perform(post("/payment-service/initiate")
+                        .header("Idempotency-Key", "payment-retry-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(initiateBody(oid)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.id").value(paymentId));
+    }
+
     // ─── Confirm ──────────────────────────────────────────────────────────────
 
     @Test

@@ -28,6 +28,9 @@
     { "key": "addressId",       "value": "",                      "type": "default" },
     { "key": "orderId",         "value": "",                      "type": "default" },
     { "key": "paymentId",       "value": "",                      "type": "default" },
+    { "key": "orderIdempotencyKey",       "value": "",            "type": "default" },
+    { "key": "couponOrderIdempotencyKey", "value": "",            "type": "default" },
+    { "key": "paymentIdempotencyKey",     "value": "",            "type": "default" },
     { "key": "couponCode",      "value": "SAVE10",                "type": "default" },
     { "key": "couponId",        "value": "",                      "type": "default" },
     { "key": "reviewId",        "value": "",                      "type": "default" },
@@ -62,6 +65,9 @@
                   "setRunnerVar('subCategoryName', 'Smartphones_' + suffix);",
                   "setRunnerVar('productName', 'Galaxy S24 Ultra ' + suffix);",
                   "setRunnerVar('couponCode', 'SAVE' + suffix);",
+                  "setRunnerVar('orderIdempotencyKey', 'order-' + runId);",
+                  "setRunnerVar('couponOrderIdempotencyKey', 'coupon-order-' + runId);",
+                  "setRunnerVar('paymentIdempotencyKey', 'payment-' + runId);",
                   "console.log('Registering email:', pm.collectionVariables.get('runnerEmail'), '| couponCode will be:', pm.collectionVariables.get('couponCode'));"
                 ]
               }
@@ -1300,7 +1306,10 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{orderIdempotencyKey}}" }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"addressId\": \"{{addressId}}\"\n}",
@@ -1367,7 +1376,10 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{couponOrderIdempotencyKey}}" }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"addressId\": \"{{addressId}}\",\n  \"couponCode\": \"{{couponCode}}\"\n}",
@@ -1529,7 +1541,10 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Idempotency-Key", "value": "{{paymentIdempotencyKey}}" }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"orderId\": \"{{directPaymentOrderId}}\",\n  \"userId\": \"{{runnerEmail}}\",\n  \"amount\": 119999\n}",

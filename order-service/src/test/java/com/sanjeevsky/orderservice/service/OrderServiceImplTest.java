@@ -10,17 +10,20 @@ import com.sanjeevsky.orderservice.exceptions.OrderNotFoundException;
 import com.sanjeevsky.orderservice.model.AddressDto;
 import com.sanjeevsky.orderservice.model.CouponValidationResult;
 import com.sanjeevsky.orderservice.model.Order;
+import com.sanjeevsky.orderservice.model.OrderItem;
 import com.sanjeevsky.orderservice.model.ShippingAddress;
 import com.sanjeevsky.orderservice.repository.OrderRepository;
 import com.sanjeevsky.orderservice.service.impl.OrderServiceImpl;
 import com.sanjeevsky.platform.model.cart.CartItemSnapshot;
 import com.sanjeevsky.platform.model.cart.CartSnapshot;
 import com.sanjeevsky.platform.model.order.OrderStatus;
+import com.sanjeevsky.platform.model.payment.PaymentRequest;
 import com.sanjeevsky.platform.model.payment.PaymentResponse;
 import com.sanjeevsky.platform.model.payment.PaymentStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -33,7 +36,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -102,6 +108,65 @@ class OrderServiceImplTest {
         assertThat(result.getOrderTotal()).isEqualTo(100.0);
         verify(cartFeignClient).clearCart(USER);
         verify(eventPublisher).publishOrderPlaced(any());
+    }
+
+    @Test
+    void createOrder_withIdempotencyKey_storesKeyAndPropagatesPaymentKey() {
+        when(orderRepository.findByUserIdAndIdempotencyKey(USER, "checkout-1")).thenReturn(Optional.empty());
+        when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(cart(List.of(cartItem(100.0)), 100.0));
+        when(customerFeignClient.getAddress(USER, ADDRESS_ID)).thenReturn(address());
+        when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentFeignClient.initiatePayment(any())).thenReturn(payment());
+
+        Order result = orderService.createOrder(USER, ADDRESS_ID, null, " checkout-1 ");
+
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        ArgumentCaptor<PaymentRequest> paymentRequestCaptor = ArgumentCaptor.forClass(PaymentRequest.class);
+        verify(orderRepository, times(2)).save(orderCaptor.capture());
+        verify(paymentFeignClient).initiatePayment(paymentRequestCaptor.capture());
+
+        assertThat(result.getIdempotencyKey()).isEqualTo("checkout-1");
+        assertThat(orderCaptor.getAllValues().get(0).getIdempotencyKey()).isEqualTo("checkout-1");
+        assertThat(paymentRequestCaptor.getValue().getIdempotencyKey()).isEqualTo("order:checkout-1");
+    }
+
+    @Test
+    void createOrder_withSameIdempotencyKey_returnsExistingOrderWithoutSideEffects() {
+        pendingOrder.setIdempotencyKey("checkout-1");
+        when(orderRepository.findByUserIdAndIdempotencyKey(USER, "checkout-1"))
+                .thenReturn(Optional.of(pendingOrder));
+
+        Order result = orderService.createOrder(USER, ADDRESS_ID, null, "checkout-1");
+
+        assertThat(result).isSameAs(pendingOrder);
+        verify(orderRepository, never()).save(any());
+        verifyNoInteractions(cartFeignClient, customerFeignClient, couponFeignClient, paymentFeignClient, eventPublisher);
+    }
+
+    @Test
+    void createOrder_withSameIdempotencyKey_completesExistingOrderWithoutPayment() {
+        pendingOrder.setIdempotencyKey("checkout-1");
+        pendingOrder.setPaymentId(null);
+        pendingOrder.setOrderItems(List.of(OrderItem.builder()
+                .productId(UUID.randomUUID())
+                .productName("Phone")
+                .unitPrice(100.0)
+                .qty(1)
+                .build()));
+        when(orderRepository.findByUserIdAndIdempotencyKey(USER, "checkout-1"))
+                .thenReturn(Optional.of(pendingOrder));
+        when(paymentFeignClient.initiatePayment(any())).thenReturn(payment());
+        when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Order result = orderService.createOrder(USER, ADDRESS_ID, null, "checkout-1");
+
+        assertThat(result.getPaymentId()).isEqualTo(PAYMENT_ID);
+        verify(paymentFeignClient).initiatePayment(any());
+        verify(orderRepository).save(pendingOrder);
+        verify(cartFeignClient).clearCart(USER);
+        verify(eventPublisher).publishOrderPlaced(any());
+        verify(cartFeignClient, never()).getCheckoutSnapshot(USER);
+        verifyNoInteractions(customerFeignClient, couponFeignClient);
     }
 
     @Test

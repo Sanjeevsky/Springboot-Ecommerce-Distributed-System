@@ -27,10 +27,28 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Payment initiatePayment(PaymentRequest request) {
-        log.info("Initiating payment for orderId: {}, userId: {}", request.getOrderId(), request.getUserId());
+        String idempotencyKey = normalizeIdempotencyKey(request.getIdempotencyKey());
+        log.info("Initiating payment for orderId: {}, userId: {}, idempotencyKey: {}",
+                request.getOrderId(), request.getUserId(), idempotencyKey);
+
+        if (idempotencyKey != null) {
+            return paymentRepository.findByUserIdAndIdempotencyKey(request.getUserId(), idempotencyKey)
+                    .map(existing -> {
+                        log.info("Returning existing paymentId: {} for userId: {}, idempotencyKey: {}",
+                                existing.getId(), request.getUserId(), idempotencyKey);
+                        return existing;
+                    })
+                    .orElseGet(() -> createPayment(request, idempotencyKey));
+        }
+
+        return createPayment(request, null);
+    }
+
+    private Payment createPayment(PaymentRequest request, String idempotencyKey) {
         Payment payment = Payment.builder()
                 .orderId(request.getOrderId())
                 .userId(request.getUserId())
+                .idempotencyKey(idempotencyKey)
                 .amount(request.getAmount())
                 .status(PaymentStatus.PENDING)
                 .build();
@@ -105,5 +123,13 @@ public class PaymentServiceImpl implements PaymentService {
         Payment payment = paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found for orderId: " + orderId));
         return payment.getStatus();
+    }
+
+    private String normalizeIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null) {
+            return null;
+        }
+        String trimmed = idempotencyKey.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

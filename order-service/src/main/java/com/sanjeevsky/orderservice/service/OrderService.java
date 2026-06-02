@@ -8,6 +8,7 @@ import java.util.UUID;
 public interface OrderService {
     Order getOrderById(String userId, UUID id);
     Order createOrder(String userId, UUID addressId, String couponCode);
+    Order createOrder(String userId, UUID addressId, String couponCode, String idempotencyKey);
     List<Order> getOrdersByUser(String userId);
     Order confirmOrder(String userId, UUID orderId);
     Order cancelOrder(String userId, UUID orderId);

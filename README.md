@@ -161,6 +161,8 @@ GET    /order-service/order/{id}
 GET    /order-service/orders
 ```
 
+`POST /order-service/order` and `POST /payment-service/initiate` accept an optional `Idempotency-Key` header. Retries with the same key for the same user return the existing order/payment and do not replay side effects such as payment initiation, cart clearing, coupon application, or Kafka event publication. The Postman runner collections generate per-run idempotency keys automatically.
+
 ---
 
 ## Verification

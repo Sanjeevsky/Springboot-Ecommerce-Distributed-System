@@ -97,6 +97,18 @@
     {
       "key": "paymentStatus",
       "value": ""
+    },
+    {
+      "key": "orderIdempotencyKey",
+      "value": ""
+    },
+    {
+      "key": "couponOrderIdempotencyKey",
+      "value": ""
+    },
+    {
+      "key": "paymentIdempotencyKey",
+      "value": ""
     }
   ],
   "item": [
@@ -699,6 +711,10 @@
           {
             "key": "Authorization",
             "value": "Bearer {{token}}"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{orderIdempotencyKey}}"
           }
         ],
         "url": {
@@ -1032,6 +1048,9 @@
           "  setRunnerVar('subCategoryName', 'Smartphones_' + suffix);",
           "  setRunnerVar('productName', 'Galaxy S24 ' + suffix);",
           "  setRunnerVar('couponCode', 'SAVE' + suffix);",
+          "  setRunnerVar('orderIdempotencyKey', 'order-' + runId);",
+          "  setRunnerVar('couponOrderIdempotencyKey', 'coupon-order-' + runId);",
+          "  setRunnerVar('paymentIdempotencyKey', 'payment-' + runId);",
           "}",
           "",
           "var requestName = pm.info.requestName || \"\";",
