@@ -597,11 +597,19 @@ const mavenTestConfigFlags = [
 ];
 
 const verifyLocalText = fs.readFileSync(path.join(root, "scripts", "verify-local.sh"), "utf8");
+const buildDockerJarsText = fs.readFileSync(path.join(root, "scripts", "build-docker-jars.sh"), "utf8");
 requireMavenTestFlags("scripts/verify-local.sh", verifyLocalText);
 requireMavenTestFlags(
   ".github/workflows/ci.yml",
   fs.readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8")
 );
+
+if (!verifyLocalText.includes("MAVEN_JAVA_HOME")
+    || !buildDockerJarsText.includes("MAVEN_JAVA_HOME")
+    || !verifyLocalText.includes('export JAVA_HOME="$preferred_java_home"')
+    || !buildDockerJarsText.includes('export JAVA_HOME="$preferred_java_home"')) {
+  fail("local Maven scripts must prefer Java 11 through MAVEN_JAVA_HOME for Lombok-compatible builds");
+}
 
 if (!verifyLocalText.includes("RUN_DIRECT_HEALTH_CHECKS")
     || !verifyLocalText.includes("SERVICE_HEALTH_CHECKS")

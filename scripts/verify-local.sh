@@ -18,6 +18,7 @@ RUN_API_COLLECTION="${RUN_API_COLLECTION:-1}"
 WAIT_RETRIES="${WAIT_RETRIES:-60}"
 WAIT_SLEEP_SECONDS="${WAIT_SLEEP_SECONDS:-5}"
 GATEWAY_DISCOVERY_STABILIZE_SECONDS="${GATEWAY_DISCOVERY_STABILIZE_SECONDS:-10}"
+DEFAULT_MAVEN_JAVA_HOME="/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home"
 MAVEN_TEST_SYSTEM_PROPS=(
   "-Dspring.config.name=application-test"
   "-Dspring.cloud.config.enabled=false"
@@ -183,8 +184,23 @@ verify_gateway_standard_routes() {
   expect_http_status "Raw shopping-cart service route" "$BASE_URL/shopping-cart-service/cart" "404"
 }
 
-if [[ -z "${JAVA_HOME:-}" && -d /Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home ]]; then
-  export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home
+configure_maven_java() {
+  local preferred_java_home="${MAVEN_JAVA_HOME:-$DEFAULT_MAVEN_JAVA_HOME}"
+
+  if [[ -n "${MAVEN_JAVA_HOME:-}" && ! -d "$MAVEN_JAVA_HOME" ]]; then
+    echo "MAVEN_JAVA_HOME does not exist: $MAVEN_JAVA_HOME" >&2
+    exit 1
+  fi
+
+  if [[ -d "$preferred_java_home" ]]; then
+    export JAVA_HOME="$preferred_java_home"
+  fi
+}
+
+configure_maven_java
+
+if [[ "$RUN_MAVEN_TESTS" == "1" && -n "${JAVA_HOME:-}" ]]; then
+  log "Using JAVA_HOME=$JAVA_HOME for Maven"
 fi
 
 log "Checking required local tools"

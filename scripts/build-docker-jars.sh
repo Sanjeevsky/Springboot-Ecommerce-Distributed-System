@@ -5,6 +5,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+DEFAULT_MAVEN_JAVA_HOME="/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home"
 DEFAULT_MODULES=(
   auth-server
   catalog-service
@@ -23,8 +24,23 @@ DEFAULT_MODULES=(
   spring-server
 )
 
-if [[ -z "${JAVA_HOME:-}" && -d /Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home ]]; then
-  export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home
+configure_maven_java() {
+  local preferred_java_home="${MAVEN_JAVA_HOME:-$DEFAULT_MAVEN_JAVA_HOME}"
+
+  if [[ -n "${MAVEN_JAVA_HOME:-}" && ! -d "$MAVEN_JAVA_HOME" ]]; then
+    echo "MAVEN_JAVA_HOME does not exist: $MAVEN_JAVA_HOME" >&2
+    exit 1
+  fi
+
+  if [[ -d "$preferred_java_home" ]]; then
+    export JAVA_HOME="$preferred_java_home"
+  fi
+}
+
+configure_maven_java
+
+if [[ -n "${JAVA_HOME:-}" ]]; then
+  printf '\n==> Using JAVA_HOME=%s for Maven\n' "$JAVA_HOME"
 fi
 
 if ! command -v mvn >/dev/null 2>&1; then

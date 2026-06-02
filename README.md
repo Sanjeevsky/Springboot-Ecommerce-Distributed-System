@@ -84,8 +84,10 @@ Kafka consumers retry failed records twice with a 1 second backoff, then publish
 
 ### Prerequisites
 - Docker + Docker Compose
-- Java 11 (`JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home` on Mac)
+- Java 11 (`/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home` on Mac)
 - Maven 3.8+
+
+The local build and verification scripts prefer that Java 11 path automatically when it exists, even if your shell default is a newer JDK. Set `MAVEN_JAVA_HOME` to override the Maven runtime explicitly.
 
 ### 1. Build all services
 
@@ -213,6 +215,7 @@ Useful switches:
 RUN_POSTMAN=0 scripts/verify-local.sh       # skip Docker-stack Postman runner checks
 RUN_API_COLLECTION=0 scripts/verify-local.sh # skip API reference collection, keep DataSeed + E2E
 RUN_MAVEN_TESTS=0 scripts/verify-local.sh   # skip Maven module tests
+MAVEN_JAVA_HOME=/path/to/jdk11 scripts/verify-local.sh # override Maven Java runtime
 GATEWAY_DISCOVERY_STABILIZE_SECONDS=0 scripts/verify-local.sh  # disable post-Eureka gateway cache wait
 ```
 
