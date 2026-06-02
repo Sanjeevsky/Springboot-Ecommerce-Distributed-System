@@ -70,4 +70,8 @@ jobs:
         run: |
           mvn -B -f "$MODULE/pom.xml" test \
             -DfailIfNoTests=false \
+            -Dspring.config.name=application-test \
+            -Dspring.cloud.config.enabled=false \
+            -Dspring.cloud.config.import-check.enabled=false \
+            "-Dspring.config.import=" \
             "-Dtest=!*ApplicationTests"

@@ -159,17 +159,29 @@ if (/SPRING_ZIPKIN_ENABLED=true/.test(composeText)) {
   fail("docker-compose.yml: tracing must default to opt-in with SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}");
 }
 
-const verifyLocalText = fs.readFileSync(path.join(root, "scripts", "verify-local.sh"), "utf8");
-for (const requiredFlag of [
+function requireMavenTestFlags(relativePath, text) {
+  for (const requiredFlag of mavenTestConfigFlags) {
+    if (!text.includes(requiredFlag)) {
+      fail(`${relativePath}: Maven tests must pass ${requiredFlag} to avoid Config Server lookups`);
+    }
+  }
+}
+
+const mavenTestConfigFlags = [
   "-Dspring.config.name=application-test",
   "-Dspring.cloud.config.enabled=false",
   "-Dspring.cloud.config.import-check.enabled=false",
   "-Dspring.config.import=",
-]) {
-  if (!verifyLocalText.includes(requiredFlag)) {
-    fail(`scripts/verify-local.sh: Maven tests must pass ${requiredFlag} to avoid Config Server lookups`);
-  }
-}
+];
+
+requireMavenTestFlags(
+  "scripts/verify-local.sh",
+  fs.readFileSync(path.join(root, "scripts", "verify-local.sh"), "utf8")
+);
+requireMavenTestFlags(
+  ".github/workflows/ci.yml",
+  fs.readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8")
+);
 
 for (const service of Object.keys(expectedApplicationNames)) {
   for (const file of integrationTestFiles(service)) {
