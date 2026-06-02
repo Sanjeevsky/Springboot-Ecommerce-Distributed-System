@@ -152,7 +152,15 @@ POST /auth-service/signup
 POST /auth-service/login         → returns JWT token
 ```
 
-All other endpoints require `Authorization: Bearer <token>`.
+Auth routes and catalog product browsing routes are public:
+
+```
+GET /catalog-service/product/list
+GET /catalog-service/product/search
+GET /catalog-service/product/getProduct/{id}
+```
+
+All other standard gateway routes require `Authorization: Bearer <token>`.
 
 ### Order flow
 
@@ -234,7 +242,7 @@ GitHub Actions runs Postman static validation and Java 11 module tests on pushes
 ```
 .
 ├── platform-commons/          # Shared DTOs, events, ApiResponse
-├── api-gateway/               # JWT filter + Eureka-based routing
+├── api-gateway/               # JWT filter + explicit routes backed by Eureka load balancing
 ├── service-discovery/         # Eureka server
 ├── cloud-config/              # Config server
 ├── spring-server/             # Boot Admin

@@ -17,6 +17,7 @@ const environmentFiles = ["postman/Ecommerce-Local.postman_environment.json"];
 const bannedMarkers = [
   { pattern: /\/raw\b/i, reason: "raw endpoints should not be used" },
   { pattern: /raw-service/i, reason: "raw service endpoints should not be used" },
+  { pattern: /\/shopping-cart-service\//i, reason: "cart requests must use the standard /cart-service route" },
   { pattern: /\bpinCode\b/, reason: "address contract uses zipCode" },
   { pattern: /\bmaxUses\b/, reason: "coupon contract uses maxUsageCount" },
   { pattern: /2026-12-31T23:59:59/, reason: "coupon expiryDate expects yyyy-MM-dd" },
