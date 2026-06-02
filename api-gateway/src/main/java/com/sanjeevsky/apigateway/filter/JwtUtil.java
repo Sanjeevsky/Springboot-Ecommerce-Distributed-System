@@ -2,15 +2,17 @@ package com.sanjeevsky.apigateway.filter;
 
 import io.jsonwebtoken.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
-import javax.crypto.SecretKey;
 import java.util.Date;
 
 @Component
 public class JwtUtil {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);
 
     @Value("${jwt.secret}")
     private String secret;
@@ -20,15 +22,15 @@ public class JwtUtil {
         try {
             claimsJws = Jwts.parser().setSigningKey(secret).parseClaimsJws(token);
         } catch (SignatureException ex) {
-            throw new Exception("Invalid JWT signature");
+            throw new Exception("Invalid JWT signature", ex);
         } catch (MalformedJwtException ex) {
-            throw new Exception("Invalid JWT token");
+            throw new Exception("Invalid JWT token", ex);
         } catch (ExpiredJwtException ex) {
-            throw new Exception("Expired JWT token");
+            throw new Exception("Expired JWT token", ex);
         } catch (UnsupportedJwtException ex) {
-            throw new Exception("Unsupported JWT token");
+            throw new Exception("Unsupported JWT token", ex);
         } catch (IllegalArgumentException ex) {
-            throw new Exception("JWT claims string is empty.");
+            throw new Exception("JWT claims string is empty.", ex);
         }
         return claimsJws.getBody();
     }
@@ -37,7 +39,7 @@ public class JwtUtil {
         try {
             return this.getAllClaimsFromToken(token).getExpiration().before(new Date());
         } catch (Exception e) {
-            e.printStackTrace();
+            log.debug("JWT token rejected: {}", e.getMessage());
             return true;
         }
     }

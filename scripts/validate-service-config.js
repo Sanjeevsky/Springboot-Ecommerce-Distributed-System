@@ -282,6 +282,31 @@ if (routerValidatorText.includes(".contains(")
   fail("api-gateway RouterValidator: open route allowlist must use exact standard paths without stale raw entries");
 }
 
+const gatewayJwtUtilText = fs.readFileSync(
+  path.join(root, "api-gateway", "src", "main", "java", "com", "sanjeevsky", "apigateway", "filter", "JwtUtil.java"),
+  "utf8"
+);
+if (gatewayJwtUtilText.includes("printStackTrace")) {
+  fail("api-gateway JwtUtil: JWT validation failures must use structured logging, not printStackTrace");
+}
+
+const gatewayConstantsPath = path.join(
+  root,
+  "api-gateway",
+  "src",
+  "main",
+  "java",
+  "com",
+  "sanjeevsky",
+  "apigateway",
+  "utils",
+  "Constants.java"
+);
+if (fs.existsSync(gatewayConstantsPath)
+    && fs.readFileSync(gatewayConstantsPath, "utf8").includes('SECRET = "secret"')) {
+  fail("api-gateway Constants: JWT secrets must come from configuration, not hard-coded constants");
+}
+
 function composeServiceBlock(service) {
   const pattern = new RegExp(`^  ${service}:\\n([\\s\\S]*?)(?=^  [a-zA-Z0-9_-]+:|^volumes:|^networks:|(?![\\s\\S]))`, "m");
   const match = composeText.match(pattern);
