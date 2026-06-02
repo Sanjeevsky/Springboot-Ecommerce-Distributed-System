@@ -2322,7 +2322,64 @@
           ]
         },
         {
+          "name": "Moderate Review (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Moderate Review: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Review status is APPROVED', () => pm.expect(json.data && json.data.status).to.eql('APPROVED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/review-service/review/{{reviewId}}/moderate?status=APPROVED",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "review-service",
+                "review",
+                "{{reviewId}}",
+                "moderate"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "APPROVED"
+                }
+              ]
+            }
+          }
+        },
+        {
           "name": "Get Approved Reviews for Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get Approved Reviews: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Approved reviews is array', () => pm.expect(json.data).to.be.an('array'));",
+                  "pm.test('Approved review available', () => pm.expect(json.data.length).to.be.above(0));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -2347,6 +2404,19 @@
         },
         {
           "name": "Get Review Summary for Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Review Summary: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Summary includes approved review', () => pm.expect(json.data && json.data.totalReviews).to.be.above(0));"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -2389,36 +2459,6 @@
                 "review-service",
                 "review",
                 "my"
-              ]
-            }
-          }
-        },
-        {
-          "name": "Moderate Review (Admin)",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/review-service/review/{{reviewId}}/moderate?status=APPROVED",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "review-service",
-                "review",
-                "{{reviewId}}",
-                "moderate"
-              ],
-              "query": [
-                {
-                  "key": "status",
-                  "value": "APPROVED"
-                }
               ]
             }
           }

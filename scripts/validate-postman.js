@@ -359,6 +359,16 @@ function validateApiCollectionGuards(relativePath, collection) {
   if (!standaloneCouponBody.includes("{{couponCode}}MGMT")) {
     fail(`${relativePath}: standalone Create Coupon must use a distinct management coupon code`);
   }
+
+  const approvedReviews = requestByName(collection, "Get Approved Reviews for Product");
+  if (!approvedReviews || !requestEventCode(approvedReviews).includes("Approved review available")) {
+    fail(`${relativePath}: approved review request must assert at least one approved review`);
+  }
+
+  const reviewSummary = requestByName(collection, "Get Review Summary for Product");
+  if (!reviewSummary || !requestEventCode(reviewSummary).includes("Summary includes approved review")) {
+    fail(`${relativePath}: review summary request must assert approved review totals`);
+  }
 }
 
 function requestIndexesByName(collection) {
@@ -396,6 +406,7 @@ function validateRunnerStateRepairs(relativePath, collection) {
     validateRequestOrder(relativePath, collection, ["Seed Inventory for Orders", "Place Order"]);
     validateRequestOrder(relativePath, collection, ["Create Coupon for Coupon Order", "Place Order (with Coupon)"]);
     validateRequestOrder(relativePath, collection, ["Place Order", "Re-add Item for Coupon Order", "Place Order (with Coupon)"]);
+    validateRequestOrder(relativePath, collection, ["Submit Review", "Moderate Review (Admin)", "Get Approved Reviews for Product", "Get Review Summary for Product"]);
     validateRequestOrder(relativePath, collection, ["Add to Wishlist", "Remove from Wishlist", "Re-add to Wishlist for Move", "Move to Cart"]);
   }
 
