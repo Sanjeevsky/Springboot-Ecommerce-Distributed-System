@@ -1767,6 +1767,7 @@
                   "var json = pm.response.json();",
                   "var data = json.data;",
                   "var status = typeof data === 'string' ? data : data && data.status;",
+                  "pm.test('Cancelled order payment is REFUNDED', () => pm.expect(status).to.eql('REFUNDED'));",
                   "if (status) {",
                   "  pm.collectionVariables.set('paymentStatus', status);",
                   "  try { pm.environment.set('paymentStatus', status); } catch (e) {}",

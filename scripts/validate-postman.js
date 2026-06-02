@@ -369,6 +369,11 @@ function validateApiCollectionGuards(relativePath, collection) {
   if (!reviewSummary || !requestEventCode(reviewSummary).includes("Summary includes approved review")) {
     fail(`${relativePath}: review summary request must assert approved review totals`);
   }
+
+  const paymentStatusByOrder = requestByName(collection, "Get Payment Status by Order");
+  if (!paymentStatusByOrder || !requestEventCode(paymentStatusByOrder).includes("Cancelled order payment is REFUNDED")) {
+    fail(`${relativePath}: payment status by order must assert cancelled order refund state`);
+  }
 }
 
 function requestIndexesByName(collection) {
