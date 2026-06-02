@@ -838,8 +838,24 @@
             "exec": [
               "pm.test('Get Payment: status 200', () => pm.response.to.have.status(200));",
               "var json = pm.response.json();",
-              "pm.test('Payment is SUCCESS', () => pm.expect(json.data.status).to.equal('SUCCESS'));",
-              "console.log('Payment status:', json.data.status, 'amount:', json.data.amount);"
+              "var status = json.data && json.data.status;",
+              "if (status) {",
+              "  pm.collectionVariables.set('paymentStatus', status);",
+              "  try { pm.environment.set('paymentStatus', status); } catch (e) {}",
+              "}",
+              "var retryKey = '_paymentSuccessRetryCount';",
+              "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+              "var maxRetries = 10;",
+              "if (status !== 'SUCCESS' && retryCount < maxRetries) {",
+              "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+              "  console.log('Payment not SUCCESS yet (' + status + '); retrying Get Payment ' + (retryCount + 1) + '/' + maxRetries);",
+              "  postman.setNextRequest(pm.info.requestName);",
+              "} else {",
+              "  pm.collectionVariables.unset(retryKey);",
+              "  try { pm.environment.unset(retryKey); } catch (e) {}",
+              "  pm.test('Payment is SUCCESS', () => pm.expect(status).to.equal('SUCCESS'));",
+              "  console.log('Payment status:', status, 'amount:', json.data.amount);",
+              "}"
             ]
           }
         }

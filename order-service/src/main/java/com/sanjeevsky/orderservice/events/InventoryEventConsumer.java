@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sanjeevsky.orderservice.model.Order;
 import com.sanjeevsky.orderservice.repository.OrderRepository;
 import com.sanjeevsky.platform.events.OrderCancelledEvent;
-import com.sanjeevsky.platform.events.OrderConfirmedEvent;
 import com.sanjeevsky.platform.model.order.OrderStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -69,19 +68,13 @@ public class InventoryEventConsumer {
     }
 
     private void handleStockReserved(UUID orderId, String userId) {
-        log.info("StockReservedEvent orderId={}, confirming", orderId);
+        log.info("StockReservedEvent orderId={}, stock reserved", orderId);
         orderRepository.findById(orderId).ifPresentOrElse(order -> {
             if (order.getStatus() != OrderStatus.PENDING) {
+                log.info("Order {} is already {}; stock reservation does not change status", orderId, order.getStatus());
                 return;
             }
-            order.setStatus(OrderStatus.CONFIRMED);
-            Order confirmed = orderRepository.save(order);
-            log.info("Order {} confirmed after stock reservation", orderId);
-            eventPublisher.publishOrderConfirmed(OrderConfirmedEvent.builder()
-                    .orderId(orderId)
-                    .userId(userId != null ? userId : confirmed.getUserId())
-                    .totalAmount(confirmed.getOrderTotal())
-                    .build());
+            log.info("Order {} remains PENDING until explicit confirmation", orderId);
         }, () -> log.warn("Order {} not found for StockReservedEvent", orderId));
     }
 }

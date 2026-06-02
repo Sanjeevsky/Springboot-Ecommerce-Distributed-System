@@ -215,12 +215,12 @@ function collectPostmanRequests(collection) {
   return requests;
 }
 
-function validateApiRouteCoverage(collection) {
+function validateRouteCoverage(relativePath, collection) {
   const postmanRequests = collectPostmanRequests(collection);
   for (const route of collectControllerRoutes()) {
     const key = `${route.method} ${route.path}`;
     if (!postmanRequests.has(key)) {
-      fail(`${apiCollectionFile}: missing ${key} from ${route.file}`);
+      fail(`${relativePath}: missing ${key} from ${route.file}`);
     }
   }
 }
@@ -280,6 +280,12 @@ function validateAsyncRunnerRetries(relativePath, collection) {
     if (method === "POST" && url.endsWith("/order-service/order")) {
       if (!code.includes("postman.setNextRequest") || !code.includes("_orderCreateRetryCount")) {
         fail(`${relativePath}: ${requestPath}: order create must retry transient checkout/payment cold-start failures`);
+      }
+    }
+
+    if (method === "GET" && url.endsWith("/payment-service/{{paymentId}}") && code.includes("Payment is SUCCESS")) {
+      if (!code.includes("postman.setNextRequest") || !code.includes("_paymentSuccessRetryCount")) {
+        fail(`${relativePath}: ${requestPath}: payment success verification must retry while order confirmation is becoming visible`);
       }
     }
   }
@@ -374,8 +380,8 @@ for (const relativePath of collectionFiles) {
   }
 
   validateBannedMarkers(relativePath);
-  if (relativePath === apiCollectionFile) {
-    validateApiRouteCoverage(collection);
+  if (relativePath === apiCollectionFile || relativePath === e2eCollectionFile) {
+    validateRouteCoverage(relativePath, collection);
   }
   validateCollectionRunnerSeeding(relativePath, collection);
   validateAsyncRunnerRetries(relativePath, collection);

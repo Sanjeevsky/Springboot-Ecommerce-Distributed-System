@@ -444,6 +444,32 @@
         },
 
         {
+          "name": "09a — Get Category by Name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get Category by Name: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Category name matches', () => pm.expect(json.data.categoryName).to.eql(pm.collectionVariables.get('categoryName')));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/catalog-service/getCategoryByName/{{categoryName}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["catalog-service", "getCategoryByName", "{{categoryName}}"]
+            }
+          }
+        },
+
+        {
           "name": "10 — Get All Categories",
           "event": [
             {
@@ -496,6 +522,30 @@
               "host": ["{{baseUrl}}"],
               "path": ["catalog-service", "add-subcategory", "{{categoryId}}"],
               "query": [{ "key": "subcategoryName", "value": "{{subCategoryName}}" }]
+            }
+          }
+        },
+
+        {
+          "name": "11a — Product Service Status",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Product Status: status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/catalog-service/product/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["catalog-service", "product", "status"]
             }
           }
         },
@@ -932,6 +982,63 @@
               "path": ["customer-service", "address", "{{addressId}}"]
             }
           }
+        },
+
+        {
+          "name": "25a — Delete Address",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Delete Address: status 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/customer-service/address/{{addressId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["customer-service", "address", "{{addressId}}"]
+            }
+          }
+        },
+
+        {
+          "name": "25b — Re-add Address for Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Re-add Address: status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "pm.test('Address ID present after re-add', () => pm.expect(json.data.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('addressId', json.data.id);",
+                  "try { pm.environment.set('addressId', json.data.id); } catch(e) {}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"country\": \"India\",\n  \"zipCode\": 560034,\n  \"home\": \"Flat 42B, Tower-C\",\n  \"streetLocality\": \"Koramangala 5th Block\",\n  \"landmark\": \"Near Forum Mall\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/customer-service/address",
+              "host": ["{{baseUrl}}"],
+              "path": ["customer-service", "address"]
+            }
+          }
         }
 
       ]
@@ -1063,6 +1170,74 @@
               "raw": "{{baseUrl}}/cart-service/cart/checkout",
               "host": ["{{baseUrl}}"],
               "path": ["cart-service", "cart", "checkout"]
+            }
+          }
+        },
+
+        {
+          "name": "29a — Clear Cart",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Clear Cart: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Cart is empty after clear', () => pm.expect(json.data.items).to.be.an('array').that.is.empty);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/cart-service/cart/clear",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart-service", "cart", "clear"]
+            }
+          }
+        },
+
+        {
+          "name": "29b — Re-add Item after Clear",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var retryKey = '_cartAddRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 5;",
+                  "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Cart add dependency not ready; retrying Re-add Item after Clear ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  postman.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(retryKey);",
+                  "  try { pm.environment.unset(retryKey); } catch (e) {}",
+                  "  pm.test('Re-add Item after Clear: status 200', () => pm.response.to.have.status(200));",
+                  "  var json = pm.response.json();",
+                  "  pm.test('Cart has an item after re-add', () => pm.expect(json.data.items.length).to.be.above(0));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"qty\": 1\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/cart-service/cart/add",
+              "host": ["{{baseUrl}}"],
+              "path": ["cart-service", "cart", "add"]
             }
           }
         },
