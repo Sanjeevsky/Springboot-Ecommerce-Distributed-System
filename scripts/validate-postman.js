@@ -106,6 +106,10 @@ function collectScriptSetVariables(code, out) {
   }
 }
 
+function isInternalRunnerVariable(name) {
+  return name.startsWith("_");
+}
+
 function collectObjectVariables(value, out) {
   if (value == null) {
     return;
@@ -220,6 +224,54 @@ function validateApiRouteCoverage(collection) {
   }
 }
 
+function validateCollectionRunnerSeeding(relativePath, collection) {
+  const collectionEventCode = (collection.event || [])
+    .filter((event) => event.listen === "prerequest")
+    .map((event) => scriptLines(event.script))
+    .join("\n");
+
+  if (!collectionEventCode.includes("seedRunnerVariables")) {
+    fail(`${relativePath}: collection-level pre-request script must seed runner variables`);
+  }
+  if (!collectionEventCode.includes("setRunnerVar")) {
+    fail(`${relativePath}: collection-level pre-request script must save seeded values for runner use`);
+  }
+}
+
+function requestUrl(item) {
+  return item && item.request && item.request.url && item.request.url.raw || "";
+}
+
+function requestMethod(item) {
+  return item && item.request && (item.request.method || "").toUpperCase() || "";
+}
+
+function requestEventCode(item) {
+  return (item.event || [])
+    .map((event) => scriptLines(event.script))
+    .join("\n");
+}
+
+function validateAsyncRunnerRetries(relativePath, collection) {
+  for (const { path: requestPath, item } of walkItems(collection.item)) {
+    const method = requestMethod(item);
+    const url = requestUrl(item);
+    const code = requestEventCode(item);
+
+    if (method === "POST" && url.endsWith("/review-service/review")) {
+      if (!code.includes("postman.setNextRequest") || !code.includes("_reviewRetryCount")) {
+        fail(`${relativePath}: ${requestPath}: review submit must retry while Kafka review eligibility is catching up`);
+      }
+    }
+
+    if (method === "GET" && url.endsWith("/notification-service/notifications")) {
+      if (!code.includes("postman.setNextRequest") || !code.includes("_notificationRetryCount")) {
+        fail(`${relativePath}: ${requestPath}: notification list must retry before notificationId is used later`);
+      }
+    }
+  }
+}
+
 function validateBannedMarkers(relativePath) {
   const text = fs.readFileSync(path.join(root, relativePath), "utf8");
   for (const { pattern, reason } of bannedMarkers) {
@@ -249,6 +301,8 @@ for (const relativePath of collectionFiles) {
   if (relativePath === apiCollectionFile) {
     validateApiRouteCoverage(collection);
   }
+  validateCollectionRunnerSeeding(relativePath, collection);
+  validateAsyncRunnerRetries(relativePath, collection);
 
   const declaredVariables = new Set(environmentVariables);
   const collectionVariables = new Set();
@@ -285,6 +339,7 @@ for (const relativePath of collectionFiles) {
   }
 
   const environmentMissingVariables = [...new Set([...collectionVariables, ...scriptSetVariables])]
+    .filter((name) => !isInternalRunnerVariable(name))
     .filter((name) => !environmentVariables.has(name))
     .sort();
   for (const name of environmentMissingVariables) {

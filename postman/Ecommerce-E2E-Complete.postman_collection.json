@@ -5,16 +5,116 @@
     "description": "Complete end-to-end collection covering all 11 microservices routed through API Gateway (port 8081).\n\n## Quick Start\n1. Import this collection + `Ecommerce-Local` environment, then select the environment\n2. Run folders **in order** with Collection Runner for the full E2E happy path\n3. The **Register** pre-request auto-generates a unique email + coupon code every run\n4. Test scripts auto-save every ID into both collection variables AND environment variables\n\n## Order of execution\n00-Auth → 01-Catalog → 02-Inventory → 03-Customer → 04-Cart → 05-Wishlist → 06-Coupon → 07-Order → 08-Payment → 09-Review → 10-Notification\n\n## Initial values already set\n`baseUrl` http://localhost:8081 · `runnerPassword` password123 · `brandName` Samsung · `categoryName` Electronics · `subCategoryName` Smartphones · `productName` Galaxy S24 Ultra · `couponCode` SAVE10 (overridden per run)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "auth": {
-    "type": "bearer",
-    "bearer": [
-      { "key": "token", "value": "{{token}}", "type": "string" }
-    ]
-  },
-  "variable": [
-    { "key": "baseUrl",         "value": "http://localhost:8081", "type": "default" },
-    { "key": "token",           "value": "",                      "type": "default" },
-    { "key": "runnerEmail",     "value": "e2e.test@example.com",  "type": "default" },
+    "auth": {
+      "type": "bearer",
+      "bearer": [
+        { "key": "token", "value": "{{token}}", "type": "string" }
+      ]
+    },
+    "event": [
+      {
+        "listen": "prerequest",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "function setRunnerVar(key, value) {",
+            "  pm.collectionVariables.set(key, value);",
+            "  try { pm.environment.set(key, value); } catch (e) {}",
+            "}",
+            "",
+            "function seedRunnerVariables() {",
+            "  var runId = Date.now().toString();",
+            "  var suffix = runId.slice(-8);",
+            "  setRunnerVar('runId', runId);",
+            "  setRunnerVar('runnerEmail', 'e2e_' + suffix + '@example.com');",
+            "  setRunnerVar('runnerPassword', 'password123');",
+            "  setRunnerVar('brandName', 'Samsung_' + suffix);",
+            "  setRunnerVar('categoryName', 'Electronics_' + suffix);",
+            "  setRunnerVar('subCategoryName', 'Smartphones_' + suffix);",
+            "  setRunnerVar('productName', 'Galaxy S24 Ultra ' + suffix);",
+            "  setRunnerVar('couponCode', 'SAVE' + suffix);",
+            "  setRunnerVar('orderIdempotencyKey', 'order-' + runId);",
+            "  setRunnerVar('couponOrderIdempotencyKey', 'coupon-order-' + runId);",
+            "  setRunnerVar('paymentIdempotencyKey', 'payment-' + runId);",
+            "  setRunnerVar('failedPaymentIdempotencyKey', 'payment-fail-' + runId);",
+            "}",
+            "",
+            "function missingRunnerVariables() {",
+            "  return ['runId', 'runnerEmail', 'couponCode', 'orderIdempotencyKey', 'couponOrderIdempotencyKey', 'paymentIdempotencyKey', 'failedPaymentIdempotencyKey'].some(function (key) {",
+            "    return !pm.collectionVariables.get(key);",
+            "  });",
+            "}",
+            "",
+            "var requestName = pm.info.requestName || '';",
+            "if (requestName.indexOf('Register User') !== -1 || missingRunnerVariables()) {",
+            "  seedRunnerVariables();",
+            "}"
+          ]
+        }
+      },
+      {
+        "listen": "test",
+        "script": {
+          "type": "text/javascript",
+          "exec": [
+            "function responseJson() {",
+            "  try {",
+            "    return pm.response.json();",
+            "  } catch (e) {",
+            "    return {};",
+            "  }",
+            "}",
+            "",
+            "function responseData(json) {",
+            "  return json && Object.prototype.hasOwnProperty.call(json, 'data') ? json.data : json;",
+            "}",
+            "",
+            "function saveRunnerVar(key, value) {",
+            "  if (value === undefined || value === null || value === '') {",
+            "    return;",
+            "  }",
+            "  pm.collectionVariables.set(key, value);",
+            "  try { pm.environment.set(key, value); } catch (e) {}",
+            "  console.log('saved ' + key + ':', value);",
+            "}",
+            "",
+            "var json = responseJson();",
+            "var data = responseData(json);",
+            "var rawUrl = pm.request.url ? pm.request.url.toString() : '';",
+            "var method = pm.request.method || '';",
+            "",
+            "if (rawUrl.indexOf('/auth-service/login') !== -1) {",
+            "  var token = typeof data === 'string' ? data : data && (data.token || data.accessToken || data.jwt);",
+            "  saveRunnerVar('token', token);",
+            "}",
+            "",
+            "if (data && typeof data === 'object') {",
+            "  if (rawUrl.indexOf('/catalog-service/add-brand') !== -1) { saveRunnerVar('brandId', data.id); }",
+            "  if (rawUrl.indexOf('/catalog-service/addCategory') !== -1) { saveRunnerVar('categoryId', data.id); }",
+            "  if (rawUrl.indexOf('/catalog-service/add-subcategory') !== -1) { saveRunnerVar('subCategoryId', data.id); }",
+            "  if (rawUrl.indexOf('/catalog-service/product/addProduct') !== -1) { saveRunnerVar('productId', data.id); saveRunnerVar('productName', data.name); }",
+            "  if (rawUrl.indexOf('/catalog-service/variant/add') !== -1) { saveRunnerVar('variantId', data.id); }",
+            "  if (method === 'POST' && rawUrl.indexOf('/customer-service/address') !== -1) { saveRunnerVar('addressId', data.id); }",
+            "  if (method === 'POST' && rawUrl.indexOf('/order-service/order') !== -1) { saveRunnerVar('orderId', data.id); saveRunnerVar('paymentId', data.paymentId); }",
+            "  if (rawUrl.indexOf('/order-service/order') !== -1) { saveRunnerVar('orderStatus', data.status); }",
+            "  if (rawUrl.indexOf('/payment-service/') !== -1) { saveRunnerVar('paymentId', data.id || data.paymentId); saveRunnerVar('paymentStatus', data.status); }",
+            "  if (method === 'POST' && rawUrl.indexOf('/coupon-service/coupon') !== -1) { saveRunnerVar('couponId', data.id); saveRunnerVar('couponCode', data.code || pm.collectionVariables.get('couponCode')); }",
+            "  if (method === 'POST' && rawUrl.indexOf('/review-service/review') !== -1) { saveRunnerVar('reviewId', data.id); }",
+            "}",
+            "",
+            "if (rawUrl.indexOf('/notification-service/notifications') !== -1) {",
+            "  var notifications = Array.isArray(data) ? data : (data && Array.isArray(data.content) ? data.content : []);",
+            "  saveRunnerVar('notificationId', notifications[0] && notifications[0].id);",
+            "}"
+          ]
+        }
+      }
+    ],
+    "variable": [
+      { "key": "baseUrl",         "value": "http://localhost:8081", "type": "default" },
+      { "key": "token",           "value": "",                      "type": "default" },
+      { "key": "runId",           "value": "",                      "type": "default" },
+      { "key": "runnerEmail",     "value": "e2e.test@example.com",  "type": "default" },
     { "key": "runnerPassword",  "value": "password123",           "type": "default" },
     { "key": "brandId",         "value": "",                      "type": "default" },
     { "key": "brandName",       "value": "Samsung",               "type": "default" },
@@ -25,9 +125,11 @@
     { "key": "productId",       "value": "",                      "type": "default" },
     { "key": "productName",     "value": "Galaxy S24 Ultra",      "type": "default" },
     { "key": "variantId",       "value": "",                      "type": "default" },
-    { "key": "addressId",       "value": "",                      "type": "default" },
-    { "key": "orderId",         "value": "",                      "type": "default" },
-    { "key": "paymentId",       "value": "",                      "type": "default" },
+      { "key": "addressId",       "value": "",                      "type": "default" },
+      { "key": "orderId",         "value": "",                      "type": "default" },
+      { "key": "orderStatus",     "value": "",                      "type": "default" },
+      { "key": "paymentId",       "value": "",                      "type": "default" },
+      { "key": "paymentStatus",   "value": "",                      "type": "default" },
     { "key": "directPaymentOrderId", "value": "",                 "type": "default" },
     { "key": "failedPaymentOrderId", "value": "",                 "type": "default" },
     { "key": "orderIdempotencyKey",       "value": "",            "type": "default" },
@@ -1758,18 +1860,29 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Submit Review: status 201', () => pm.response.to.have.status(201));",
-                  "var json = pm.response.json();",
-                  "pm.test('Review ID present', () => pm.expect(json.data.id).to.be.a('string'));",
-                  "pm.collectionVariables.set('reviewId', json.data.id);",
-                  "try { pm.environment.set('reviewId', json.data.id); } catch(e) {}",
-                  "pm.test('Review status is PENDING', () => pm.expect(json.data.status).to.eql('PENDING'));",
-                  "console.log('reviewId:', json.data.id, '| status:', json.data.status);"
-                ]
+                  "type": "text/javascript",
+                  "exec": [
+                    "var retryKey = '_reviewRetryCount';",
+                    "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                    "var maxRetries = 30;",
+                    "if (pm.response.code === 403 && retryCount < maxRetries) {",
+                    "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                    "  console.log('Review eligibility not ready; retrying Submit Review ' + (retryCount + 1) + '/' + maxRetries);",
+                    "  postman.setNextRequest(pm.info.requestName);",
+                    "} else {",
+                    "  pm.collectionVariables.unset(retryKey);",
+                    "  try { pm.environment.unset(retryKey); } catch(e) {}",
+                    "  pm.test('Submit Review: status 201', function () { pm.response.to.have.status(201); });",
+                    "  var json = pm.response.json();",
+                    "  pm.test('Review ID present', function () { pm.expect(json.data.id).to.be.a('string'); });",
+                    "  pm.collectionVariables.set('reviewId', json.data.id);",
+                    "  try { pm.environment.set('reviewId', json.data.id); } catch(e) {}",
+                    "  pm.test('Review status is PENDING', function () { pm.expect(json.data.status).to.eql('PENDING'); });",
+                    "  console.log('reviewId:', json.data.id, '| status:', json.data.status);",
+                    "}"
+                  ]
+                }
               }
-            }
           ],
           "request": {
             "method": "POST",
@@ -1909,21 +2022,34 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Get Notifications: status 200', () => pm.response.to.have.status(200));",
-                  "var json = pm.response.json();",
-                  "pm.test('Notifications is array', () => pm.expect(json.data).to.be.an('array'));",
-                  "console.log('Total notifications:', json.data.length);",
-                  "if (json.data.length > 0) {",
-                  "  var id = json.data[0].id;",
-                  "  pm.collectionVariables.set('notificationId', id);",
-                  "  try { pm.environment.set('notificationId', id); } catch(e) {}",
-                  "  console.log('notificationId saved:', id);",
-                  "}"
-                ]
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Get Notifications: status 200', () => pm.response.to.have.status(200));",
+                    "var json = pm.response.json();",
+                    "pm.test('Notifications is array', () => pm.expect(json.data).to.be.an('array'));",
+                    "var notifications = Array.isArray(json.data) ? json.data : [];",
+                    "var retryKey = '_notificationRetryCount';",
+                    "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                    "var maxRetries = 30;",
+                    "if (!notifications.length && retryCount < maxRetries) {",
+                    "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                    "  console.log('Notifications not available yet; retrying ' + (retryCount + 1) + '/' + maxRetries);",
+                    "  postman.setNextRequest(pm.info.requestName);",
+                    "} else {",
+                    "  pm.collectionVariables.unset(retryKey);",
+                    "  try { pm.environment.unset(retryKey); } catch(e) {}",
+                    "  pm.test('Notification available for mark-read step', function () { pm.expect(notifications.length).to.be.above(0); });",
+                    "  console.log('Total notifications:', notifications.length);",
+                    "  if (notifications.length > 0) {",
+                    "    var id = notifications[0].id;",
+                    "    pm.collectionVariables.set('notificationId', id);",
+                    "    try { pm.environment.set('notificationId', id); } catch(e) {}",
+                    "    console.log('notificationId saved:', id);",
+                    "  }",
+                    "}"
+                  ]
+                }
               }
-            }
           ],
           "request": {
             "method": "GET",

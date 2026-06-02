@@ -2092,18 +2092,29 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Submit Review: status 201', () => pm.response.to.have.status(201));",
-                  "var json = pm.response.json();",
-                  "if (json.data && json.data.id) {",
-                  "  pm.collectionVariables.set('reviewId', json.data.id);",
-                  "  try { pm.environment.set('reviewId', json.data.id); } catch (e) {}",
-                  "  console.log('reviewId:', json.data.id);",
-                  "}"
-                ]
+                  "type": "text/javascript",
+                  "exec": [
+                    "var retryKey = '_reviewRetryCount';",
+                    "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                    "var maxRetries = 30;",
+                    "if (pm.response.code === 403 && retryCount < maxRetries) {",
+                    "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                    "  console.log('Review eligibility not ready; retrying Submit Review ' + (retryCount + 1) + '/' + maxRetries);",
+                    "  postman.setNextRequest(pm.info.requestName);",
+                    "} else {",
+                    "  pm.collectionVariables.unset(retryKey);",
+                    "  try { pm.environment.unset(retryKey); } catch (e) {}",
+                    "  pm.test('Submit Review: status 201', function () { pm.response.to.have.status(201); });",
+                    "  var json = pm.response.json();",
+                    "  if (json.data && json.data.id) {",
+                    "    pm.collectionVariables.set('reviewId', json.data.id);",
+                    "    try { pm.environment.set('reviewId', json.data.id); } catch (e) {}",
+                    "    console.log('reviewId:', json.data.id);",
+                    "  }",
+                    "}"
+                  ]
+                }
               }
-            }
           ]
         },
         {
@@ -2330,19 +2341,31 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Get All Notifications: status 200', () => pm.response.to.have.status(200));",
-                  "var json = pm.response.json();",
-                  "var notifications = Array.isArray(json.data) ? json.data : (json.data && Array.isArray(json.data.content) ? json.data.content : []);",
-                  "if (notifications.length && notifications[0].id) {",
-                  "  pm.collectionVariables.set('notificationId', notifications[0].id);",
-                  "  try { pm.environment.set('notificationId', notifications[0].id); } catch (e) {}",
-                  "  console.log('notificationId:', notifications[0].id);",
-                  "}"
-                ]
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Get All Notifications: status 200', () => pm.response.to.have.status(200));",
+                    "var json = pm.response.json();",
+                    "var notifications = Array.isArray(json.data) ? json.data : (json.data && Array.isArray(json.data.content) ? json.data.content : []);",
+                    "var retryKey = '_notificationRetryCount';",
+                    "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                    "var maxRetries = 30;",
+                    "if (!notifications.length && retryCount < maxRetries) {",
+                    "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                    "  console.log('Notifications not available yet; retrying ' + (retryCount + 1) + '/' + maxRetries);",
+                    "  postman.setNextRequest(pm.info.requestName);",
+                    "} else {",
+                    "  pm.collectionVariables.unset(retryKey);",
+                    "  try { pm.environment.unset(retryKey); } catch (e) {}",
+                    "  pm.test('Notification available for mark-read step', function () { pm.expect(notifications.length).to.be.above(0); });",
+                    "  if (notifications.length && notifications[0].id) {",
+                    "    pm.collectionVariables.set('notificationId', notifications[0].id);",
+                    "    try { pm.environment.set('notificationId', notifications[0].id); } catch (e) {}",
+                    "    console.log('notificationId:', notifications[0].id);",
+                    "  }",
+                    "}"
+                  ]
+                }
               }
-            }
           ]
         },
         {
@@ -2404,12 +2427,25 @@
               "path": [
                 "notification-service",
                 "notifications",
-                "{{notificationId}}",
-                "read"
-              ]
-            }
+                  "{{notificationId}}",
+                  "read"
+                ]
+              }
+            },
+            "event": [
+              {
+                "listen": "test",
+                "script": {
+                  "type": "text/javascript",
+                  "exec": [
+                    "pm.test('Mark Notification as Read: status 200', function () { pm.response.to.have.status(200); });",
+                    "var json = pm.response.json();",
+                    "pm.test('Notification is read', function () { pm.expect(json.data && json.data.read).to.be.true; });"
+                  ]
+                }
+              }
+            ]
           }
-        }
       ]
     }
   ],

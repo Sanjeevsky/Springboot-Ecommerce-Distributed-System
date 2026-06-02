@@ -879,13 +879,25 @@
       "event": [
         {
           "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Submit Review: status 201', () => pm.response.to.have.status(201));",
-              "console.log('Review status:', pm.response.json().data.status);"
-            ]
+            "script": {
+              "exec": [
+                "var retryKey = '_reviewRetryCount';",
+                "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                "var maxRetries = 30;",
+                "if (pm.response.code === 403 && retryCount < maxRetries) {",
+                "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                "  console.log('Review eligibility not ready; retrying Submit Product Review ' + (retryCount + 1) + '/' + maxRetries);",
+                "  postman.setNextRequest(pm.info.requestName);",
+                "} else {",
+                "  pm.collectionVariables.unset(retryKey);",
+                "  try { pm.environment.unset(retryKey); } catch (e) {}",
+                "  pm.test('Submit Review: status 201', function () { pm.response.to.have.status(201); });",
+                "  var json = pm.response.json();",
+                "  console.log('Review status:', json.data.status);",
+                "}"
+              ]
+            }
           }
-        }
       ],
       "request": {
         "method": "POST",
@@ -960,14 +972,27 @@
       "event": [
         {
           "listen": "test",
-          "script": {
-            "exec": [
-              "pm.test('Notifications: status 200', () => pm.response.to.have.status(200));",
-              "var json = pm.response.json();",
-              "console.log('Notifications received:', json.data.length);"
-            ]
+            "script": {
+              "exec": [
+                "pm.test('Notifications: status 200', () => pm.response.to.have.status(200));",
+                "var json = pm.response.json();",
+                "var notifications = Array.isArray(json.data) ? json.data : [];",
+                "var retryKey = '_notificationRetryCount';",
+                "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                "var maxRetries = 30;",
+                "if (!notifications.length && retryCount < maxRetries) {",
+                "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                "  console.log('Notifications not available yet; retrying ' + (retryCount + 1) + '/' + maxRetries);",
+                "  postman.setNextRequest(pm.info.requestName);",
+                "} else {",
+                "  pm.collectionVariables.unset(retryKey);",
+                "  try { pm.environment.unset(retryKey); } catch (e) {}",
+                "  pm.test('Notifications received', function () { pm.expect(notifications.length).to.be.above(0); });",
+                "  console.log('Notifications received:', notifications.length);",
+                "}"
+              ]
+            }
           }
-        }
       ],
       "request": {
         "method": "GET",

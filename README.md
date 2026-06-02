@@ -139,6 +139,8 @@ Postman collections:
 | `Ecommerce-E2E-Complete.postman_collection.json` | Runner-safe application E2E flow |
 | `Ecommerce-Local.postman_environment.json` | Local gateway environment |
 
+The runner-safe collections use collection-level scripts to generate and save run values such as token, IDs, coupon code, and idempotency keys. The environment file is only the local value store. Kafka-backed review eligibility and notification requests include runner retries so asynchronous consumers can catch up before later requests use `reviewId` or `notificationId`.
+
 ### Authentication
 
 ```
