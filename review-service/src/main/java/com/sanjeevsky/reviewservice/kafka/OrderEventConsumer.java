@@ -33,12 +33,13 @@ public class OrderEventConsumer {
             String userId = root.has("userId") ? root.get("userId").asText() : null;
 
             if (orderId == null || userId == null) {
-                log.warn("OrderPlacedEvent missing orderId or userId, skipping eligibility recording");
-                return;
+                throw new IllegalArgumentException("OrderPlacedEvent missing orderId or userId");
             }
 
             for (JsonNode item : root.get("items")) {
-                if (!item.has("productId")) continue;
+                if (!item.has("productId")) {
+                    throw new IllegalArgumentException("OrderPlacedEvent item missing productId");
+                }
                 UUID productId = UUID.fromString(item.get("productId").asText());
 
                 if (!eligibilityRepository.existsByUserIdAndProductId(userId, productId)) {
@@ -54,7 +55,8 @@ public class OrderEventConsumer {
                 }
             }
         } catch (Exception e) {
-            log.warn("Failed to process order event for review eligibility: {}", e.getMessage());
+            log.warn("Failed to process order event for review eligibility: {}", e.getMessage(), e);
+            throw new IllegalStateException("Failed to process order event for review eligibility", e);
         }
     }
 }

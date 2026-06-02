@@ -26,6 +26,9 @@ public class Notification {
     @Column(nullable = false)
     private String userId;
 
+    @Column(name = "event_key")
+    private String eventKey;
+
     private String type;
 
     private String subject;

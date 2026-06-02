@@ -43,16 +43,21 @@ public class OrderEventConsumer {
                 // OrderCancelledEvent
                 handleOrderCancelled(objectMapper.treeToValue(root, OrderCancelledEvent.class));
             } else {
-                log.warn("Unknown order event format, ignoring. Message: {}", message);
+                throw new IllegalArgumentException("Unknown order event format");
             }
         } catch (Exception e) {
             log.error("Error processing order event: {}", e.getMessage(), e);
+            throw new IllegalStateException("Failed to process order event", e);
         }
     }
 
     private void handleOrderPlaced(OrderPlacedEvent event) {
         log.info("Handling OrderPlacedEvent for orderId={}", event.getOrderId());
         List<OrderItemEvent> items = event.getItems();
+
+        if (event.getOrderId() == null || event.getUserId() == null || items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("OrderPlacedEvent missing required fields");
+        }
 
         for (OrderItemEvent item : items) {
             try {
@@ -97,22 +102,21 @@ public class OrderEventConsumer {
     private void handleOrderCancelled(OrderCancelledEvent event) {
         log.info("Handling OrderCancelledEvent for orderId={}", event.getOrderId());
         UUID orderId = event.getOrderId();
+        if (orderId == null) {
+            throw new IllegalArgumentException("OrderCancelledEvent missing orderId");
+        }
 
         List<InventoryTransaction> transactions = transactionRepository.findAllByOrderId(orderId);
 
         for (InventoryTransaction tx : transactions) {
             if ("RESERVE".equals(tx.getType())) {
-                try {
-                    Inventory inventory = inventoryService.getStockById(tx.getInventoryId());
-                    inventoryService.releaseStock(
-                            orderId,
-                            inventory.getProductId(),
-                            inventory.getVariantId(),
-                            tx.getQuantity()
-                    );
-                } catch (Exception e) {
-                    log.error("Error releasing stock for inventoryId={}: {}", tx.getInventoryId(), e.getMessage(), e);
-                }
+                Inventory inventory = inventoryService.getStockById(tx.getInventoryId());
+                inventoryService.releaseStock(
+                        orderId,
+                        inventory.getProductId(),
+                        inventory.getVariantId(),
+                        tx.getQuantity()
+                );
             }
         }
     }

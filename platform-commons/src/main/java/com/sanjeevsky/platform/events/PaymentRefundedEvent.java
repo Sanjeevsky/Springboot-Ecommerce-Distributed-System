@@ -13,6 +13,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentRefundedEvent {
+    @Builder.Default
+    private String eventType = "PAYMENT_REFUNDED";
     private UUID paymentId;
     private UUID orderId;
     private String userId;

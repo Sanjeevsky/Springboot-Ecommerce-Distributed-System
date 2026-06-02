@@ -29,8 +29,7 @@ public class InventoryEventConsumer {
         try {
             JsonNode root = objectMapper.readTree(payload);
             if (!root.has("orderId")) {
-                log.warn("Inventory event missing orderId, skipping");
-                return;
+                throw new IllegalArgumentException("Inventory event missing orderId");
             }
             UUID orderId = UUID.fromString(root.get("orderId").asText());
             String userId = root.has("userId") ? root.get("userId").asText() : null;
@@ -40,10 +39,11 @@ public class InventoryEventConsumer {
             } else if (root.has("items")) {
                 handleStockReserved(orderId, userId);
             } else {
-                log.warn("Unrecognised inventory event format for orderId={}", orderId);
+                throw new IllegalArgumentException("Unrecognised inventory event format for orderId=" + orderId);
             }
         } catch (Exception e) {
             log.error("Failed to process inventory event: {}", payload, e);
+            throw new IllegalStateException("Failed to process inventory event", e);
         }
     }
 

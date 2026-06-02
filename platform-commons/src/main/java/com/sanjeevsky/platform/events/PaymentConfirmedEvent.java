@@ -13,6 +13,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentConfirmedEvent {
+    @Builder.Default
+    private String eventType = "PAYMENT_CONFIRMED";
     private UUID paymentId;
     private UUID orderId;
     private String userId;

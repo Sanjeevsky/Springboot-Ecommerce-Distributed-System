@@ -195,6 +195,21 @@ class InventoryServiceImplTest {
         assertThat(captor.getValue().getOrderId()).isEqualTo(ORDER_ID);
     }
 
+    @Test
+    void reserveStock_duplicateOrderInventory_skipsMutation() {
+        Inventory inv = inventory(50, 10);
+        when(inventoryRepository.findByProductIdAndVariantId(PRODUCT_ID, VARIANT_ID))
+                .thenReturn(Optional.of(inv));
+        when(transactionRepository.existsByOrderIdAndInventoryIdAndType(ORDER_ID, INVENTORY_ID, "RESERVE"))
+                .thenReturn(true);
+
+        Inventory result = inventoryService.reserveStock(ORDER_ID, PRODUCT_ID, VARIANT_ID, 10);
+
+        assertThat(result.getReservedQty()).isEqualTo(10);
+        verify(inventoryRepository, never()).save(any());
+        verify(transactionRepository, never()).save(any());
+    }
+
     // ─── releaseStock ─────────────────────────────────────────────────────────
 
     @Test
@@ -237,6 +252,21 @@ class InventoryServiceImplTest {
         verify(transactionRepository).save(captor.capture());
         assertThat(captor.getValue().getType()).isEqualTo("RELEASE");
         assertThat(captor.getValue().getQuantity()).isEqualTo(5);
+    }
+
+    @Test
+    void releaseStock_duplicateOrderInventory_skipsMutation() {
+        Inventory inv = inventory(50, 15);
+        when(inventoryRepository.findByProductIdAndVariantId(PRODUCT_ID, VARIANT_ID))
+                .thenReturn(Optional.of(inv));
+        when(transactionRepository.existsByOrderIdAndInventoryIdAndType(ORDER_ID, INVENTORY_ID, "RELEASE"))
+                .thenReturn(true);
+
+        Inventory result = inventoryService.releaseStock(ORDER_ID, PRODUCT_ID, VARIANT_ID, 5);
+
+        assertThat(result.getReservedQty()).isEqualTo(15);
+        verify(inventoryRepository, never()).save(any());
+        verify(transactionRepository, never()).save(any());
     }
 
     // ─── getStockByProduct ────────────────────────────────────────────────────

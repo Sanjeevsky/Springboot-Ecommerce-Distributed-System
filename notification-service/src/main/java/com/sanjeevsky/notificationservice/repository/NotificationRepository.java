@@ -13,4 +13,6 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     List<Notification> findByUserId(String userId);
 
     List<Notification> findByUserIdAndRead(String userId, boolean read);
+
+    boolean existsByEventKey(String eventKey);
 }

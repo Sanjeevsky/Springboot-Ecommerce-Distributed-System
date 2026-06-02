@@ -11,4 +11,6 @@ import java.util.UUID;
 public interface InventoryTransactionRepository extends JpaRepository<InventoryTransaction, UUID> {
 
     List<InventoryTransaction> findAllByOrderId(UUID orderId);
+
+    boolean existsByOrderIdAndInventoryIdAndType(UUID orderId, UUID inventoryId, String type);
 }

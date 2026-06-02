@@ -12,6 +12,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -46,6 +47,7 @@ class OrderEventConsumerTest {
         verify(notificationRepository).save(captor.capture());
         Notification saved = captor.getValue();
         assertThat(saved.getUserId()).isEqualTo(USER_ID);
+        assertThat(saved.getEventKey()).isEqualTo("order:" + ORDER_ID + ":ORDER_PLACED");
         assertThat(saved.getType()).isEqualTo("ORDER_PLACED");
         assertThat(saved.getMessage()).contains("499.99");
         assertThat(saved.getMessage()).contains("Shirt x 2");
@@ -88,8 +90,9 @@ class OrderEventConsumerTest {
     // ─── error handling ───────────────────────────────────────────────────────
 
     @Test
-    void consume_invalidJson_doesNotSaveAndDoesNotThrow() {
-        consumer.consume("not-json-at-all");
+    void consume_invalidJson_throwsForRetryAndDoesNotSave() {
+        assertThatThrownBy(() -> consumer.consume("not-json-at-all"))
+                .isInstanceOf(IllegalStateException.class);
 
         verify(notificationRepository, never()).save(any());
     }
@@ -107,5 +110,16 @@ class OrderEventConsumerTest {
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
         assertThat(captor.getValue().getUserId()).isEqualTo("unknown");
+    }
+
+    @Test
+    void consume_duplicateEventKey_skipsSave() {
+        String payload = "{\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\"}";
+        when(notificationRepository.existsByEventKey("order:" + ORDER_ID + ":ORDER_CONFIRMED"))
+                .thenReturn(true);
+
+        consumer.consume(payload);
+
+        verify(notificationRepository, never()).save(any());
     }
 }

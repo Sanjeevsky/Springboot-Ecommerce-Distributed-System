@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -111,18 +112,31 @@ class OrderEventConsumerTest {
     // ─── error handling ───────────────────────────────────────────────────────
 
     @Test
-    void consume_invalidJson_doesNotThrow() {
-        consumer.consumeOrderEvent("not-json");
+    void consume_invalidJson_throwsForRetry() {
+        assertThatThrownBy(() -> consumer.consumeOrderEvent("not-json"))
+                .isInstanceOf(IllegalStateException.class);
 
         verifyNoInteractions(eligibilityRepository);
     }
 
     @Test
-    void consume_missingUserId_skipsProcessing() {
+    void consume_missingUserId_throwsForRetry() {
         String payload = "{\"orderId\":\"" + ORDER_ID + "\","
                 + "\"items\":[{\"productId\":\"" + PRODUCT_1 + "\",\"qty\":1}]}";
 
-        consumer.consumeOrderEvent(payload);
+        assertThatThrownBy(() -> consumer.consumeOrderEvent(payload))
+                .isInstanceOf(IllegalStateException.class);
+
+        verify(eligibilityRepository, never()).save(any());
+    }
+
+    @Test
+    void consume_missingProductId_throwsForRetry() {
+        String payload = "{\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
+                + "\"items\":[{\"qty\":1}]}";
+
+        assertThatThrownBy(() -> consumer.consumeOrderEvent(payload))
+                .isInstanceOf(IllegalStateException.class);
 
         verify(eligibilityRepository, never()).save(any());
     }

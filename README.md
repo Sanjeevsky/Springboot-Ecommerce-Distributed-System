@@ -53,6 +53,14 @@ customer-service ──► order-events ──► inventory-service
 payment-service  ──► payment-events ──► notification-service
 ```
 
+Kafka consumers retry failed records twice with a 1 second backoff, then publish the original record to a dead-letter topic:
+
+| Source topic | Dead-letter topic |
+|--------------|-------------------|
+| `order-events` | `order-events-dlt` |
+| `payment-events` | `payment-events-dlt` |
+| `inventory-events` | `inventory-events-dlt` |
+
 ---
 
 ## Tech Stack

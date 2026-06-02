@@ -83,6 +83,12 @@ public class InventoryServiceImpl implements InventoryService {
 
         Inventory inventory = getStock(productId, variantId);
 
+        if (transactionRepository.existsByOrderIdAndInventoryIdAndType(orderId, inventory.getId(), "RESERVE")) {
+            log.info("Stock reservation already exists for orderId={}, inventoryId={}; skipping duplicate reserve",
+                    orderId, inventory.getId());
+            return inventory;
+        }
+
         int available = inventory.getAvailableQty();
         if (available < qty) {
             throw new InsufficientStockException(
@@ -111,6 +117,12 @@ public class InventoryServiceImpl implements InventoryService {
         log.info("Releasing stock: orderId={}, productId={}, variantId={}, qty={}", orderId, productId, variantId, qty);
 
         Inventory inventory = getStock(productId, variantId);
+
+        if (transactionRepository.existsByOrderIdAndInventoryIdAndType(orderId, inventory.getId(), "RELEASE")) {
+            log.info("Stock release already exists for orderId={}, inventoryId={}; skipping duplicate release",
+                    orderId, inventory.getId());
+            return inventory;
+        }
 
         int newReserved = Math.max(0, inventory.getReservedQty() - qty);
         inventory.setReservedQty(newReserved);
