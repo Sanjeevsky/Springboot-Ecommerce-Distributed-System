@@ -17,8 +17,7 @@ import org.springframework.context.annotation.Configuration;
         contact = @Contact(name = "Sanjeevsky", url = "https://github.com/Sanjeevsky")
     ),
     servers = {
-        @Server(url = "http://localhost:8083", description = "Direct"),
-        @Server(url = "http://localhost:8081", description = "Via API Gateway")
+        @Server(url = "http://localhost:8081", description = "API Gateway")
     },
     security = @SecurityRequirement(name = "bearerAuth")
 )

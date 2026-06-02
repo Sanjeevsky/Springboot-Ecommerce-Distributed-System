@@ -149,8 +149,19 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
 
   for (const file of javaMainFiles(service)) {
     const text = fs.readFileSync(file, "utf8");
+    const relativeFile = path.relative(root, file);
     if (text.includes("@Autowired")) {
-      fail(`${path.relative(root, file)}: production dependencies must use constructor injection without @Autowired`);
+      fail(`${relativeFile}: production dependencies must use constructor injection without @Autowired`);
+    }
+    if (path.basename(file) === "OpenApiConfig.java") {
+      if (text.includes('description = "Direct"')
+          || text.includes('description = "Via API Gateway"')
+          || /@Server\(url = "http:\/\/localhost:(?!8081\b)\d+"/.test(text)) {
+        fail(`${relativeFile}: OpenAPI servers must advertise only the API Gateway`);
+      }
+      if (!text.includes('@Server(url = "http://localhost:8081", description = "API Gateway")')) {
+        fail(`${relativeFile}: OpenAPI config must include the API Gateway server`);
+      }
     }
   }
 
