@@ -1838,6 +1838,33 @@
               "path": ["order-service", "order", "{{orderId}}", "cancel"]
             }
           }
+        },
+
+        {
+          "name": "44a — Verify Cancel Refund",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get Cancelled Order Payment: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Cancelled order payment is REFUNDED', () => pm.expect(json.data.status).to.eql('REFUNDED'));",
+                  "console.log('Cancelled order payment status:', json.data.status);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/payment-service/{{paymentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["payment-service", "{{paymentId}}"]
+            }
+          }
         }
 
       ]

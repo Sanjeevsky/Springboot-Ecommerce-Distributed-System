@@ -351,6 +351,11 @@ function validateRunnerStateRepairs(relativePath, collection) {
       "40a — Re-add Item for Coupon Order",
       "40b — Create Order with Coupon → verify discount applied",
     ]);
+    validateRequestOrder(relativePath, collection, [
+      "44 — Cancel Order",
+      "44a — Verify Cancel Refund",
+      "45 — Initiate Payment → save paymentId",
+    ]);
   }
 }
 
