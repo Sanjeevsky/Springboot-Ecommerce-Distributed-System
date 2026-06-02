@@ -12,6 +12,7 @@ POSTMAN_ENV="${POSTMAN_ENV:-postman/Ecommerce-Local.postman_environment.json}"
 RUN_POSTMAN="${RUN_POSTMAN:-1}"
 RUN_MAVEN_TESTS="${RUN_MAVEN_TESTS:-1}"
 RUN_DIRECT_HEALTH_CHECKS="${RUN_DIRECT_HEALTH_CHECKS:-1}"
+RUN_API_COLLECTION="${RUN_API_COLLECTION:-1}"
 WAIT_RETRIES="${WAIT_RETRIES:-60}"
 WAIT_SLEEP_SECONDS="${WAIT_SLEEP_SECONDS:-5}"
 GATEWAY_DISCOVERY_STABILIZE_SECONDS="${GATEWAY_DISCOVERY_STABILIZE_SECONDS:-10}"
@@ -158,6 +159,15 @@ if [[ "$RUN_POSTMAN" == "1" ]]; then
   if [[ "$GATEWAY_DISCOVERY_STABILIZE_SECONDS" -gt 0 ]]; then
     log "Allowing gateway discovery cache to refresh"
     sleep "$GATEWAY_DISCOVERY_STABILIZE_SECONDS"
+  fi
+
+  if [[ "$RUN_API_COLLECTION" == "1" ]]; then
+    log "Running Postman API reference flow"
+    newman run postman/Ecommerce-API.postman_collection.json \
+      -e "$POSTMAN_ENV" \
+      --bail failure \
+      --timeout-request 30000 \
+      --delay-request 100
   fi
 
   log "Running Postman data seed flow"

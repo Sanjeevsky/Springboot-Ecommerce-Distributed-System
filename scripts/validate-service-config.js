@@ -187,6 +187,11 @@ if (!verifyLocalText.includes("RUN_DIRECT_HEALTH_CHECKS")
   fail("scripts/verify-local.sh: local smoke verifier must wait for direct service actuator health before Postman runs");
 }
 
+if (!verifyLocalText.includes("RUN_API_COLLECTION")
+    || !verifyLocalText.includes("Ecommerce-API.postman_collection.json")) {
+  fail("scripts/verify-local.sh: local smoke verifier must include the API Postman collection");
+}
+
 const smokeScriptText = fs.readFileSync(path.join(root, "e2e-smoke-test.sh"), "utf8");
 if (!smokeScriptText.includes("exec scripts/verify-local.sh") || !smokeScriptText.includes("RUN_MAVEN_TESTS")) {
   fail("e2e-smoke-test.sh: legacy smoke entrypoint must delegate to scripts/verify-local.sh");

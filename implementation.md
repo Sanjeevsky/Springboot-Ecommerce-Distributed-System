@@ -146,7 +146,7 @@ Order-service: unique constraint on `(userId, idempotencyKey)` to prevent duplic
 
 ### Phase 4 — E2E Verification
 
-Full smoke verification uses `scripts/verify-local.sh`; `e2e-smoke-test.sh` is a compatibility wrapper for the same Postman-backed runner flow. It covers:
+Full smoke verification uses `scripts/verify-local.sh`; `e2e-smoke-test.sh` is a compatibility wrapper for the same Postman-backed runner flow. By default it runs the API reference collection, the DataSeed collection, and the complete E2E collection. It covers:
 1. Auth: register → login → get JWT
 2. Catalog: add brand → category → product
 3. Cart: add item → update qty → verify total
@@ -157,7 +157,7 @@ Full smoke verification uses `scripts/verify-local.sh`; `e2e-smoke-test.sh` is a
 8. Notification: verify notifications created
 9. Review: verify purchase eligibility
 
-The API Postman collection is also runner-safe for targeted application checks. It asserts that all non-retry requests return 2xx and verifies business outcomes for coupon orders, cancelled-order refunds, and review moderation before approved-review reads.
+The API Postman collection is runner-safe for targeted application checks and is included in the default verifier. It asserts that all non-retry requests return 2xx and verifies business outcomes for coupon orders, cancelled-order refunds, and review moderation before approved-review reads.
 
 ---
 

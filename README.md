@@ -181,6 +181,8 @@ Full local verification:
 scripts/verify-local.sh
 ```
 
+By default this runs the API reference collection, the DataSeed collection, and the complete E2E collection after local health/Eureka readiness checks.
+
 Legacy smoke entrypoint:
 
 ```bash
@@ -193,6 +195,7 @@ Useful switches:
 
 ```bash
 RUN_POSTMAN=0 scripts/verify-local.sh       # skip Docker-stack Postman runner checks
+RUN_API_COLLECTION=0 scripts/verify-local.sh # skip API reference collection, keep DataSeed + E2E
 RUN_MAVEN_TESTS=0 scripts/verify-local.sh   # skip Maven module tests
 GATEWAY_DISCOVERY_STABILIZE_SECONDS=0 scripts/verify-local.sh  # disable post-Eureka gateway cache wait
 ```
