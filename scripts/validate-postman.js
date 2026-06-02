@@ -9,6 +9,7 @@ const collectionFiles = [
   "postman/Ecommerce-DataSeed.postman_collection.json",
   "postman/Ecommerce-E2E-Complete.postman_collection.json",
 ];
+const apiCollectionFile = "postman/Ecommerce-API.postman_collection.json";
 const environmentFiles = ["postman/Ecommerce-Local.postman_environment.json"];
 
 const bannedMarkers = [
@@ -124,6 +125,99 @@ function collectObjectVariables(value, out) {
   }
 }
 
+function walkFiles(directory, out = []) {
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const absolutePath = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      if (entry.name !== "target") {
+        walkFiles(absolutePath, out);
+      }
+    } else if (entry.isFile()) {
+      out.push(absolutePath);
+    }
+  }
+  return out;
+}
+
+function joinRoutePath(basePath, methodPath) {
+  return `/${[basePath, methodPath].filter(Boolean).join("/")}`
+    .replace(/\/+/g, "/")
+    .replace(/\/$/, "") || "/";
+}
+
+function normalizeRoutePath(routePath) {
+  const withoutBaseUrl = routePath
+    .replace(/^{{baseUrl}}/, "")
+    .replace(/^https?:\/\/[^/]+/, "")
+    .split("?")[0];
+
+  const segments = withoutBaseUrl
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => (/^{{.*}}$/.test(segment) || /^{.*}$/.test(segment) ? "{var}" : segment));
+
+  return `/${segments.join("/")}`;
+}
+
+function mappingValue(annotation) {
+  const match = annotation.match(/\(\s*(?:value\s*=\s*)?"([^"]*)"/)
+    || annotation.match(/\(\s*(?:value\s*=\s*)?'([^']*)'/);
+  return match ? match[1] : "";
+}
+
+function collectControllerRoutes() {
+  const routes = [];
+  for (const absolutePath of walkFiles(root)) {
+    if (!absolutePath.endsWith(".java") || !absolutePath.includes(`${path.sep}src${path.sep}main${path.sep}java${path.sep}`)) {
+      continue;
+    }
+    if (!absolutePath.includes(`${path.sep}controller${path.sep}`)) {
+      continue;
+    }
+
+    const code = fs.readFileSync(absolutePath, "utf8");
+    if (!code.includes("@RestController")) {
+      continue;
+    }
+
+    const baseMatch = code.match(/@RequestMapping\s*\(\s*(?:value\s*=\s*)?"([^"]*)"/);
+    const basePath = baseMatch ? baseMatch[1] : "";
+    const mappingRegex = /@(Get|Post|Put|Delete|Patch)Mapping\s*(\([^)]*\))?/g;
+    let match;
+    while ((match = mappingRegex.exec(code)) !== null) {
+      routes.push({
+        method: match[1].toUpperCase(),
+        path: normalizeRoutePath(joinRoutePath(basePath, mappingValue(match[0]))),
+        file: path.relative(root, absolutePath),
+      });
+    }
+  }
+  return routes;
+}
+
+function collectPostmanRequests(collection) {
+  const requests = new Set();
+  for (const { item } of walkItems(collection.item)) {
+    const request = item.request || {};
+    const method = (request.method || "").toUpperCase();
+    const rawUrl = request.url && request.url.raw;
+    if (method && rawUrl) {
+      requests.add(`${method} ${normalizeRoutePath(rawUrl)}`);
+    }
+  }
+  return requests;
+}
+
+function validateApiRouteCoverage(collection) {
+  const postmanRequests = collectPostmanRequests(collection);
+  for (const route of collectControllerRoutes()) {
+    const key = `${route.method} ${route.path}`;
+    if (!postmanRequests.has(key)) {
+      fail(`${apiCollectionFile}: missing ${key} from ${route.file}`);
+    }
+  }
+}
+
 function validateBannedMarkers(relativePath) {
   const text = fs.readFileSync(path.join(root, relativePath), "utf8");
   for (const { pattern, reason } of bannedMarkers) {
@@ -150,6 +244,9 @@ for (const relativePath of collectionFiles) {
   }
 
   validateBannedMarkers(relativePath);
+  if (relativePath === apiCollectionFile) {
+    validateApiRouteCoverage(collection);
+  }
 
   const declaredVariables = new Set(environmentVariables);
   const collectionVariables = new Set();

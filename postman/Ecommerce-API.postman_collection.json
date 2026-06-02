@@ -311,6 +311,29 @@
               ]
             }
           }
+        },
+        {
+          "name": "Get Brand by Name",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/catalog-service/getBrandByName/{{brandName}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "getBrandByName",
+                "{{brandName}}"
+              ]
+            }
+          }
         }
       ]
     },
@@ -407,6 +430,52 @@
           }
         },
         {
+          "name": "Get Category by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/catalog-service/getCategory/{{categoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "getCategory",
+                "{{categoryId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Category by Name",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/catalog-service/getCategoryByName/{{categoryName}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "getCategoryByName",
+                "{{categoryName}}"
+              ]
+            }
+          }
+        },
+        {
           "name": "Get All Categories",
           "request": {
             "method": "GET",
@@ -433,6 +502,23 @@
     {
       "name": "Catalog \u2014 Product",
       "item": [
+        {
+          "name": "Product Service Status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/catalog-service/product/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "product",
+                "status"
+              ]
+            }
+          }
+        },
         {
           "name": "Add Product",
           "event": [
@@ -538,7 +624,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"color\": \"Phantom Black\",\n  \"storage\": \"256GB\",\n  \"ram\": \"8GB\",\n  \"price\": 79999.00,\n  \"sku\": \"SGS24-BLK-256\"\n}"
+              "raw": "{\n  \"condition1Name\": \"Storage\",\n  \"condition1Value\": \"256GB\",\n  \"condition2Name\": \"Color\",\n  \"condition2Value\": \"Phantom Black\",\n  \"mrpPrice\": 89999.00,\n  \"salePrice\": 79999.00\n}"
             }
           }
         },
@@ -1602,6 +1688,30 @@
                 "{{productId}}",
                 "variant",
                 "{{variantId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Available Quantity",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/inventory-service/stock/{{productId}}/available",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory-service",
+                "stock",
+                "{{productId}}",
+                "available"
               ]
             }
           }

@@ -424,7 +424,7 @@
         },
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"color\": \"Phantom Black\",\n  \"storage\": \"256GB\",\n  \"ram\": \"8GB\",\n  \"price\": 79999.00,\n  \"sku\": \"SGS24-BLK-256\"\n}"
+          "raw": "{\n  \"condition1Name\": \"Storage\",\n  \"condition1Value\": \"256GB\",\n  \"condition2Name\": \"Color\",\n  \"condition2Value\": \"Phantom Black\",\n  \"mrpPrice\": 89999.00,\n  \"salePrice\": 79999.00\n}"
         }
       }
     },
