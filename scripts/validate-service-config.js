@@ -400,6 +400,12 @@ if (!verifyLocalText.includes("verify_gateway_standard_routes")
   fail("scripts/verify-local.sh: local smoke verifier must assert standard gateway routes and reject raw service-id routes");
 }
 
+if (!verifyLocalText.includes("print_url_diagnostics")
+    || !verifyLocalText.includes("print_eureka_registry_snapshot")
+    || !verifyLocalText.includes("Eureka registry snapshot")) {
+  fail("scripts/verify-local.sh: local smoke verifier must print HTTP and Eureka diagnostics when readiness checks fail");
+}
+
 const smokeScriptText = fs.readFileSync(path.join(root, "e2e-smoke-test.sh"), "utf8");
 if (!smokeScriptText.includes("exec scripts/verify-local.sh") || !smokeScriptText.includes("RUN_MAVEN_TESTS")) {
   fail("e2e-smoke-test.sh: legacy smoke entrypoint must delegate to scripts/verify-local.sh");

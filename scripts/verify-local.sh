@@ -84,6 +84,46 @@ require_command() {
   fi
 }
 
+print_url_diagnostics() {
+  local name="$1"
+  local url="$2"
+
+  echo "Last $name response from $url:" >&2
+  if ! curl -sS -i --max-time 10 "$url" >&2; then
+    echo "  <unreachable>" >&2
+  fi
+}
+
+print_eureka_registry_snapshot() {
+  local registry
+
+  echo "Eureka registry snapshot from $EUREKA_URL/eureka/apps:" >&2
+  if ! registry="$(curl -fs "$EUREKA_URL/eureka/apps" 2>/dev/null)"; then
+    echo "  <unavailable>" >&2
+    return 0
+  fi
+
+  printf '%s\n' "$registry" | node -e '
+const fs = require("fs");
+const xml = fs.readFileSync(0, "utf8");
+const apps = [...xml.matchAll(/<application>([\s\S]*?)<\/application>/g)]
+  .map(([, appXml]) => {
+    const name = (appXml.match(/<name>([^<]+)<\/name>/) || [null, "<unknown>"])[1];
+    const statuses = [...appXml.matchAll(/<status>([^<]+)<\/status>/g)].map((match) => match[1]);
+    return `${name}: ${statuses.length ? statuses.join(", ") : "NO_INSTANCES"}`;
+  })
+  .sort();
+
+if (apps.length === 0) {
+  console.error("  <none>");
+} else {
+  for (const app of apps) {
+    console.error(`  ${app}`);
+  }
+}
+' || echo "  <failed to parse registry snapshot>" >&2
+}
+
 wait_for_url() {
   local name="$1"
   local url="$2"
@@ -96,6 +136,7 @@ wait_for_url() {
   done
 
   echo "$name did not become reachable at $url" >&2
+  print_url_diagnostics "$name" "$url"
   return 1
 }
 
@@ -110,7 +151,8 @@ wait_for_eureka_app() {
     sleep "$WAIT_SLEEP_SECONDS"
   done
 
-  echo "Eureka app $app did not register as UP" >&2
+  echo "Eureka app $app did not register as UP at $app_url" >&2
+  print_eureka_registry_snapshot
   return 1
 }
 
