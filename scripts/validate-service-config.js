@@ -176,6 +176,17 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
     fail(`${service}: spring.jpa.show-sql must stay disabled for full-stack Docker smoke stability`);
   }
 
+  const sleuthSamplerPercentageValues = files.flatMap((file) => propertyValues(file, "spring.sleuth.sampler.percentage"));
+  if (sleuthSamplerPercentageValues.length) {
+    fail(`${service}: use spring.sleuth.sampler.probability=1.0 instead of deprecated spring.sleuth.sampler.percentage`);
+  }
+
+  const zipkinEnabledValues = files.flatMap((file) => propertyValues(file, "spring.zipkin.enabled"));
+  const sleuthSamplerProbabilityValues = files.flatMap((file) => propertyValues(file, "spring.sleuth.sampler.probability"));
+  if (zipkinEnabledValues.length && !sleuthSamplerProbabilityValues.includes("1.0")) {
+    fail(`${service}: services with Zipkin config must set spring.sleuth.sampler.probability=1.0`);
+  }
+
   for (const file of files) {
     const text = fs.readFileSync(file, "utf8");
     const relativeFile = path.relative(root, file);
