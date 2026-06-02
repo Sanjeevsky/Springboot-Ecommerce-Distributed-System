@@ -51,6 +51,16 @@ function integrationTestFiles(service) {
     return [];
   }
 
+  return javaTestFiles(service)
+    .filter((file) => /IntegrationTest\.java$/.test(path.basename(file)));
+}
+
+function javaTestFiles(service) {
+  const testRoot = path.join(root, service, "src", "test", "java");
+  if (!fs.existsSync(testRoot)) {
+    return [];
+  }
+
   const files = [];
   const stack = [testRoot];
   while (stack.length > 0) {
@@ -59,7 +69,7 @@ function integrationTestFiles(service) {
       const fullPath = path.join(current, entry.name);
       if (entry.isDirectory()) {
         stack.push(fullPath);
-      } else if (/IntegrationTest\.java$/.test(entry.name)) {
+      } else if (entry.name.endsWith(".java")) {
         files.push(fullPath);
       }
     }
@@ -125,6 +135,77 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
   if (showSqlValues.some((value) => value.toLowerCase() === "true")) {
     fail(`${service}: spring.jpa.show-sql must stay disabled for full-stack Docker smoke stability`);
   }
+}
+
+const readmeCoverageServices = [
+  "auth-server",
+  "catalog-service",
+  "customer-service",
+  "order-service",
+  "payment-service",
+  "shopping-cart-service",
+  "coupon-service",
+  "review-service",
+  "wishlist-service",
+  "inventory-service",
+  "notification-service",
+];
+const readmeText = fs.readFileSync(path.join(root, "README.md"), "utf8");
+const readmeCoverageStart = readmeText.indexOf("## Test Coverage");
+const readmeCoverageText = readmeCoverageStart === -1 ? "" : readmeText.slice(readmeCoverageStart);
+if (!readmeCoverageText) {
+  fail("README.md: missing Test Coverage section");
+}
+
+function junitTestCount(file) {
+  return (fs.readFileSync(file, "utf8").match(/@Test\b/g) || []).length;
+}
+
+function coverageCounts(service) {
+  let unit = 0;
+  let integration = 0;
+  for (const file of javaTestFiles(service)) {
+    const count = junitTestCount(file);
+    if (/IntegrationTest\.java$/.test(path.basename(file))) {
+      integration += count;
+    } else if (!/ApplicationTests\.java$/.test(path.basename(file))) {
+      unit += count;
+    }
+  }
+  return { unit, integration };
+}
+
+function readmeCoverageRow(service) {
+  const escapedService = service.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = readmeCoverageText.match(new RegExp(`\\| ${escapedService} \\| ([^|]+) \\| ([^|]+) \\|`));
+  if (!match) {
+    fail(`README.md: missing Test Coverage row for ${service}`);
+    return null;
+  }
+  return {
+    unit: Number(match[1].trim()),
+    integration: match[2].trim() === "—" ? 0 : Number(match[2].trim()),
+  };
+}
+
+let totalReadmeUnitTests = 0;
+let totalReadmeIntegrationTests = 0;
+for (const service of readmeCoverageServices) {
+  const actual = coverageCounts(service);
+  const documented = readmeCoverageRow(service);
+  totalReadmeUnitTests += actual.unit;
+  totalReadmeIntegrationTests += actual.integration;
+  if (documented && (documented.unit !== actual.unit || documented.integration !== actual.integration)) {
+    fail(`README.md: ${service} Test Coverage row must be ${actual.unit} unit and ${actual.integration || "—"} integration tests`);
+  }
+}
+
+const totalCoverageMatch = readmeCoverageText.match(/\| \*\*Total\*\* \| \*\*(\d+)\*\* \| \*\*(\d+)\*\* \|/);
+if (!totalCoverageMatch) {
+  fail("README.md: missing Test Coverage total row");
+} else if (Number(totalCoverageMatch[1]) !== totalReadmeUnitTests
+    || Number(totalCoverageMatch[2]) !== totalReadmeIntegrationTests) {
+  fail(`README.md: Test Coverage total must be ${totalReadmeUnitTests} unit and ${totalReadmeIntegrationTests} integration tests`);
 }
 
 const gatewayFetchIntervals = propertiesFiles("api-gateway")

@@ -272,14 +272,14 @@ GitHub Actions runs Postman static validation and Java 11 module tests on pushes
 | Service | Unit Tests | Integration Tests |
 |---------|-----------|-------------------|
 | auth-server | 8 | 8 |
-| catalog-service | 25 | — |
-| customer-service | 39 | — |
-| order-service | 10 | — |
-| payment-service | 11 | 8 |
-| shopping-cart-service | 13 | 5 |
+| catalog-service | 28 | — |
+| customer-service | 13 | — |
+| order-service | 29 | — |
+| payment-service | 22 | 11 |
+| shopping-cart-service | 14 | 6 |
 | coupon-service | 13 | 8 |
-| review-service | 17 | 8 |
+| review-service | 19 | 8 |
 | wishlist-service | 8 | 8 |
-| inventory-service | 15 | 8 |
-| notification-service | 8 | 5 |
-| **Total** | **167** | **58** |
+| inventory-service | 18 | 8 |
+| notification-service | 11 | 5 |
+| **Total** | **183** | **62** |
