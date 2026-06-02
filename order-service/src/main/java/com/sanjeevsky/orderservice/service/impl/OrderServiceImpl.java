@@ -191,7 +191,7 @@ public class OrderServiceImpl implements OrderService {
         Order order = orderRepository.findByIdAndUserId(orderId, userId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
         if (order.getStatus() == OrderStatus.CONFIRMED) {
-            paymentFeignClient.confirmPayment(order.getPaymentId());
+            log.info("Order already confirmed id={} for user={}", orderId, userId);
             return order;
         }
         if (order.getStatus() != OrderStatus.PENDING) {

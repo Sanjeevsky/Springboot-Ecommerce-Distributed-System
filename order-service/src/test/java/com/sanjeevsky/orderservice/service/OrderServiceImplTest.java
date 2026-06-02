@@ -183,14 +183,14 @@ class OrderServiceImplTest {
 
     @Test
     void confirmOrder_alreadyConfirmed_isIdempotent() {
-        // Re-confirming an already CONFIRMED order is a no-op (calls confirmPayment again, no exception)
         pendingOrder.setStatus(OrderStatus.CONFIRMED);
         when(orderRepository.findByIdAndUserId(ORDER_ID, USER)).thenReturn(Optional.of(pendingOrder));
 
         Order result = orderService.confirmOrder(USER, ORDER_ID);
 
         assertThat(result.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
-        verify(paymentFeignClient).confirmPayment(PAYMENT_ID);
+        verify(orderRepository, never()).save(any());
+        verifyNoInteractions(paymentFeignClient, eventPublisher);
     }
 
     @Test
