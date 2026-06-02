@@ -3,6 +3,7 @@ package com.sanjeevsky.orderservice.service.impl;
 import com.sanjeevsky.orderservice.clients.CartFeignClient;
 import com.sanjeevsky.orderservice.clients.CouponFeignClient;
 import com.sanjeevsky.orderservice.clients.CustomerFeignClient;
+import com.sanjeevsky.orderservice.clients.InventoryFeignClient;
 import com.sanjeevsky.orderservice.clients.PaymentFeignClient;
 import com.sanjeevsky.orderservice.events.OrderEventPublisher;
 import com.sanjeevsky.orderservice.exceptions.AddressNotFoundException;
@@ -10,6 +11,7 @@ import com.sanjeevsky.orderservice.exceptions.InvalidRequestException;
 import com.sanjeevsky.orderservice.exceptions.OrderNotFoundException;
 import com.sanjeevsky.orderservice.model.AddressDto;
 import com.sanjeevsky.orderservice.model.CouponValidationResult;
+import com.sanjeevsky.orderservice.model.InventoryStock;
 import com.sanjeevsky.orderservice.model.Order;
 import com.sanjeevsky.orderservice.model.OrderItem;
 import com.sanjeevsky.orderservice.model.ShippingAddress;
@@ -19,6 +21,7 @@ import com.sanjeevsky.platform.events.OrderCancelledEvent;
 import com.sanjeevsky.platform.events.OrderConfirmedEvent;
 import com.sanjeevsky.platform.events.OrderItemEvent;
 import com.sanjeevsky.platform.events.OrderPlacedEvent;
+import com.sanjeevsky.platform.model.cart.CartItemSnapshot;
 import com.sanjeevsky.platform.model.cart.CartSnapshot;
 import com.sanjeevsky.platform.model.order.OrderStatus;
 import com.sanjeevsky.platform.model.payment.PaymentRequest;
@@ -28,6 +31,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -41,6 +46,7 @@ public class OrderServiceImpl implements OrderService {
     private final PaymentFeignClient paymentFeignClient;
     private final CustomerFeignClient customerFeignClient;
     private final CouponFeignClient couponFeignClient;
+    private final InventoryFeignClient inventoryFeignClient;
     private final OrderEventPublisher eventPublisher;
 
     @Override
@@ -114,6 +120,8 @@ public class OrderServiceImpl implements OrderService {
                         .qty(item.getQty())
                         .build())
                 .collect(Collectors.toList());
+
+        validateInventoryAvailability(cart);
 
         double cartTotal = cart.getTotalAmount();
         double discount = 0;
@@ -244,6 +252,36 @@ public class OrderServiceImpl implements OrderService {
 
     private String paymentIdempotencyKey(String idempotencyKey) {
         return idempotencyKey == null ? null : "order:" + idempotencyKey;
+    }
+
+    private void validateInventoryAvailability(CartSnapshot cart) {
+        for (CartItemSnapshot item : cart.getItems()) {
+            List<InventoryStock> stockEntries;
+            try {
+                stockEntries = inventoryFeignClient.getStockByProduct(item.getProductId());
+            } catch (RuntimeException ex) {
+                log.warn("Inventory pre-check skipped for productId={} variantId={}: {}",
+                        item.getProductId(), item.getVariantId(), ex.getMessage());
+                continue;
+            }
+
+            if (stockEntries == null) {
+                log.warn("Inventory pre-check skipped for productId={} variantId={} because inventory-service fallback returned no data",
+                        item.getProductId(), item.getVariantId());
+                continue;
+            }
+
+            Optional<InventoryStock> matchingStock = stockEntries.stream()
+                    .filter(stock -> Objects.equals(stock.getVariantId(), item.getVariantId()))
+                    .findFirst();
+
+            int available = matchingStock.map(InventoryStock::availableQuantity).orElse(0);
+            if (available < item.getQty()) {
+                throw new InvalidRequestException("Insufficient stock for productId=" + item.getProductId()
+                        + " variantId=" + item.getVariantId()
+                        + ". Available=" + available + ", requested=" + item.getQty());
+            }
+        }
     }
 
     private UUID orderAddressId(Order order, UUID fallbackAddressId) {

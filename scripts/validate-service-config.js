@@ -234,6 +234,16 @@ if (!shoppingCartComposeBlock.includes("CLIENTS_CATALOG_URL=http://catalog-servi
   fail("docker-compose.yml: shopping-cart-service must define CLIENTS_CATALOG_URL=http://catalog-service:8084");
 }
 
+const orderProperties = propertiesFiles("order-service");
+if (!orderProperties.some((file) => hasProperty(file, "clients.inventory.url"))) {
+  fail("order-service: expected clients.inventory.url property for Docker inventory dependency override");
+}
+
+const orderComposeBlock = composeServiceBlock("order-service");
+if (!orderComposeBlock.includes("CLIENTS_INVENTORY_URL=http://inventory-service:8088")) {
+  fail("docker-compose.yml: order-service must define CLIENTS_INVENTORY_URL=http://inventory-service:8088");
+}
+
 function requireMavenTestFlags(relativePath, text) {
   for (const requiredFlag of mavenTestConfigFlags) {
     if (!text.includes(requiredFlag)) {

@@ -3,12 +3,14 @@ package com.sanjeevsky.orderservice.service;
 import com.sanjeevsky.orderservice.clients.CartFeignClient;
 import com.sanjeevsky.orderservice.clients.CouponFeignClient;
 import com.sanjeevsky.orderservice.clients.CustomerFeignClient;
+import com.sanjeevsky.orderservice.clients.InventoryFeignClient;
 import com.sanjeevsky.orderservice.clients.PaymentFeignClient;
 import com.sanjeevsky.orderservice.events.OrderEventPublisher;
 import com.sanjeevsky.orderservice.exceptions.InvalidRequestException;
 import com.sanjeevsky.orderservice.exceptions.OrderNotFoundException;
 import com.sanjeevsky.orderservice.model.AddressDto;
 import com.sanjeevsky.orderservice.model.CouponValidationResult;
+import com.sanjeevsky.orderservice.model.InventoryStock;
 import com.sanjeevsky.orderservice.model.Order;
 import com.sanjeevsky.orderservice.model.OrderItem;
 import com.sanjeevsky.orderservice.model.ShippingAddress;
@@ -37,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -51,6 +54,7 @@ class OrderServiceImplTest {
     @Mock PaymentFeignClient paymentFeignClient;
     @Mock CustomerFeignClient customerFeignClient;
     @Mock CouponFeignClient couponFeignClient;
+    @Mock InventoryFeignClient inventoryFeignClient;
     @Mock OrderEventPublisher eventPublisher;
 
     @InjectMocks OrderServiceImpl orderService;
@@ -64,6 +68,7 @@ class OrderServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        lenient().when(inventoryFeignClient.getStockByProduct(any())).thenReturn(null);
         pendingOrder = Order.builder()
                 .id(ORDER_ID)
                 .userId(USER)
@@ -115,6 +120,58 @@ class OrderServiceImplTest {
         assertThat(result.getStatus()).isEqualTo(OrderStatus.PENDING);
         assertThat(result.getOrderTotal()).isEqualTo(100.0);
         verify(cartFeignClient).clearCart(USER);
+        verify(eventPublisher).publishOrderPlaced(any());
+    }
+
+    @Test
+    void createOrder_insufficientInventory_throwsBeforePayment() {
+        CartItemSnapshot item = cartItem(100.0);
+        item.setQty(2);
+        when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(cart(List.of(item), 200.0));
+        when(customerFeignClient.getAddress(USER, ADDRESS_ID)).thenReturn(address());
+        when(inventoryFeignClient.getStockByProduct(item.getProductId()))
+                .thenReturn(List.of(stock(item.getProductId(), item.getVariantId(), 1, 0)));
+
+        assertThatThrownBy(() -> orderService.createOrder(USER, ADDRESS_ID, null))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessageContaining("Insufficient stock");
+
+        verify(orderRepository, never()).save(any());
+        verifyNoInteractions(paymentFeignClient, eventPublisher);
+    }
+
+    @Test
+    void createOrder_inventoryUnavailable_continuesWithKafkaReservation() {
+        CartItemSnapshot item = cartItem(100.0);
+        when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(cart(List.of(item), 100.0));
+        when(customerFeignClient.getAddress(USER, ADDRESS_ID)).thenReturn(address());
+        when(inventoryFeignClient.getStockByProduct(item.getProductId())).thenReturn(null);
+        when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentFeignClient.initiatePayment(any())).thenReturn(payment());
+
+        Order result = orderService.createOrder(USER, ADDRESS_ID, null);
+
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.PENDING);
+        verify(eventPublisher).publishOrderPlaced(any());
+    }
+
+    @Test
+    void createOrder_usesMatchingVariantInventory() {
+        CartItemSnapshot item = cartItem(100.0);
+        UUID otherVariant = UUID.randomUUID();
+        when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(cart(List.of(item), 100.0));
+        when(customerFeignClient.getAddress(USER, ADDRESS_ID)).thenReturn(address());
+        when(inventoryFeignClient.getStockByProduct(item.getProductId()))
+                .thenReturn(List.of(
+                        stock(item.getProductId(), otherVariant, 100, 100),
+                        stock(item.getProductId(), item.getVariantId(), 2, 0)
+                ));
+        when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentFeignClient.initiatePayment(any())).thenReturn(payment());
+
+        Order result = orderService.createOrder(USER, ADDRESS_ID, null);
+
+        assertThat(result.getStatus()).isEqualTo(OrderStatus.PENDING);
         verify(eventPublisher).publishOrderPlaced(any());
     }
 
@@ -349,6 +406,16 @@ class OrderServiceImplTest {
         c.setItems(items);
         c.setTotalAmount(total);
         return c;
+    }
+
+    private InventoryStock stock(UUID productId, UUID variantId, int totalQty, int reservedQty) {
+        InventoryStock stock = new InventoryStock();
+        stock.setProductId(productId);
+        stock.setVariantId(variantId);
+        stock.setTotalQty(totalQty);
+        stock.setReservedQty(reservedQty);
+        stock.setAvailableQty(totalQty - reservedQty);
+        return stock;
     }
 
     private AddressDto address() {

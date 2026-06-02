@@ -512,6 +512,7 @@ services:
       - CLIENTS_CUSTOMER_URL=http://customer-service:8082
       - CLIENTS_PAYMENT_URL=http://payment-service:8085
       - CLIENTS_COUPON_URL=http://coupon-service:8089
+      - CLIENTS_INVENTORY_URL=http://inventory-service:8088
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
