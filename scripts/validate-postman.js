@@ -283,6 +283,12 @@ function validateAsyncRunnerRetries(relativePath, collection) {
       }
     }
 
+    if (method === "POST" && url.endsWith("/inventory-service/stock")) {
+      if (!code.includes("pm.execution.setNextRequest") || !code.includes("_inventoryStockRetryCount")) {
+        fail(`${relativePath}: ${requestPath}: inventory stock write must retry transient inventory cold-start failures`);
+      }
+    }
+
     if (method === "GET" && url.endsWith("/payment-service/{{paymentId}}") && code.includes("Payment is SUCCESS")) {
       if (!code.includes("pm.execution.setNextRequest") || !code.includes("_paymentSuccessRetryCount")) {
         fail(`${relativePath}: ${requestPath}: payment success verification must retry while order confirmation is becoming visible`);

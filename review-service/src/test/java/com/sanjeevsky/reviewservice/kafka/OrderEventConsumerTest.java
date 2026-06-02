@@ -36,11 +36,11 @@ class OrderEventConsumerTest {
     private static final UUID PRODUCT_2 = UUID.randomUUID();
     private static final String USER_ID = "buyer@example.com";
 
-    // ─── OrderPlacedEvent ─────────────────────────────────────────────────────
+    // ─── OrderConfirmedEvent ──────────────────────────────────────────────────
 
     @Test
-    void consume_orderPlaced_persistsEligibilityForEachProduct() {
-        String payload = "{\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
+    void consume_orderConfirmed_persistsEligibilityForEachProduct() {
+        String payload = "{\"eventType\":\"ORDER_CONFIRMED\",\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
                 + "\"totalAmount\":300.0,"
                 + "\"items\":["
                 + "{\"productId\":\"" + PRODUCT_1 + "\",\"qty\":1},"
@@ -56,8 +56,8 @@ class OrderEventConsumerTest {
     }
 
     @Test
-    void consume_orderPlaced_setsCorrectFields() {
-        String payload = "{\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
+    void consume_orderConfirmed_setsCorrectFields() {
+        String payload = "{\"eventType\":\"ORDER_CONFIRMED\",\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
                 + "\"totalAmount\":150.0,"
                 + "\"items\":[{\"productId\":\"" + PRODUCT_1 + "\",\"qty\":1}]}";
 
@@ -75,8 +75,8 @@ class OrderEventConsumerTest {
     }
 
     @Test
-    void consume_orderPlaced_skipsIfEligibilityAlreadyExists() {
-        String payload = "{\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
+    void consume_orderConfirmed_skipsIfEligibilityAlreadyExists() {
+        String payload = "{\"eventType\":\"ORDER_CONFIRMED\",\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
                 + "\"totalAmount\":100.0,"
                 + "\"items\":[{\"productId\":\"" + PRODUCT_1 + "\",\"qty\":1}]}";
 
@@ -87,12 +87,13 @@ class OrderEventConsumerTest {
         verify(eligibilityRepository, never()).save(any());
     }
 
-    // ─── Non-OrderPlacedEvent (no items field) ────────────────────────────────
+    // ─── Non-confirmed events ─────────────────────────────────────────────────
 
     @Test
-    void consume_orderConfirmedEvent_noItems_doesNothing() {
-        String payload = "{\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
-                + "\"totalAmount\":300.0}";
+    void consume_orderPlacedEvent_doesNothing() {
+        String payload = "{\"eventType\":\"ORDER_PLACED\",\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
+                + "\"totalAmount\":300.0,"
+                + "\"items\":[{\"productId\":\"" + PRODUCT_1 + "\",\"qty\":1}]}";
 
         consumer.consumeOrderEvent(payload);
 
@@ -101,7 +102,7 @@ class OrderEventConsumerTest {
 
     @Test
     void consume_orderCancelledEvent_doesNothing() {
-        String payload = "{\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
+        String payload = "{\"eventType\":\"ORDER_CANCELLED\",\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
                 + "\"reason\":\"Out of stock\"}";
 
         consumer.consumeOrderEvent(payload);
@@ -121,7 +122,7 @@ class OrderEventConsumerTest {
 
     @Test
     void consume_missingUserId_throwsForRetry() {
-        String payload = "{\"orderId\":\"" + ORDER_ID + "\","
+        String payload = "{\"eventType\":\"ORDER_CONFIRMED\",\"orderId\":\"" + ORDER_ID + "\","
                 + "\"items\":[{\"productId\":\"" + PRODUCT_1 + "\",\"qty\":1}]}";
 
         assertThatThrownBy(() -> consumer.consumeOrderEvent(payload))
@@ -132,8 +133,18 @@ class OrderEventConsumerTest {
 
     @Test
     void consume_missingProductId_throwsForRetry() {
-        String payload = "{\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
+        String payload = "{\"eventType\":\"ORDER_CONFIRMED\",\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
                 + "\"items\":[{\"qty\":1}]}";
+
+        assertThatThrownBy(() -> consumer.consumeOrderEvent(payload))
+                .isInstanceOf(IllegalStateException.class);
+
+        verify(eligibilityRepository, never()).save(any());
+    }
+
+    @Test
+    void consume_orderConfirmedMissingItems_throwsForRetry() {
+        String payload = "{\"eventType\":\"ORDER_CONFIRMED\",\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\"}";
 
         assertThatThrownBy(() -> consumer.consumeOrderEvent(payload))
                 .isInstanceOf(IllegalStateException.class);

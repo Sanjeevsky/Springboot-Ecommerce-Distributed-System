@@ -7,9 +7,11 @@ cd "$ROOT_DIR"
 
 BASE_URL="${BASE_URL:-http://localhost:8081}"
 EUREKA_URL="${EUREKA_URL:-http://localhost:8761}"
+LOCAL_SERVICE_HOST="${LOCAL_SERVICE_HOST:-localhost}"
 POSTMAN_ENV="${POSTMAN_ENV:-postman/Ecommerce-Local.postman_environment.json}"
 RUN_POSTMAN="${RUN_POSTMAN:-1}"
 RUN_MAVEN_TESTS="${RUN_MAVEN_TESTS:-1}"
+RUN_DIRECT_HEALTH_CHECKS="${RUN_DIRECT_HEALTH_CHECKS:-1}"
 WAIT_RETRIES="${WAIT_RETRIES:-60}"
 WAIT_SLEEP_SECONDS="${WAIT_SLEEP_SECONDS:-5}"
 GATEWAY_DISCOVERY_STABILIZE_SECONDS="${GATEWAY_DISCOVERY_STABILIZE_SECONDS:-10}"
@@ -53,6 +55,21 @@ REQUIRED_EUREKA_APPS=(
   REVIEW-SERVICE
 )
 
+SERVICE_HEALTH_CHECKS=(
+  "API gateway|$BASE_URL/actuator/health"
+  "auth-service|http://$LOCAL_SERVICE_HOST:${AUTH_SERVICE_PORT:-8083}/actuator/health"
+  "customer-service|http://$LOCAL_SERVICE_HOST:${CUSTOMER_SERVICE_PORT:-8082}/actuator/health"
+  "catalog-service|http://$LOCAL_SERVICE_HOST:${CATALOG_SERVICE_PORT:-8084}/actuator/health"
+  "shopping-cart-service|http://$LOCAL_SERVICE_HOST:${SHOPPING_CART_SERVICE_PORT:-8086}/actuator/health"
+  "payment-service|http://$LOCAL_SERVICE_HOST:${PAYMENT_SERVICE_PORT:-8085}/actuator/health"
+  "inventory-service|http://$LOCAL_SERVICE_HOST:${INVENTORY_SERVICE_PORT:-8088}/actuator/health"
+  "order-service|http://$LOCAL_SERVICE_HOST:${ORDER_SERVICE_PORT:-8092}/actuator/health"
+  "notification-service|http://$LOCAL_SERVICE_HOST:${NOTIFICATION_SERVICE_PORT:-8087}/actuator/health"
+  "coupon-service|http://$LOCAL_SERVICE_HOST:${COUPON_SERVICE_PORT:-8089}/actuator/health"
+  "wishlist-service|http://$LOCAL_SERVICE_HOST:${WISHLIST_SERVICE_PORT:-8091}/actuator/health"
+  "review-service|http://$LOCAL_SERVICE_HOST:${REVIEW_SERVICE_PORT:-8090}/actuator/health"
+)
+
 log() {
   printf '\n==> %s\n' "$1"
 }
@@ -94,6 +111,14 @@ wait_for_eureka_app() {
   return 1
 }
 
+wait_for_health_check() {
+  local check="$1"
+  local name="${check%%|*}"
+  local url="${check#*|}"
+
+  wait_for_url "$name" "$url"
+}
+
 if [[ -z "${JAVA_HOME:-}" && -d /Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home ]]; then
   export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home
 fi
@@ -116,8 +141,17 @@ log "Validating service configuration"
 node scripts/validate-service-config.js
 
 if [[ "$RUN_POSTMAN" == "1" ]]; then
-  log "Waiting for gateway and Eureka registrations"
-  wait_for_url "API gateway" "$BASE_URL/actuator/health"
+  if [[ "$RUN_DIRECT_HEALTH_CHECKS" == "1" ]]; then
+    log "Waiting for local service health checks"
+    for check in "${SERVICE_HEALTH_CHECKS[@]}"; do
+      wait_for_health_check "$check"
+    done
+  else
+    log "Waiting for gateway health"
+    wait_for_url "API gateway" "$BASE_URL/actuator/health"
+  fi
+
+  log "Waiting for Eureka registrations"
   for app in "${REQUIRED_EUREKA_APPS[@]}"; do
     wait_for_eureka_app "$app"
   done

@@ -174,14 +174,18 @@ const mavenTestConfigFlags = [
   "-Dspring.config.import=",
 ];
 
-requireMavenTestFlags(
-  "scripts/verify-local.sh",
-  fs.readFileSync(path.join(root, "scripts", "verify-local.sh"), "utf8")
-);
+const verifyLocalText = fs.readFileSync(path.join(root, "scripts", "verify-local.sh"), "utf8");
+requireMavenTestFlags("scripts/verify-local.sh", verifyLocalText);
 requireMavenTestFlags(
   ".github/workflows/ci.yml",
   fs.readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8")
 );
+
+if (!verifyLocalText.includes("RUN_DIRECT_HEALTH_CHECKS")
+    || !verifyLocalText.includes("SERVICE_HEALTH_CHECKS")
+    || !verifyLocalText.includes("INVENTORY_SERVICE_PORT")) {
+  fail("scripts/verify-local.sh: local smoke verifier must wait for direct service actuator health before Postman runs");
+}
 
 const smokeScriptText = fs.readFileSync(path.join(root, "e2e-smoke-test.sh"), "utf8");
 if (!smokeScriptText.includes("exec scripts/verify-local.sh") || !smokeScriptText.includes("RUN_MAVEN_TESTS")) {

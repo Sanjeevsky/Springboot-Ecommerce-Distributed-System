@@ -1891,6 +1891,32 @@
       "item": [
         {
           "name": "Add / Restock",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var retryKey = '_inventoryStockRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 6;",
+                  "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Inventory service not ready; retrying Add / Restock ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "  return;",
+                  "}",
+                  "pm.collectionVariables.unset(retryKey);",
+                  "pm.test('Add / Restock: status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { return; }",
+                  "var json = pm.response.json();",
+                  "pm.test('Stock response has data', () => pm.expect(json.data).to.be.an('object'));",
+                  "pm.test('Stock updated', () => pm.expect(json.data.totalQty).to.be.above(0));",
+                  "console.log('totalQty:', json.data.totalQty, '| availableQty:', json.data.availableQty);"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [

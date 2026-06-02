@@ -33,17 +33,19 @@ public class OrderEventConsumer {
             String orderId = root.get("orderId").asText();
 
             Notification notification;
-            String eventType;
+            String eventType = root.has("eventType") ? root.get("eventType").asText() : inferLegacyEventType(root);
 
-            if (root.has("items")) {
+            if ("ORDER_PLACED".equals(eventType)) {
                 // OrderPlacedEvent
-                eventType = "ORDER_PLACED";
                 double totalAmount = root.has("totalAmount") ? root.get("totalAmount").asDouble() : 0.0;
                 List<String> itemDescriptions = new ArrayList<>();
-                for (JsonNode item : root.get("items")) {
-                    String productName = item.has("productName") ? item.get("productName").asText() : "Unknown";
-                    int qty = item.has("qty") ? item.get("qty").asInt() : 0;
-                    itemDescriptions.add(productName + " x " + qty);
+                JsonNode itemsNode = root.get("items");
+                if (itemsNode != null && itemsNode.isArray()) {
+                    for (JsonNode item : itemsNode) {
+                        String productName = item.has("productName") ? item.get("productName").asText() : "Unknown";
+                        int qty = item.has("qty") ? item.get("qty").asInt() : 0;
+                        itemDescriptions.add(productName + " x " + qty);
+                    }
                 }
                 String itemsSummary = String.join(", ", itemDescriptions);
 
@@ -57,10 +59,9 @@ public class OrderEventConsumer {
 
                 log.info("OrderPlacedEvent processed for orderId={}, userId={}", orderId, userId);
 
-            } else if (root.has("reason")) {
+            } else if ("ORDER_CANCELLED".equals(eventType)) {
                 // OrderCancelledEvent
-                eventType = "ORDER_CANCELLED";
-                String reason = root.get("reason").asText();
+                String reason = root.has("reason") ? root.get("reason").asText() : "No reason provided";
 
                 notification = Notification.builder()
                         .userId(userId)
@@ -71,9 +72,8 @@ public class OrderEventConsumer {
 
                 log.info("OrderCancelledEvent processed for orderId={}, userId={}", orderId, userId);
 
-            } else {
+            } else if ("ORDER_CONFIRMED".equals(eventType)) {
                 // OrderConfirmedEvent
-                eventType = "ORDER_CONFIRMED";
                 notification = Notification.builder()
                         .userId(userId)
                         .type(eventType)
@@ -82,6 +82,8 @@ public class OrderEventConsumer {
                         .build();
 
                 log.info("OrderConfirmedEvent processed for orderId={}, userId={}", orderId, userId);
+            } else {
+                throw new IllegalArgumentException("Unknown order event type: " + eventType);
             }
 
             String eventKey = "order:" + orderId + ":" + eventType;
@@ -98,5 +100,15 @@ public class OrderEventConsumer {
             log.error("Failed to process order event payload: {}", payload, e);
             throw new IllegalStateException("Failed to process order event payload", e);
         }
+    }
+
+    private String inferLegacyEventType(JsonNode root) {
+        if (root.has("items")) {
+            return "ORDER_PLACED";
+        }
+        if (root.has("reason")) {
+            return "ORDER_CANCELLED";
+        }
+        return "ORDER_CONFIRMED";
     }
 }

@@ -433,10 +433,22 @@
       "event": [
         {
           "listen": "test",
-          "script": {
-            "exec": [
+            "script": {
+              "exec": [
+              "var retryKey = '_inventoryStockRetryCount';",
+              "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+              "var maxRetries = 6;",
+              "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+              "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+              "  console.log('Inventory service not ready; retrying Seed Inventory ' + (retryCount + 1) + '/' + maxRetries);",
+              "  pm.execution.setNextRequest(pm.info.requestName);",
+              "  return;",
+              "}",
+              "pm.collectionVariables.unset(retryKey);",
               "pm.test('Seed Inventory: status 200', () => pm.response.to.have.status(200));",
+              "if (pm.response.code !== 200) { return; }",
               "var json = pm.response.json();",
+              "pm.test('Stock response has data', () => pm.expect(json.data).to.be.an('object'));",
               "console.log('totalQty:', json.data.totalQty, 'available:', json.data.availableQty);"
             ]
           }

@@ -35,13 +35,16 @@ public class OrderEventConsumer {
         log.info("Received order event message: {}", message);
         try {
             JsonNode root = objectMapper.readTree(message);
+            String eventType = root.has("eventType") ? root.get("eventType").asText() : "";
 
-            if (root.has("items")) {
+            if ("ORDER_PLACED".equals(eventType) || (eventType.isEmpty() && root.has("items"))) {
                 // OrderPlacedEvent
                 handleOrderPlaced(objectMapper.treeToValue(root, OrderPlacedEvent.class));
-            } else if (root.has("reason")) {
+            } else if ("ORDER_CANCELLED".equals(eventType) || (eventType.isEmpty() && root.has("reason"))) {
                 // OrderCancelledEvent
                 handleOrderCancelled(objectMapper.treeToValue(root, OrderCancelledEvent.class));
+            } else if ("ORDER_CONFIRMED".equals(eventType)) {
+                log.debug("Ignoring OrderConfirmedEvent for inventory reservation");
             } else {
                 throw new IllegalArgumentException("Unknown order event format");
             }

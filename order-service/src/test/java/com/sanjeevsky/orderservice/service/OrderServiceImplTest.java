@@ -14,6 +14,7 @@ import com.sanjeevsky.orderservice.model.OrderItem;
 import com.sanjeevsky.orderservice.model.ShippingAddress;
 import com.sanjeevsky.orderservice.repository.OrderRepository;
 import com.sanjeevsky.orderservice.service.impl.OrderServiceImpl;
+import com.sanjeevsky.platform.events.OrderConfirmedEvent;
 import com.sanjeevsky.platform.model.cart.CartItemSnapshot;
 import com.sanjeevsky.platform.model.cart.CartSnapshot;
 import com.sanjeevsky.platform.model.order.OrderStatus;
@@ -69,6 +70,13 @@ class OrderServiceImplTest {
                 .status(OrderStatus.PENDING)
                 .paymentId(PAYMENT_ID)
                 .shippingAddress(ShippingAddress.builder().city("NYC").build())
+                .orderItems(List.of(OrderItem.builder()
+                        .productId(UUID.randomUUID())
+                        .variantId(UUID.randomUUID())
+                        .productName("Phone")
+                        .unitPrice(100.0)
+                        .qty(1)
+                        .build()))
                 .orderTotal(100.0)
                 .build();
     }
@@ -178,7 +186,9 @@ class OrderServiceImplTest {
 
         assertThat(result.getStatus()).isEqualTo(OrderStatus.CONFIRMED);
         verify(paymentFeignClient).confirmPayment(PAYMENT_ID);
-        verify(eventPublisher).publishOrderConfirmed(any());
+        ArgumentCaptor<OrderConfirmedEvent> eventCaptor = ArgumentCaptor.forClass(OrderConfirmedEvent.class);
+        verify(eventPublisher).publishOrderConfirmed(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getItems()).hasSize(1);
     }
 
     @Test

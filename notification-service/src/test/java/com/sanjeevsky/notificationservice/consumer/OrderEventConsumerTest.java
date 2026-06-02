@@ -35,7 +35,7 @@ class OrderEventConsumerTest {
 
     @Test
     void consume_orderPlacedPayload_savesOrderPlacedNotification() {
-        String payload = "{\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
+        String payload = "{\"eventType\":\"ORDER_PLACED\",\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
                 + "\"totalAmount\":499.99,"
                 + "\"items\":[{\"productName\":\"Shirt\",\"qty\":2},{\"productName\":\"Pants\",\"qty\":1}]}";
 
@@ -58,7 +58,7 @@ class OrderEventConsumerTest {
 
     @Test
     void consume_orderCancelledPayload_savesOrderCancelledNotification() {
-        String payload = "{\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
+        String payload = "{\"eventType\":\"ORDER_CANCELLED\",\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
                 + "\"reason\":\"Out of stock\"}";
 
         when(notificationRepository.save(any(Notification.class))).thenAnswer(inv -> inv.getArgument(0));
@@ -75,8 +75,9 @@ class OrderEventConsumerTest {
     // ─── OrderConfirmedEvent ──────────────────────────────────────────────────
 
     @Test
-    void consume_orderConfirmedPayload_savesOrderConfirmedNotification() {
-        String payload = "{\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\"}";
+    void consume_orderConfirmedPayloadWithItems_savesOrderConfirmedNotification() {
+        String payload = "{\"eventType\":\"ORDER_CONFIRMED\",\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\","
+                + "\"items\":[{\"productName\":\"Shirt\",\"qty\":2}]}";
 
         when(notificationRepository.save(any(Notification.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -99,7 +100,7 @@ class OrderEventConsumerTest {
 
     @Test
     void consume_missingUserId_usesUnknownFallback() {
-        String payload = "{\"orderId\":\"" + ORDER_ID + "\","
+        String payload = "{\"eventType\":\"ORDER_PLACED\",\"orderId\":\"" + ORDER_ID + "\","
                 + "\"items\":[{\"productName\":\"Shoes\",\"qty\":1}],"
                 + "\"totalAmount\":100.0}";
 
@@ -114,7 +115,7 @@ class OrderEventConsumerTest {
 
     @Test
     void consume_duplicateEventKey_skipsSave() {
-        String payload = "{\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\"}";
+        String payload = "{\"eventType\":\"ORDER_CONFIRMED\",\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER_ID + "\"}";
         when(notificationRepository.existsByEventKey("order:" + ORDER_ID + ":ORDER_CONFIRMED"))
                 .thenReturn(true);
 

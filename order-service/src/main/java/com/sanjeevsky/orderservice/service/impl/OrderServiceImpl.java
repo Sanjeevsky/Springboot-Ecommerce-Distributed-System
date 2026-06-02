@@ -164,22 +164,12 @@ public class OrderServiceImpl implements OrderService {
 
         cartFeignClient.clearCart(userId);
 
-        List<OrderItemEvent> itemEvents = finalOrder.getOrderItems().stream()
-                .map(i -> OrderItemEvent.builder()
-                        .productId(i.getProductId())
-                        .variantId(i.getVariantId())
-                        .productName(i.getProductName())
-                        .unitPrice(i.getUnitPrice())
-                        .qty(i.getQty())
-                        .build())
-                .collect(Collectors.toList());
-
         eventPublisher.publishOrderPlaced(OrderPlacedEvent.builder()
                 .orderId(finalOrder.getId())
                 .userId(userId)
                 .totalAmount(finalOrder.getOrderTotal())
                 .addressId(orderAddressId(finalOrder, addressId))
-                .items(itemEvents)
+                .items(orderItemEvents(finalOrder))
                 .build());
 
         return finalOrder;
@@ -205,6 +195,7 @@ public class OrderServiceImpl implements OrderService {
                 .orderId(confirmed.getId())
                 .userId(userId)
                 .totalAmount(confirmed.getOrderTotal())
+                .items(orderItemEvents(confirmed))
                 .build());
 
         return confirmed;
@@ -260,5 +251,17 @@ public class OrderServiceImpl implements OrderService {
             return order.getShippingAddress().getOriginalAddressId();
         }
         return fallbackAddressId;
+    }
+
+    private List<OrderItemEvent> orderItemEvents(Order order) {
+        return order.getOrderItems().stream()
+                .map(i -> OrderItemEvent.builder()
+                        .productId(i.getProductId())
+                        .variantId(i.getVariantId())
+                        .productName(i.getProductName())
+                        .unitPrice(i.getUnitPrice())
+                        .qty(i.getQty())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

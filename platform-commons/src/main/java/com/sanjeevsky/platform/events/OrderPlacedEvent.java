@@ -14,6 +14,8 @@ import java.util.UUID;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OrderPlacedEvent {
+    @Builder.Default
+    private String eventType = "ORDER_PLACED";
     private UUID orderId;
     private String userId;
     private double totalAmount;

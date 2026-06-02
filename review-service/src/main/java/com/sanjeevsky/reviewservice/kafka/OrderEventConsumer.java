@@ -23,9 +23,10 @@ public class OrderEventConsumer {
     public void consumeOrderEvent(String message) {
         try {
             JsonNode root = objectMapper.readTree(message);
+            String eventType = root.has("eventType") ? root.get("eventType").asText() : "";
 
-            if (!root.has("items")) {
-                // Not an OrderPlacedEvent — confirmed/cancelled events carry no item list
+            if (!"ORDER_CONFIRMED".equals(eventType)) {
+                // Review eligibility is granted only after payment-backed order confirmation.
                 return;
             }
 
@@ -33,12 +34,15 @@ public class OrderEventConsumer {
             String userId = root.has("userId") ? root.get("userId").asText() : null;
 
             if (orderId == null || userId == null) {
-                throw new IllegalArgumentException("OrderPlacedEvent missing orderId or userId");
+                throw new IllegalArgumentException("OrderConfirmedEvent missing orderId or userId");
+            }
+            if (!root.has("items") || !root.get("items").isArray() || root.get("items").size() == 0) {
+                throw new IllegalArgumentException("OrderConfirmedEvent missing items");
             }
 
             for (JsonNode item : root.get("items")) {
                 if (!item.has("productId")) {
-                    throw new IllegalArgumentException("OrderPlacedEvent item missing productId");
+                    throw new IllegalArgumentException("OrderConfirmedEvent item missing productId");
                 }
                 UUID productId = UUID.fromString(item.get("productId").asText());
 
