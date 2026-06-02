@@ -146,7 +146,7 @@ Order-service: unique constraint on `(userId, idempotencyKey)` to prevent duplic
 
 ### Phase 4 — E2E Verification
 
-Full smoke test (`e2e-smoke-test.sh`) covering:
+Full smoke verification uses `scripts/verify-local.sh`; `e2e-smoke-test.sh` is a compatibility wrapper for the same Postman-backed runner flow. It covers:
 1. Auth: register → login → get JWT
 2. Catalog: add brand → category → product
 3. Cart: add item → update qty → verify total
@@ -331,6 +331,6 @@ docker-compose up -d --build
 # 3. Verify all services registered in Eureka
 curl http://localhost:8761/eureka/apps | grep -o '<app>.*</app>'
 
-# 4. Run E2E smoke test
-chmod +x e2e-smoke-test.sh && ./e2e-smoke-test.sh
+# 4. Run local verification
+RUN_MAVEN_TESTS=0 scripts/verify-local.sh
 ```

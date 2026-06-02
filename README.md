@@ -181,6 +181,14 @@ Full local verification:
 scripts/verify-local.sh
 ```
 
+Legacy smoke entrypoint:
+
+```bash
+./e2e-smoke-test.sh
+```
+
+`e2e-smoke-test.sh` delegates to the Postman-backed local verifier with Maven tests skipped by default.
+
 Useful switches:
 
 ```bash
