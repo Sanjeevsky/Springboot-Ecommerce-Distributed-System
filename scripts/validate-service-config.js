@@ -89,6 +89,16 @@ function propertyValues(file, propertyName) {
     .map((match) => match[1].trim());
 }
 
+function hasProperty(file, propertyName) {
+  const escapedName = propertyName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`^${escapedName}\\s*=`);
+  return fs.readFileSync(file, "utf8")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#"))
+    .some((line) => pattern.test(line));
+}
+
 function durationMillis(value) {
   const match = String(value).trim().match(/^(\d+)(ms|s)$/);
   if (!match) {
@@ -109,6 +119,11 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
   if (!names.includes(expectedName)) {
     const found = names.length ? names.join(", ") : "<none>";
     fail(`${service}: expected spring.application.name=${expectedName}, found ${found}`);
+  }
+
+  const showSqlValues = files.flatMap((file) => propertyValues(file, "spring.jpa.show-sql"));
+  if (showSqlValues.some((value) => value.toLowerCase() === "true")) {
+    fail(`${service}: spring.jpa.show-sql must stay disabled for full-stack Docker smoke stability`);
   }
 }
 
@@ -157,6 +172,39 @@ for (const service of Object.keys(expectedApplicationNames)) {
 const composeText = fs.readFileSync(path.join(root, "docker-compose.yml"), "utf8");
 if (/SPRING_ZIPKIN_ENABLED=true/.test(composeText)) {
   fail("docker-compose.yml: tracing must default to opt-in with SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}");
+}
+
+function composeServiceBlock(service) {
+  const pattern = new RegExp(`^  ${service}:\\n([\\s\\S]*?)(?=^  [a-zA-Z0-9_-]+:|^volumes:|^networks:|(?![\\s\\S]))`, "m");
+  const match = composeText.match(pattern);
+  return match ? match[0] : "";
+}
+
+for (const service of Object.keys(expectedApplicationNames)) {
+  const block = composeServiceBlock(service);
+  if (!block) {
+    fail(`docker-compose.yml: missing service block for ${service}`);
+  } else if (!block.includes("restart: unless-stopped")) {
+    fail(`docker-compose.yml: ${service} must use restart: unless-stopped for local smoke stability`);
+  }
+}
+
+const shoppingCartProperties = propertiesFiles("shopping-cart-service");
+if (!shoppingCartProperties.some((file) => hasProperty(file, "clients.catalog.url"))) {
+  fail("shopping-cart-service: expected clients.catalog.url property for Docker catalog dependency override");
+}
+
+const shoppingCartClientText = fs.readFileSync(
+  path.join(root, "shopping-cart-service", "src", "main", "java", "com", "sanjeevsky", "shoppingcartservice", "clients", "CatalogFeignClient.java"),
+  "utf8"
+);
+if (!shoppingCartClientText.includes('url = "${clients.catalog.url:}"')) {
+  fail("shopping-cart-service: CatalogFeignClient must use clients.catalog.url for Docker catalog dependency override");
+}
+
+const shoppingCartComposeBlock = composeServiceBlock("shopping-cart-service");
+if (!shoppingCartComposeBlock.includes("CLIENTS_CATALOG_URL=http://catalog-service:8084")) {
+  fail("docker-compose.yml: shopping-cart-service must define CLIENTS_CATALOG_URL=http://catalog-service:8084");
 }
 
 function requireMavenTestFlags(relativePath, text) {

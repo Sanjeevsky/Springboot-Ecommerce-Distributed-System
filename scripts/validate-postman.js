@@ -387,6 +387,25 @@ function validateDataSeedCollectionGuards(relativePath, collection) {
     fail(`${relativePath}: Submit Product Review must save reviewId before moderation`);
   }
 
+  const expectedAssertions = [
+    ["08 — Seed Inventory (50 units)", "Seed stock quantity available"],
+    ["09 — Create Coupon (SAVE10)", "Coupon code matches runner value"],
+    ["11 — Add Product to Cart", "Cart has seeded item"],
+    ["12 — View Cart", "Cart contains seeded item"],
+    ["13 — Validate Coupon", "Coupon is valid"],
+    ["15 — Check Payment Status", "Payment starts PENDING"],
+    ["18 — Get Order History", "Order history includes seeded order"],
+    ["23 — Add to Wishlist", "Wishlist item has productId"],
+    ["25 — Check Inventory After Order", "Inventory reserved order quantity"],
+  ];
+
+  for (const [requestName, assertionName] of expectedAssertions) {
+    const request = requestByName(collection, requestName);
+    if (!request || !requestEventCode(request).includes(assertionName)) {
+      fail(`${relativePath}: ${requestName} must assert "${assertionName}"`);
+    }
+  }
+
   const moderateReview = requestByName(collection, "20 — Moderate Product Review");
   if (!moderateReview || !requestEventCode(moderateReview).includes("Review status is APPROVED")) {
     fail(`${relativePath}: data seed review must be moderated to APPROVED`);

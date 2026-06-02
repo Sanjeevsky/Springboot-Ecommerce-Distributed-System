@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 
 import java.util.UUID;
 
-@FeignClient(name = "catalog-service", fallback = CatalogFeignClientFallback.class)
+@FeignClient(name = "catalog-service", url = "${clients.catalog.url:}", fallback = CatalogFeignClientFallback.class)
 public interface CatalogFeignClient {
 
     @GetMapping("/catalog-service/product/getProduct/{id}")

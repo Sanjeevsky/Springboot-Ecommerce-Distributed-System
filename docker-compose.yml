@@ -125,6 +125,7 @@ services:
 
   service-discovery:
     build: ./service-discovery
+    restart: unless-stopped
     ports:
       - "8761:8761"
     environment:
@@ -140,6 +141,7 @@ services:
 
   cloud-config:
     build: ./cloud-config
+    restart: unless-stopped
     ports:
       - "8071:8071"
     depends_on:
@@ -154,6 +156,7 @@ services:
 
   spring-server:
     build: ./spring-server
+    restart: unless-stopped
     profiles: ["platform-tools"]
     ports:
       - "9000:9000"
@@ -169,6 +172,7 @@ services:
 
   auth-server:
     build: ./auth-server
+    restart: unless-stopped
     ports:
       - "8083:8083"
     depends_on:
@@ -195,6 +199,7 @@ services:
 
   catalog-service:
     build: ./catalog-service
+    restart: unless-stopped
     ports:
       - "8084:8084"
     depends_on:
@@ -226,6 +231,7 @@ services:
 
   customer-service:
     build: ./customer-service
+    restart: unless-stopped
     ports:
       - "8082:8082"
     depends_on:
@@ -255,6 +261,7 @@ services:
 
   shopping-cart-service:
     build: ./shopping-cart-service
+    restart: unless-stopped
     ports:
       - "8086:8086"
     depends_on:
@@ -277,6 +284,7 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
+      - CLIENTS_CATALOG_URL=http://catalog-service:8084
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
@@ -284,6 +292,7 @@ services:
 
   payment-service:
     build: ./payment-service
+    restart: unless-stopped
     ports:
       - "8085:8085"
     depends_on:
@@ -312,6 +321,7 @@ services:
 
   api-gateway:
     build: ./api-gateway
+    restart: unless-stopped
     ports:
       - "8081:8081"
     depends_on:
@@ -335,6 +345,7 @@ services:
 
   notification-service:
     build: ./notification-service
+    restart: unless-stopped
     ports:
       - "8087:8087"
     depends_on:
@@ -364,6 +375,7 @@ services:
 
   inventory-service:
     build: ./inventory-service
+    restart: unless-stopped
     ports:
       - "8088:8088"
     depends_on:
@@ -392,6 +404,7 @@ services:
 
   coupon-service:
     build: ./coupon-service
+    restart: unless-stopped
     ports:
       - "8089:8089"
     depends_on:
@@ -417,6 +430,7 @@ services:
 
   review-service:
     build: ./review-service
+    restart: unless-stopped
     ports:
       - "8090:8090"
     depends_on:
@@ -445,6 +459,7 @@ services:
 
   wishlist-service:
     build: ./wishlist-service
+    restart: unless-stopped
     ports:
       - "8091:8091"
     depends_on:
@@ -471,6 +486,7 @@ services:
 
   order-service:
     build: ./order-service
+    restart: unless-stopped
     ports:
       - "8092:8092"
     depends_on:

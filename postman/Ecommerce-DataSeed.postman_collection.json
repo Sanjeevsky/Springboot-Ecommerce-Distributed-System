@@ -449,6 +449,10 @@
               "if (pm.response.code !== 200) { return; }",
               "var json = pm.response.json();",
               "pm.test('Stock response has data', () => pm.expect(json.data).to.be.an('object'));",
+              "pm.test('Seed stock quantity available', function () {",
+              "  pm.expect(json.data.totalQty).to.equal(50);",
+              "  pm.expect(json.data.availableQty).to.equal(50);",
+              "});",
               "console.log('totalQty:', json.data.totalQty, 'available:', json.data.availableQty);"
             ]
           }
@@ -491,6 +495,8 @@
             "exec": [
               "pm.test('Create Coupon: status 201', () => pm.response.to.have.status(201));",
               "var json = pm.response.json();",
+              "pm.test('Coupon ID present', function () { pm.expect(json.data && json.data.id).to.be.a('string'); });",
+              "pm.test('Coupon code matches runner value', function () { pm.expect(json.data && json.data.code).to.equal(pm.collectionVariables.get('couponCode')); });",
               "console.log('Coupon code:', json.data.code);"
             ]
           }
@@ -589,6 +595,7 @@
               "  pm.test('Add to Cart: status 200', () => pm.response.to.have.status(200));",
               "  var json = pm.response.json();",
               "  pm.test('Cart response has data', () => pm.expect(json.data).to.be.an('object'));",
+              "  pm.test('Cart has seeded item', function () { pm.expect(json.data.items || []).to.have.length.above(0); });",
               "  console.log('Cart total:', json.data.totalAmount, 'items:', json.data.items.length);",
               "}"
             ]
@@ -633,6 +640,8 @@
             "exec": [
               "pm.test('Get Cart: status 200', () => pm.response.to.have.status(200));",
               "var json = pm.response.json();",
+              "pm.test('Cart contains seeded item', function () { pm.expect(json.data && json.data.items || []).to.have.length.above(0); });",
+              "pm.test('Cart total is positive', function () { pm.expect(json.data && json.data.totalAmount).to.be.above(0); });",
               "console.log('Cart items:', json.data.items.length, 'total:', json.data.totalAmount);"
             ]
           }
@@ -667,6 +676,8 @@
             "exec": [
               "pm.test('Validate Coupon: status 200', () => pm.response.to.have.status(200));",
               "var json = pm.response.json();",
+              "pm.test('Coupon is valid', function () { pm.expect(json.data && json.data.valid).to.equal(true); });",
+              "pm.test('Coupon discount is positive', function () { pm.expect(json.data && json.data.discountAmount).to.be.above(0); });",
               "console.log('Valid:', json.data.valid, 'discount:', json.data.discountAmount);"
             ]
           }
@@ -778,6 +789,7 @@
             "exec": [
               "pm.test('Payment Status: status 200', () => pm.response.to.have.status(200));",
               "var json = pm.response.json();",
+              "pm.test('Payment starts PENDING', function () { pm.expect(json.data).to.equal('PENDING'); });",
               "console.log('Payment status:', json.data);"
             ]
           }
@@ -901,7 +913,12 @@
             "exec": [
               "pm.test('Order History: status 200', () => pm.response.to.have.status(200));",
               "var json = pm.response.json();",
-              "console.log('Total orders for user:', json.data.length);"
+              "var orders = Array.isArray(json.data) ? json.data : [];",
+              "pm.test('Order history includes seeded order', function () {",
+              "  var orderId = pm.collectionVariables.get('orderId');",
+              "  pm.expect(orders.some(function (order) { return order && order.id === orderId; })).to.equal(true);",
+              "});",
+              "console.log('Total orders for user:', orders.length);"
             ]
           }
         }
@@ -1107,7 +1124,9 @@
           "listen": "test",
           "script": {
             "exec": [
-              "pm.test('Add to Wishlist: status 201', () => pm.response.to.have.status(201));"
+              "pm.test('Add to Wishlist: status 201', () => pm.response.to.have.status(201));",
+              "var json = pm.response.json();",
+              "pm.test('Wishlist item has productId', function () { pm.expect(json.data && json.data.productId).to.equal(pm.collectionVariables.get('productId')); });"
             ]
           }
         }
@@ -1196,7 +1215,11 @@
             "exec": [
               "pm.test('Inventory: status 200', () => pm.response.to.have.status(200));",
               "var json = pm.response.json();",
-              "var inv = json.data[0];",
+              "var inventory = Array.isArray(json.data) ? json.data : [];",
+              "pm.test('Inventory entry exists', function () { pm.expect(inventory.length).to.be.above(0); });",
+              "var inv = inventory[0] || {};",
+              "pm.test('Inventory reserved order quantity', function () { pm.expect(inv.reservedQty).to.be.at.least(2); });",
+              "pm.test('Inventory available decreased', function () { pm.expect(inv.availableQty).to.be.below(inv.totalQty); });",
               "console.log('Total:', inv.totalQty, 'Reserved:', inv.reservedQty, 'Available:', inv.availableQty);"
             ]
           }
