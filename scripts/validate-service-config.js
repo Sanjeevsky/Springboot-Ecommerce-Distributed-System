@@ -305,6 +305,9 @@ const gatewayConfigText = fs.readFileSync(
   path.join(root, "api-gateway", "src", "main", "java", "com", "sanjeevsky", "apigateway", "config", "GatewayConfig.java"),
   "utf8"
 );
+if (gatewayConfigText.includes("@Autowired")) {
+  fail("api-gateway GatewayConfig: route filter dependency must use constructor injection");
+}
 if (!gatewayConfigText.includes('.path("/cart-service/**")')
     || !gatewayConfigText.includes('.uri("lb://shopping-cart-service")')) {
   fail("api-gateway GatewayConfig: cart must use the standard /cart-service/** route to shopping-cart-service");
