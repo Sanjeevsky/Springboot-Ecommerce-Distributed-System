@@ -234,6 +234,24 @@ if (!shoppingCartComposeBlock.includes("CLIENTS_CATALOG_URL=http://catalog-servi
   fail("docker-compose.yml: shopping-cart-service must define CLIENTS_CATALOG_URL=http://catalog-service:8084");
 }
 
+const wishlistProperties = propertiesFiles("wishlist-service");
+if (!wishlistProperties.some((file) => hasProperty(file, "clients.cart.url"))) {
+  fail("wishlist-service: expected clients.cart.url property for Docker cart dependency override");
+}
+
+const wishlistCartClientText = fs.readFileSync(
+  path.join(root, "wishlist-service", "src", "main", "java", "com", "sanjeevsky", "wishlistservice", "clients", "CartFeignClient.java"),
+  "utf8"
+);
+if (!wishlistCartClientText.includes('url = "${clients.cart.url:}"')) {
+  fail("wishlist-service: CartFeignClient must use clients.cart.url for Docker cart dependency override");
+}
+
+const wishlistComposeBlock = composeServiceBlock("wishlist-service");
+if (!wishlistComposeBlock.includes("CLIENTS_CART_URL=http://shopping-cart-service:8086")) {
+  fail("docker-compose.yml: wishlist-service must define CLIENTS_CART_URL=http://shopping-cart-service:8086");
+}
+
 const orderProperties = propertiesFiles("order-service");
 if (!orderProperties.some((file) => hasProperty(file, "clients.inventory.url"))) {
   fail("order-service: expected clients.inventory.url property for Docker inventory dependency override");
