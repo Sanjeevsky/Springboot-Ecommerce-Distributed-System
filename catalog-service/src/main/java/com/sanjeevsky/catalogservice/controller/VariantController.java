@@ -5,7 +5,6 @@ import com.sanjeevsky.catalogservice.model.dto.VariantDTO;
 import com.sanjeevsky.catalogservice.service.VariantService;
 import com.sanjeevsky.platform.response.ApiResponse;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,10 +15,13 @@ import java.util.UUID;
 @RequestMapping("/catalog-service/variant")
 public class VariantController {
 
-    @Autowired
-    private VariantService service;
-    @Autowired
-    private ModelMapper mapper;
+    private final VariantService service;
+    private final ModelMapper mapper;
+
+    public VariantController(VariantService service, ModelMapper mapper) {
+        this.service = service;
+        this.mapper = mapper;
+    }
 
     @PostMapping("/add/{productId}")
     public ResponseEntity<ApiResponse<Variant>> addVariant(

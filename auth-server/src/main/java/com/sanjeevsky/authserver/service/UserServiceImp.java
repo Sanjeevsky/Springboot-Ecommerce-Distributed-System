@@ -9,7 +9,6 @@ import com.sanjeevsky.authserver.modal.UpdatePasswordRequest;
 import com.sanjeevsky.authserver.modal.User;
 import com.sanjeevsky.authserver.modal.UserDTO;
 import com.sanjeevsky.authserver.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -17,12 +16,18 @@ import java.util.Optional;
 
 @Service
 public class UserServiceImp implements UserService {
-    @Autowired
-    private UserRepository repository;
-    @Autowired
-    private JwtTokenGenerator generator;
-    @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
+    private final UserRepository repository;
+    private final JwtTokenGenerator generator;
+    private final BCryptPasswordEncoder passwordEncoder;
+
+    public UserServiceImp(
+            UserRepository repository,
+            JwtTokenGenerator generator,
+            BCryptPasswordEncoder passwordEncoder) {
+        this.repository = repository;
+        this.generator = generator;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     public User registerUser(User user) {

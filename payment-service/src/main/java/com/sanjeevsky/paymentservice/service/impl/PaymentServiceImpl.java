@@ -12,7 +12,6 @@ import com.sanjeevsky.platform.events.PaymentConfirmedEvent;
 import com.sanjeevsky.platform.events.PaymentInitiatedEvent;
 import com.sanjeevsky.platform.events.PaymentRefundedEvent;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -21,10 +20,13 @@ import java.util.UUID;
 @Service
 public class PaymentServiceImpl implements PaymentService {
 
-    @Autowired
-    private PaymentRepository paymentRepository;
-    @Autowired
-    private PaymentEventPublisher eventPublisher;
+    private final PaymentRepository paymentRepository;
+    private final PaymentEventPublisher eventPublisher;
+
+    public PaymentServiceImpl(PaymentRepository paymentRepository, PaymentEventPublisher eventPublisher) {
+        this.paymentRepository = paymentRepository;
+        this.eventPublisher = eventPublisher;
+    }
 
     @Override
     public Payment initiatePayment(PaymentRequest request) {

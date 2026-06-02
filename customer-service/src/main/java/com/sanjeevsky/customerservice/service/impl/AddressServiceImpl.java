@@ -6,7 +6,6 @@ import com.sanjeevsky.customerservice.exceptions.NoAddressExistsException;
 import com.sanjeevsky.customerservice.model.Address;
 import com.sanjeevsky.customerservice.repository.AddressRepository;
 import com.sanjeevsky.customerservice.service.AddressService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,8 +24,11 @@ import static com.sanjeevsky.customerservice.utils.ErrorConstants.STREET_FIELD_C
 @Service
 public class AddressServiceImpl implements AddressService {
 
-    @Autowired
-    AddressRepository repository;
+    private final AddressRepository repository;
+
+    public AddressServiceImpl(AddressRepository repository) {
+        this.repository = repository;
+    }
 
     @Override
     public Address addAddress(Address address, String user) {

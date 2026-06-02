@@ -4,7 +4,6 @@ import com.sanjeevsky.catalogservice.model.Brand;
 import com.sanjeevsky.catalogservice.service.BrandService;
 import com.sanjeevsky.platform.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +18,11 @@ import static com.sanjeevsky.catalogservice.utils.LoggingConstants.*;
 @RequestMapping("/catalog-service")
 public class BrandController {
 
-    @Autowired
-    private BrandService brandService;
+    private final BrandService brandService;
+
+    public BrandController(BrandService brandService) {
+        this.brandService = brandService;
+    }
 
     @GetMapping("/getBrand/{id}")
     public ResponseEntity<ApiResponse<Brand>> getBrand(@PathVariable UUID id) {

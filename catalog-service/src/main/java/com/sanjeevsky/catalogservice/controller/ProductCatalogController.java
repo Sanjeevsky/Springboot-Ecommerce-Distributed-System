@@ -7,7 +7,6 @@ import com.sanjeevsky.catalogservice.service.ProductService;
 import com.sanjeevsky.platform.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import javax.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -24,11 +23,13 @@ import static com.sanjeevsky.catalogservice.utils.LoggingConstants.*;
 @RequestMapping("/catalog-service/product/")
 public class ProductCatalogController {
 
-    @Autowired
-    private ProductService productService;
+    private final ProductService productService;
+    private final ModelMapper mapper;
 
-    @Autowired
-    private ModelMapper mapper;
+    public ProductCatalogController(ProductService productService, ModelMapper mapper) {
+        this.productService = productService;
+        this.mapper = mapper;
+    }
 
     @GetMapping("/status")
     private ResponseEntity<ApiResponse<?>> getStatus() {

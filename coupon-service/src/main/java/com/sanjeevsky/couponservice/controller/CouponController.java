@@ -5,7 +5,6 @@ import com.sanjeevsky.couponservice.model.CouponValidationResult;
 import com.sanjeevsky.couponservice.service.CouponService;
 import com.sanjeevsky.platform.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,8 +16,11 @@ import java.util.List;
 @RequestMapping("/coupon-service")
 public class CouponController {
 
-    @Autowired
-    private CouponService couponService;
+    private final CouponService couponService;
+
+    public CouponController(CouponService couponService) {
+        this.couponService = couponService;
+    }
 
     @PostMapping("/coupon")
     public ResponseEntity<ApiResponse<Coupon>> createCoupon(@RequestBody Coupon coupon) {

@@ -6,7 +6,6 @@ import com.sanjeevsky.paymentservice.model.PaymentStatus;
 import com.sanjeevsky.paymentservice.service.PaymentService;
 import com.sanjeevsky.platform.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -18,8 +17,11 @@ import java.util.UUID;
 @RequestMapping("/payment-service")
 public class PaymentController {
 
-    @Autowired
-    private PaymentService paymentService;
+    private final PaymentService paymentService;
+
+    public PaymentController(PaymentService paymentService) {
+        this.paymentService = paymentService;
+    }
 
     @PostMapping("/initiate")
     public ResponseEntity<ApiResponse<Payment>> initiatePayment(

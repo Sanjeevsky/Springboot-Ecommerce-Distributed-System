@@ -8,7 +8,6 @@ import com.sanjeevsky.reviewservice.repository.OrderEligibilityRepository;
 import com.sanjeevsky.reviewservice.repository.ReviewRepository;
 import com.sanjeevsky.reviewservice.service.ReviewService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,11 +19,13 @@ import java.util.stream.Collectors;
 @Service
 public class ReviewServiceImpl implements ReviewService {
 
-    @Autowired
-    private ReviewRepository reviewRepository;
+    private final ReviewRepository reviewRepository;
+    private final OrderEligibilityRepository eligibilityRepository;
 
-    @Autowired
-    private OrderEligibilityRepository eligibilityRepository;
+    public ReviewServiceImpl(ReviewRepository reviewRepository, OrderEligibilityRepository eligibilityRepository) {
+        this.reviewRepository = reviewRepository;
+        this.eligibilityRepository = eligibilityRepository;
+    }
 
     @Override
     public Review addReview(String userId, Review review) {

@@ -77,6 +77,28 @@ function javaTestFiles(service) {
   return files;
 }
 
+function javaMainFiles(service) {
+  const mainRoot = path.join(root, service, "src", "main", "java");
+  if (!fs.existsSync(mainRoot)) {
+    return [];
+  }
+
+  const files = [];
+  const stack = [mainRoot];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+      } else if (entry.name.endsWith(".java")) {
+        files.push(fullPath);
+      }
+    }
+  }
+  return files;
+}
+
 function applicationNameValues(file) {
   return fs.readFileSync(file, "utf8")
     .split(/\r?\n/)
@@ -123,6 +145,13 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
   if (files.length === 0) {
     fail(`${service}: no application*.properties files found`);
     continue;
+  }
+
+  for (const file of javaMainFiles(service)) {
+    const text = fs.readFileSync(file, "utf8");
+    if (text.includes("@Autowired")) {
+      fail(`${path.relative(root, file)}: production dependencies must use constructor injection without @Autowired`);
+    }
   }
 
   const names = files.flatMap(applicationNameValues);

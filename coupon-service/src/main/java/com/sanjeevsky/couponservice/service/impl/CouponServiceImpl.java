@@ -7,7 +7,6 @@ import com.sanjeevsky.couponservice.model.CouponValidationResult;
 import com.sanjeevsky.couponservice.repository.CouponRepository;
 import com.sanjeevsky.couponservice.service.CouponService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -17,8 +16,11 @@ import java.util.List;
 @Service
 public class CouponServiceImpl implements CouponService {
 
-    @Autowired
-    private CouponRepository couponRepository;
+    private final CouponRepository couponRepository;
+
+    public CouponServiceImpl(CouponRepository couponRepository) {
+        this.couponRepository = couponRepository;
+    }
 
     @Override
     public Coupon createCoupon(Coupon coupon) {

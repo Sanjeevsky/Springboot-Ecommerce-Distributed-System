@@ -6,7 +6,6 @@ import com.sanjeevsky.catalogservice.exceptions.BrandNotExistsException;
 import com.sanjeevsky.catalogservice.model.Brand;
 import com.sanjeevsky.catalogservice.repository.BrandRepository;
 import com.sanjeevsky.catalogservice.service.BrandService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,8 +17,11 @@ import static com.sanjeevsky.catalogservice.utils.ErrorConstants.*;
 @Service
 public class BrandServiceImpl implements BrandService {
 
-    @Autowired
-    private BrandRepository brandRepository;
+    private final BrandRepository brandRepository;
+
+    public BrandServiceImpl(BrandRepository brandRepository) {
+        this.brandRepository = brandRepository;
+    }
 
     @Override
     public Brand getBrand(UUID brandId){

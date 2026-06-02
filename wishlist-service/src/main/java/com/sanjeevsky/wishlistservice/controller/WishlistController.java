@@ -5,7 +5,6 @@ import com.sanjeevsky.wishlistservice.dto.AddToWishlistRequest;
 import com.sanjeevsky.wishlistservice.model.WishlistItem;
 import com.sanjeevsky.wishlistservice.service.WishlistService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +18,11 @@ import java.util.UUID;
 @RequestMapping("/wishlist-service")
 public class WishlistController {
 
-    @Autowired
-    private WishlistService wishlistService;
+    private final WishlistService wishlistService;
+
+    public WishlistController(WishlistService wishlistService) {
+        this.wishlistService = wishlistService;
+    }
 
     @PostMapping("/wishlist")
     public ResponseEntity<ApiResponse<WishlistItem>> addToWishlist(

@@ -7,7 +7,6 @@ import com.sanjeevsky.catalogservice.model.Variant;
 import com.sanjeevsky.catalogservice.repository.ProductRepository;
 import com.sanjeevsky.catalogservice.repository.VariantRepository;
 import com.sanjeevsky.catalogservice.service.VariantService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -19,10 +18,13 @@ import static com.sanjeevsky.catalogservice.utils.ErrorConstants.VARIANT_WITH_GI
 @Service
 public class VariantServiceImpl implements VariantService {
 
-    @Autowired
-    private VariantRepository variantRepository;
-    @Autowired
-    private ProductRepository productRepository;
+    private final VariantRepository variantRepository;
+    private final ProductRepository productRepository;
+
+    public VariantServiceImpl(VariantRepository variantRepository, ProductRepository productRepository) {
+        this.variantRepository = variantRepository;
+        this.productRepository = productRepository;
+    }
 
     @Override
     public Variant addVariant(UUID productId, Variant variant){

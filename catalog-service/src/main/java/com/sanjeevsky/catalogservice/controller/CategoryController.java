@@ -4,7 +4,6 @@ import com.sanjeevsky.catalogservice.model.Category;
 import com.sanjeevsky.catalogservice.service.CategoryService;
 import com.sanjeevsky.platform.response.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,8 +18,11 @@ import static com.sanjeevsky.catalogservice.utils.LoggingConstants.*;
 @RequestMapping("/catalog-service")
 public class CategoryController {
 
-    @Autowired
-    private CategoryService categoryService;
+    private final CategoryService categoryService;
+
+    public CategoryController(CategoryService categoryService) {
+        this.categoryService = categoryService;
+    }
 
     @GetMapping("/getCategory/{id}")
     public ResponseEntity<ApiResponse<Category>> getCategory(@PathVariable UUID id) {

@@ -7,7 +7,6 @@ import com.sanjeevsky.catalogservice.model.SubCategory;
 import com.sanjeevsky.catalogservice.repository.CategoryRepository;
 import com.sanjeevsky.catalogservice.repository.SubCategoryRepository;
 import com.sanjeevsky.catalogservice.service.SubCategoryService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,10 +17,15 @@ import static com.sanjeevsky.catalogservice.utils.ErrorConstants.*;
 
 @Service
 public class SubCategoryServiceImpl implements SubCategoryService {
-    @Autowired
-    private CategoryRepository categoryRepository;
-    @Autowired
-    private SubCategoryRepository subCategoryRepository;
+    private final CategoryRepository categoryRepository;
+    private final SubCategoryRepository subCategoryRepository;
+
+    public SubCategoryServiceImpl(
+            CategoryRepository categoryRepository,
+            SubCategoryRepository subCategoryRepository) {
+        this.categoryRepository = categoryRepository;
+        this.subCategoryRepository = subCategoryRepository;
+    }
 
     @Override
     public SubCategory getSubCategory(UUID subCategoryId){

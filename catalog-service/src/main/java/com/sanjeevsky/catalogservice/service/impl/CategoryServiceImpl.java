@@ -6,7 +6,6 @@ import com.sanjeevsky.catalogservice.exceptions.CategoryNotExistsException;
 import com.sanjeevsky.catalogservice.model.Category;
 import com.sanjeevsky.catalogservice.repository.CategoryRepository;
 import com.sanjeevsky.catalogservice.service.CategoryService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -18,8 +17,11 @@ import static com.sanjeevsky.catalogservice.utils.ErrorConstants.NOT_CATEGORY_FO
 
 @Service
 public class CategoryServiceImpl implements CategoryService {
-    @Autowired
-    private CategoryRepository categoryRepository;
+    private final CategoryRepository categoryRepository;
+
+    public CategoryServiceImpl(CategoryRepository categoryRepository) {
+        this.categoryRepository = categoryRepository;
+    }
 
     @Override
     public Category getCategory(UUID categoryId){

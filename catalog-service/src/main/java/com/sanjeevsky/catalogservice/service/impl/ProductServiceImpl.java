@@ -7,7 +7,6 @@ import com.sanjeevsky.catalogservice.service.BrandService;
 import com.sanjeevsky.catalogservice.service.CategoryService;
 import com.sanjeevsky.catalogservice.service.ProductService;
 import com.sanjeevsky.catalogservice.service.SubCategoryService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
@@ -24,14 +23,21 @@ import static com.sanjeevsky.catalogservice.utils.ErrorConstants.PRODUCT_WITH_TH
 @Service
 public class ProductServiceImpl implements ProductService {
 
-    @Autowired
-    private ProductRepository productRepository;
-    @Autowired
-    private BrandService brandService;
-    @Autowired
-    private CategoryService categoryService;
-    @Autowired
-    private SubCategoryService subCategoryService;
+    private final ProductRepository productRepository;
+    private final BrandService brandService;
+    private final CategoryService categoryService;
+    private final SubCategoryService subCategoryService;
+
+    public ProductServiceImpl(
+            ProductRepository productRepository,
+            BrandService brandService,
+            CategoryService categoryService,
+            SubCategoryService subCategoryService) {
+        this.productRepository = productRepository;
+        this.brandService = brandService;
+        this.categoryService = categoryService;
+        this.subCategoryService = subCategoryService;
+    }
 
     @Override
     @CacheEvict(value = "products", allEntries = true)

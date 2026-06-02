@@ -8,7 +8,6 @@ import com.sanjeevsky.wishlistservice.model.WishlistItem;
 import com.sanjeevsky.wishlistservice.repository.WishlistRepository;
 import com.sanjeevsky.wishlistservice.service.WishlistService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -20,11 +19,13 @@ import java.util.UUID;
 @Service
 public class WishlistServiceImpl implements WishlistService {
 
-    @Autowired
-    private WishlistRepository wishlistRepository;
+    private final WishlistRepository wishlistRepository;
+    private final CartFeignClient cartFeignClient;
 
-    @Autowired
-    private CartFeignClient cartFeignClient;
+    public WishlistServiceImpl(WishlistRepository wishlistRepository, CartFeignClient cartFeignClient) {
+        this.wishlistRepository = wishlistRepository;
+        this.cartFeignClient = cartFeignClient;
+    }
 
     @Override
     public WishlistItem addToWishlist(String userId, AddToWishlistRequest request) {
