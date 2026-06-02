@@ -143,6 +143,38 @@ class PaymentIntegrationTest {
                 .andExpect(jsonPath("$.data.status").value("REFUNDED"));
     }
 
+    @Test
+    void refundPayment_pendingPayment_returns200WithRefundedStatus() throws Exception {
+        UUID oid = UUID.fromString("11111111-1111-1111-1111-111111111111");
+        MvcResult init = mockMvc.perform(post("/payment-service/initiate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(initiateBody(oid)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String paymentId = extractPaymentId(init);
+
+        mockMvc.perform(put("/payment-service/refund/" + paymentId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("REFUNDED"));
+    }
+
+    @Test
+    void failPayment_successPayment_returns400() throws Exception {
+        UUID oid = UUID.fromString("22222222-2222-2222-2222-222222222222");
+        MvcResult init = mockMvc.perform(post("/payment-service/initiate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(initiateBody(oid)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String paymentId = extractPaymentId(init);
+        mockMvc.perform(put("/payment-service/confirm/" + paymentId)).andExpect(status().isOk());
+
+        mockMvc.perform(put("/payment-service/fail/" + paymentId))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("from SUCCESS to FAILED")));
+    }
+
     // ─── Get by ID ────────────────────────────────────────────────────────────
 
     @Test

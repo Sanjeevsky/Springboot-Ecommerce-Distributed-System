@@ -1,6 +1,7 @@
 package com.sanjeevsky.paymentservice.service.impl;
 
 import com.sanjeevsky.paymentservice.events.PaymentEventPublisher;
+import com.sanjeevsky.paymentservice.exceptions.InvalidPaymentTransitionException;
 import com.sanjeevsky.paymentservice.exceptions.PaymentNotFoundException;
 import com.sanjeevsky.paymentservice.model.Payment;
 import com.sanjeevsky.paymentservice.model.PaymentRequest;
@@ -74,6 +75,9 @@ public class PaymentServiceImpl implements PaymentService {
             log.info("Payment already confirmed for paymentId: {}", paymentId);
             return payment;
         }
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            throw invalidTransition(payment, PaymentStatus.SUCCESS);
+        }
         payment.setStatus(PaymentStatus.SUCCESS);
         Payment confirmed = paymentRepository.save(payment);
 
@@ -96,6 +100,9 @@ public class PaymentServiceImpl implements PaymentService {
             log.info("Payment already failed for paymentId: {}", paymentId);
             return payment;
         }
+        if (payment.getStatus() != PaymentStatus.PENDING) {
+            throw invalidTransition(payment, PaymentStatus.FAILED);
+        }
         payment.setStatus(PaymentStatus.FAILED);
         return paymentRepository.save(payment);
     }
@@ -115,6 +122,9 @@ public class PaymentServiceImpl implements PaymentService {
         if (payment.getStatus() == PaymentStatus.REFUNDED) {
             log.info("Payment already refunded for paymentId: {}", paymentId);
             return payment;
+        }
+        if (payment.getStatus() != PaymentStatus.SUCCESS && payment.getStatus() != PaymentStatus.PENDING) {
+            throw invalidTransition(payment, PaymentStatus.REFUNDED);
         }
         payment.setStatus(PaymentStatus.REFUNDED);
         Payment refunded = paymentRepository.save(payment);
@@ -143,5 +153,12 @@ public class PaymentServiceImpl implements PaymentService {
         }
         String trimmed = idempotencyKey.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private InvalidPaymentTransitionException invalidTransition(Payment payment, PaymentStatus targetStatus) {
+        return new InvalidPaymentTransitionException(
+                "Cannot transition payment " + payment.getId()
+                        + " from " + payment.getStatus()
+                        + " to " + targetStatus);
     }
 }

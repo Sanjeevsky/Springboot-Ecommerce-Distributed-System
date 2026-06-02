@@ -1,6 +1,7 @@
 package com.sanjeevsky.paymentservice.service;
 
 import com.sanjeevsky.paymentservice.events.PaymentEventPublisher;
+import com.sanjeevsky.paymentservice.exceptions.InvalidPaymentTransitionException;
 import com.sanjeevsky.paymentservice.exceptions.PaymentNotFoundException;
 import com.sanjeevsky.paymentservice.model.Payment;
 import com.sanjeevsky.paymentservice.model.PaymentRequest;
@@ -126,6 +127,32 @@ class PaymentServiceImplTest {
     }
 
     @Test
+    void confirmPayment_failed_throwsInvalidPaymentTransitionException() {
+        Payment payment = pendingPayment();
+        payment.setStatus(PaymentStatus.FAILED);
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.confirmPayment(PAYMENT_ID))
+                .isInstanceOf(InvalidPaymentTransitionException.class)
+                .hasMessageContaining("from FAILED to SUCCESS");
+        verify(paymentRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void confirmPayment_refunded_throwsInvalidPaymentTransitionException() {
+        Payment payment = pendingPayment();
+        payment.setStatus(PaymentStatus.REFUNDED);
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.confirmPayment(PAYMENT_ID))
+                .isInstanceOf(InvalidPaymentTransitionException.class)
+                .hasMessageContaining("from REFUNDED to SUCCESS");
+        verify(paymentRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
     void confirmPayment_notFound_throwsPaymentNotFoundException() {
         when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.empty());
 
@@ -156,6 +183,30 @@ class PaymentServiceImplTest {
         Payment result = paymentService.failPayment(PAYMENT_ID);
 
         assertThat(result).isSameAs(payment);
+        verify(paymentRepository, never()).save(any());
+    }
+
+    @Test
+    void failPayment_success_throwsInvalidPaymentTransitionException() {
+        Payment payment = pendingPayment();
+        payment.setStatus(PaymentStatus.SUCCESS);
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.failPayment(PAYMENT_ID))
+                .isInstanceOf(InvalidPaymentTransitionException.class)
+                .hasMessageContaining("from SUCCESS to FAILED");
+        verify(paymentRepository, never()).save(any());
+    }
+
+    @Test
+    void failPayment_refunded_throwsInvalidPaymentTransitionException() {
+        Payment payment = pendingPayment();
+        payment.setStatus(PaymentStatus.REFUNDED);
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.failPayment(PAYMENT_ID))
+                .isInstanceOf(InvalidPaymentTransitionException.class)
+                .hasMessageContaining("from REFUNDED to FAILED");
         verify(paymentRepository, never()).save(any());
     }
 
@@ -192,6 +243,7 @@ class PaymentServiceImplTest {
     @Test
     void refundPayment_changesStatusToRefunded() {
         Payment payment = pendingPayment();
+        payment.setStatus(PaymentStatus.SUCCESS);
         when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
         when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -210,6 +262,32 @@ class PaymentServiceImplTest {
         Payment result = paymentService.refundPayment(PAYMENT_ID);
 
         assertThat(result).isSameAs(payment);
+        verify(paymentRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void refundPayment_pending_changesStatusToRefunded() {
+        Payment payment = pendingPayment();
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
+        when(paymentRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Payment result = paymentService.refundPayment(PAYMENT_ID);
+
+        assertThat(result.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
+        verify(paymentRepository).save(payment);
+        verify(eventPublisher).publishPaymentRefunded(any());
+    }
+
+    @Test
+    void refundPayment_failed_throwsInvalidPaymentTransitionException() {
+        Payment payment = pendingPayment();
+        payment.setStatus(PaymentStatus.FAILED);
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.refundPayment(PAYMENT_ID))
+                .isInstanceOf(InvalidPaymentTransitionException.class)
+                .hasMessageContaining("from FAILED to REFUNDED");
         verify(paymentRepository, never()).save(any());
         verifyNoInteractions(eventPublisher);
     }

@@ -25,6 +25,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(InvalidPaymentTransitionException.class)
+    public ResponseEntity<ApiResponse<Void>> invalidPaymentTransition(InvalidPaymentTransitionException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> runtimeException(RuntimeException ex) {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);

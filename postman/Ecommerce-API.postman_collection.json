@@ -51,6 +51,10 @@
       "value": ""
     },
     {
+      "key": "failedPaymentOrderId",
+      "value": ""
+    },
+    {
       "key": "runId",
       "value": ""
     },
@@ -112,6 +116,10 @@
     },
     {
       "key": "paymentIdempotencyKey",
+      "value": ""
+    },
+    {
+      "key": "failedPaymentIdempotencyKey",
       "value": ""
     }
   ],
@@ -1518,52 +1526,6 @@
           ]
         },
         {
-          "name": "Fail Payment",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/payment-service/fail/{{paymentId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "payment-service",
-                "fail",
-                "{{paymentId}}"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Fail Payment: status 200', () => pm.response.to.have.status(200));",
-                  "var json = pm.response.json();",
-                  "var data = json.data;",
-                  "var status = typeof data === 'string' ? data : data && data.status;",
-                  "if (status) {",
-                  "  pm.collectionVariables.set('paymentStatus', status);",
-                  "  try { pm.environment.set('paymentStatus', status); } catch (e) {}",
-                  "  console.log('paymentStatus:', status);",
-                  "}",
-                  "if (data && data.id) {",
-                  "  pm.collectionVariables.set('paymentId', data.id);",
-                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
           "name": "Refund Payment",
           "request": {
             "method": "PUT",
@@ -1592,6 +1554,119 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('Refund Payment: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "var data = json.data;",
+                  "var status = typeof data === 'string' ? data : data && data.status;",
+                  "if (status) {",
+                  "  pm.collectionVariables.set('paymentStatus', status);",
+                  "  try { pm.environment.set('paymentStatus', status); } catch (e) {}",
+                  "  console.log('paymentStatus:', status);",
+                  "}",
+                  "if (data && data.id) {",
+                  "  pm.collectionVariables.set('paymentId', data.id);",
+                  "  try { pm.environment.set('paymentId', data.id); } catch (e) {}",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Initiate Payment for Failure",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var failedPaymentOrderId = pm.variables.replaceIn('{{$guid}}');",
+                  "pm.collectionVariables.set('failedPaymentOrderId', failedPaymentOrderId);",
+                  "try { pm.environment.set('failedPaymentOrderId', failedPaymentOrderId); } catch (e) {}",
+                  "console.log('failedPaymentOrderId:', failedPaymentOrderId);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Initiate Payment for Failure: status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "var data = json.data;",
+                  "pm.test('Payment ID present', () => pm.expect(data.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('paymentId', data.id);",
+                  "try { pm.environment.set('paymentId', data.id); } catch (e) {}",
+                  "if (data.status) {",
+                  "  pm.collectionVariables.set('paymentStatus', data.status);",
+                  "  try { pm.environment.set('paymentStatus', data.status); } catch (e) {}",
+                  "}",
+                  "console.log('paymentId:', data.id, '| status:', data.status);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{failedPaymentIdempotencyKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment-service/initiate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "initiate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{failedPaymentOrderId}}\",\n  \"userId\": \"{{runnerEmail}}\",\n  \"amount\": 119999.0\n}"
+            }
+          }
+        },
+        {
+          "name": "Fail Payment",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment-service/fail/{{paymentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "fail",
+                "{{paymentId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Fail Payment: status 200', () => pm.response.to.have.status(200));",
                   "var json = pm.response.json();",
                   "var data = json.data;",
                   "var status = typeof data === 'string' ? data : data && data.status;",
@@ -2233,10 +2308,11 @@
           "  setRunnerVar('orderIdempotencyKey', 'order-' + runId);",
           "  setRunnerVar('couponOrderIdempotencyKey', 'coupon-order-' + runId);",
           "  setRunnerVar('paymentIdempotencyKey', 'payment-' + runId);",
+          "  setRunnerVar('failedPaymentIdempotencyKey', 'payment-fail-' + runId);",
           "}",
           "",
           "function missingRunnerVariables() {",
-          "  return ['runId', 'runnerEmail', 'couponCode', 'orderIdempotencyKey', 'couponOrderIdempotencyKey', 'paymentIdempotencyKey'].some(function (key) {",
+          "  return ['runId', 'runnerEmail', 'couponCode', 'orderIdempotencyKey', 'couponOrderIdempotencyKey', 'paymentIdempotencyKey', 'failedPaymentIdempotencyKey'].some(function (key) {",
           "    return !pm.collectionVariables.get(key);",
           "  });",
           "}",
