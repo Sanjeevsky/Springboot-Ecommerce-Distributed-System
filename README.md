@@ -137,11 +137,11 @@ Postman collections:
 | Collection | Purpose |
 |------------|---------|
 | `Ecommerce-API.postman_collection.json` | Runner-safe endpoint reference/application collection with global non-2xx checks |
-| `Ecommerce-DataSeed.postman_collection.json` | Runner-safe seed flow for local data |
+| `Ecommerce-DataSeed.postman_collection.json` | Runner-safe seed flow for local catalog, order, payment, approved review, wishlist, notification, and inventory data |
 | `Ecommerce-E2E-Complete.postman_collection.json` | Runner-safe application E2E flow |
 | `Ecommerce-Local.postman_environment.json` | Local gateway environment |
 
-The collections use collection-level scripts to generate and save run values such as token, IDs, coupon code, and idempotency keys. The environment file is only the local value store. Kafka-backed review eligibility and notification requests include runner retries so asynchronous consumers can catch up before later requests use `reviewId` or `notificationId`. The API collection also fails unexpected non-2xx responses and asserts key semantics such as coupon discounts, cancelled-order refunds, and review moderation before approved-review reads.
+The collections use collection-level scripts to generate and save run values such as token, IDs, coupon code, and idempotency keys. The environment file is only the local value store. Kafka-backed review eligibility and notification requests include runner retries so asynchronous consumers can catch up before later requests use `reviewId` or `notificationId`. The DataSeed collection moderates and verifies an approved review, and the API collection fails unexpected non-2xx responses while asserting key semantics such as coupon discounts, cancelled-order refunds, and review moderation before approved-review reads.
 
 ### Authentication
 

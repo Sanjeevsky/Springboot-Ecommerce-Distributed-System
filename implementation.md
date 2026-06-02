@@ -155,9 +155,9 @@ Full smoke verification uses `scripts/verify-local.sh`; `e2e-smoke-test.sh` is a
 6. Order: create (with coupon) → confirm → verify payment
 7. Inventory: verify stock reserved after order
 8. Notification: verify notifications created
-9. Review: verify purchase eligibility
+9. Review: verify purchase eligibility, moderation, and approved-review reads
 
-The API Postman collection is runner-safe for targeted application checks and is included in the default verifier. It asserts that all non-retry requests return 2xx and verifies business outcomes for coupon orders, cancelled-order refunds, and review moderation before approved-review reads.
+The DataSeed collection leaves an approved review available for the seeded product. The API Postman collection is runner-safe for targeted application checks and is included in the default verifier. It asserts that all non-retry requests return 2xx and verifies business outcomes for coupon orders, cancelled-order refunds, and review moderation before approved-review reads.
 
 ---
 

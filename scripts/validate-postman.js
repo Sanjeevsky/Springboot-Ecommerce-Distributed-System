@@ -10,6 +10,7 @@ const collectionFiles = [
   "postman/Ecommerce-E2E-Complete.postman_collection.json",
 ];
 const apiCollectionFile = "postman/Ecommerce-API.postman_collection.json";
+const dataSeedCollectionFile = "postman/Ecommerce-DataSeed.postman_collection.json";
 const e2eCollectionFile = "postman/Ecommerce-E2E-Complete.postman_collection.json";
 const environmentFiles = ["postman/Ecommerce-Local.postman_environment.json"];
 
@@ -376,6 +377,32 @@ function validateApiCollectionGuards(relativePath, collection) {
   }
 }
 
+function validateDataSeedCollectionGuards(relativePath, collection) {
+  if (relativePath !== dataSeedCollectionFile) {
+    return;
+  }
+
+  const submitReview = requestByName(collection, "19 — Submit Product Review");
+  if (!submitReview || !requestEventCode(submitReview).includes("Review ID present")) {
+    fail(`${relativePath}: Submit Product Review must save reviewId before moderation`);
+  }
+
+  const moderateReview = requestByName(collection, "20 — Moderate Product Review");
+  if (!moderateReview || !requestEventCode(moderateReview).includes("Review status is APPROVED")) {
+    fail(`${relativePath}: data seed review must be moderated to APPROVED`);
+  }
+
+  const approvedReviews = requestByName(collection, "21 — Get Approved Reviews");
+  if (!approvedReviews || !requestEventCode(approvedReviews).includes("Seed approved review available")) {
+    fail(`${relativePath}: data seed must verify approved review availability`);
+  }
+
+  const reviewSummary = requestByName(collection, "22 — Get Review Summary");
+  if (!reviewSummary || !requestEventCode(reviewSummary).includes("Seed summary includes approved review")) {
+    fail(`${relativePath}: data seed must verify approved review summary`);
+  }
+}
+
 function requestIndexesByName(collection) {
   const indexes = new Map();
   walkItems(collection.item).forEach(({ item }, index) => {
@@ -413,6 +440,16 @@ function validateRunnerStateRepairs(relativePath, collection) {
     validateRequestOrder(relativePath, collection, ["Place Order", "Re-add Item for Coupon Order", "Place Order (with Coupon)"]);
     validateRequestOrder(relativePath, collection, ["Submit Review", "Moderate Review (Admin)", "Get Approved Reviews for Product", "Get Review Summary for Product"]);
     validateRequestOrder(relativePath, collection, ["Add to Wishlist", "Remove from Wishlist", "Re-add to Wishlist for Move", "Move to Cart"]);
+  }
+
+  if (relativePath === dataSeedCollectionFile) {
+    validateRequestOrder(relativePath, collection, [
+      "19 — Submit Product Review",
+      "20 — Moderate Product Review",
+      "21 — Get Approved Reviews",
+      "22 — Get Review Summary",
+      "23 — Add to Wishlist",
+    ]);
   }
 
   if (relativePath === e2eCollectionFile) {
@@ -470,6 +507,7 @@ for (const relativePath of collectionFiles) {
   }
   validateCollectionRunnerSeeding(relativePath, collection);
   validateApiCollectionGuards(relativePath, collection);
+  validateDataSeedCollectionGuards(relativePath, collection);
   validateAsyncRunnerRetries(relativePath, collection);
   validateGatewayRoutedRequests(relativePath, collection);
   validateRunnerStateRepairs(relativePath, collection);

@@ -2,7 +2,7 @@
   "info": {
     "name": "Ecommerce \u2014 Data Seed & E2E Flow",
     "_postman_id": "ecommerce-dataseed-collection",
-    "description": "Run these requests IN ORDER with Collection Runner. Select the Ecommerce Local environment if you want values visible in the Environment tab; the collection scripts seed and save token/IDs into both collection variables and environment variables for the next request. Covers register -> catalog setup -> inventory -> cart -> order -> payment. Optional coupon/review/wishlist steps require their Docker profile/services to be running.",
+    "description": "Run these requests IN ORDER with Collection Runner. Select the Ecommerce Local environment if you want values visible in the Environment tab; the collection scripts seed and save token/IDs into both collection variables and environment variables for the next request. Covers register -> catalog setup -> inventory -> cart -> coupon -> order -> payment -> approved review -> wishlist -> notifications.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -433,8 +433,8 @@
       "event": [
         {
           "listen": "test",
-            "script": {
-              "exec": [
+          "script": {
+            "exec": [
               "var retryKey = '_inventoryStockRetryCount';",
               "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
               "var maxRetries = 6;",
@@ -931,25 +931,30 @@
       "event": [
         {
           "listen": "test",
-            "script": {
-              "exec": [
-                "var retryKey = '_reviewRetryCount';",
-                "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
-                "var maxRetries = 30;",
-                "if (pm.response.code === 403 && retryCount < maxRetries) {",
-                "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
-                "  console.log('Review eligibility not ready; retrying Submit Product Review ' + (retryCount + 1) + '/' + maxRetries);",
-                "  pm.execution.setNextRequest(pm.info.requestName);",
-                "} else {",
-                "  pm.collectionVariables.unset(retryKey);",
-                "  try { pm.environment.unset(retryKey); } catch (e) {}",
-                "  pm.test('Submit Review: status 201', function () { pm.response.to.have.status(201); });",
-                "  var json = pm.response.json();",
-                "  console.log('Review status:', json.data.status);",
-                "}"
-              ]
-            }
+          "script": {
+            "exec": [
+              "var retryKey = '_reviewRetryCount';",
+              "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+              "var maxRetries = 30;",
+              "if (pm.response.code === 403 && retryCount < maxRetries) {",
+              "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+              "  console.log('Review eligibility not ready; retrying Submit Product Review ' + (retryCount + 1) + '/' + maxRetries);",
+              "  pm.execution.setNextRequest(pm.info.requestName);",
+              "} else {",
+              "  pm.collectionVariables.unset(retryKey);",
+              "  try { pm.environment.unset(retryKey); } catch (e) {}",
+              "  pm.test('Submit Review: status 201', function () { pm.response.to.have.status(201); });",
+              "  var json = pm.response.json();",
+              "  pm.test('Review ID present', function () { pm.expect(json.data && json.data.id).to.be.a('string'); });",
+              "  if (json.data && json.data.id) {",
+              "    pm.collectionVariables.set('reviewId', json.data.id);",
+              "    try { pm.environment.set('reviewId', json.data.id); } catch (e) {}",
+              "  }",
+              "  console.log('Review status:', json.data.status);",
+              "}"
+            ]
           }
+        }
       ],
       "request": {
         "method": "POST",
@@ -980,7 +985,123 @@
       }
     },
     {
-      "name": "20 \u2014 Add to Wishlist",
+      "name": "20 \u2014 Moderate Product Review",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Moderate Review: status 200', function () { pm.response.to.have.status(200); });",
+              "var json = pm.response.json();",
+              "pm.test('Review status is APPROVED', function () { pm.expect(json.data && json.data.status).to.equal('APPROVED'); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/review-service/review/{{reviewId}}/moderate?status=APPROVED",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "review-service",
+            "review",
+            "{{reviewId}}",
+            "moderate"
+          ],
+          "query": [
+            {
+              "key": "status",
+              "value": "APPROVED"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "21 \u2014 Get Approved Reviews",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Approved Reviews: status 200', function () { pm.response.to.have.status(200); });",
+              "var json = pm.response.json();",
+              "var reviews = Array.isArray(json.data) ? json.data : [];",
+              "pm.test('Seed approved review available', function () { pm.expect(reviews.length).to.be.above(0); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/review-service/review/product/{{productId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "review-service",
+            "review",
+            "product",
+            "{{productId}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "22 \u2014 Get Review Summary",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Review Summary: status 200', function () { pm.response.to.have.status(200); });",
+              "var json = pm.response.json();",
+              "pm.test('Seed summary includes approved review', function () { pm.expect(json.data && json.data.totalReviews).to.be.above(0); });"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/review-service/review/product/{{productId}}/summary",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "review-service",
+            "review",
+            "product",
+            "{{productId}}",
+            "summary"
+          ]
+        }
+      }
+    },
+    {
+      "name": "23 \u2014 Add to Wishlist",
       "event": [
         {
           "listen": "test",
@@ -1020,31 +1141,31 @@
       }
     },
     {
-      "name": "21 \u2014 Get Notifications",
+      "name": "24 \u2014 Get Notifications",
       "event": [
         {
           "listen": "test",
-            "script": {
-              "exec": [
-                "pm.test('Notifications: status 200', () => pm.response.to.have.status(200));",
-                "var json = pm.response.json();",
-                "var notifications = Array.isArray(json.data) ? json.data : [];",
-                "var retryKey = '_notificationRetryCount';",
-                "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
-                "var maxRetries = 30;",
-                "if (!notifications.length && retryCount < maxRetries) {",
-                "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
-                "  console.log('Notifications not available yet; retrying ' + (retryCount + 1) + '/' + maxRetries);",
-                "  pm.execution.setNextRequest(pm.info.requestName);",
-                "} else {",
-                "  pm.collectionVariables.unset(retryKey);",
-                "  try { pm.environment.unset(retryKey); } catch (e) {}",
-                "  pm.test('Notifications received', function () { pm.expect(notifications.length).to.be.above(0); });",
-                "  console.log('Notifications received:', notifications.length);",
-                "}"
-              ]
-            }
+          "script": {
+            "exec": [
+              "pm.test('Notifications: status 200', () => pm.response.to.have.status(200));",
+              "var json = pm.response.json();",
+              "var notifications = Array.isArray(json.data) ? json.data : [];",
+              "var retryKey = '_notificationRetryCount';",
+              "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+              "var maxRetries = 30;",
+              "if (!notifications.length && retryCount < maxRetries) {",
+              "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+              "  console.log('Notifications not available yet; retrying ' + (retryCount + 1) + '/' + maxRetries);",
+              "  pm.execution.setNextRequest(pm.info.requestName);",
+              "} else {",
+              "  pm.collectionVariables.unset(retryKey);",
+              "  try { pm.environment.unset(retryKey); } catch (e) {}",
+              "  pm.test('Notifications received', function () { pm.expect(notifications.length).to.be.above(0); });",
+              "  console.log('Notifications received:', notifications.length);",
+              "}"
+            ]
           }
+        }
       ],
       "request": {
         "method": "GET",
@@ -1067,7 +1188,7 @@
       }
     },
     {
-      "name": "22 \u2014 Check Inventory After Order",
+      "name": "25 \u2014 Check Inventory After Order",
       "event": [
         {
           "listen": "test",
