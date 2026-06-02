@@ -1192,6 +1192,60 @@
       "name": "Customer \u2014 Order",
       "item": [
         {
+          "name": "Seed Inventory for Orders",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var retryKey = '_inventoryStockRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 6;",
+                  "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Inventory service not ready; retrying Seed Inventory for Orders ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "  return;",
+                  "}",
+                  "pm.collectionVariables.unset(retryKey);",
+                  "pm.test('Seed Inventory for Orders: status 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) { return; }",
+                  "var json = pm.response.json();",
+                  "pm.test('Order stock response has data', () => pm.expect(json.data).to.be.an('object'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/inventory-service/stock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory-service",
+                "stock"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"quantity\": 100\n}"
+            }
+          }
+        },
+        {
           "name": "Place Order",
           "event": [
             {
@@ -1417,6 +1471,47 @@
           }
         },
         {
+          "name": "Create Coupon for Coupon Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Create Coupon for Coupon Order: status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/coupon-service/coupon",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "coupon-service",
+                "coupon"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10.0,\n  \"minOrderAmount\": 500.0,\n  \"maxUsageCount\": 100,\n  \"expiryDate\": \"2099-12-31\",\n  \"active\": true\n}"
+            }
+          }
+        },
+        {
           "name": "Place Order (with Coupon)",
           "event": [
             {
@@ -1437,6 +1532,7 @@
                   "  pm.test('Place Order with Coupon: status 201', () => pm.response.to.have.status(201));",
                   "  var json = pm.response.json();",
                   "  pm.test('Order response has data', () => pm.expect(json.data).to.be.an('object'));",
+                  "  pm.test('Coupon discount applied', () => pm.expect(json.data.discount).to.be.above(0));",
                   "  pm.collectionVariables.set('orderId', json.data.id);",
                   "  try { pm.environment.set('orderId', json.data.id); } catch (e) {}",
                   "  if (json.data.paymentId) {",
@@ -2054,7 +2150,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10.0,\n  \"minOrderAmount\": 500.0,\n  \"maxUsageCount\": 100,\n  \"expiryDate\": \"2099-12-31\",\n  \"active\": true\n}"
+              "raw": "{\n  \"code\": \"{{couponCode}}MGMT\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10.0,\n  \"minOrderAmount\": 500.0,\n  \"maxUsageCount\": 100,\n  \"expiryDate\": \"2099-12-31\",\n  \"active\": true\n}"
             }
           },
           "event": [

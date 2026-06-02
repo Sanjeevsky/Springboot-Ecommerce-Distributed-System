@@ -345,6 +345,20 @@ function validateApiCollectionGuards(relativePath, collection) {
       fail(`${relativePath}: ${requestName}: protected API request must include Authorization header`);
     }
   }
+
+  const couponOrder = requestByName(collection, "Place Order (with Coupon)");
+  if (!couponOrder || !requestEventCode(couponOrder).includes("Coupon discount applied")) {
+    fail(`${relativePath}: Place Order (with Coupon) must assert a non-zero coupon discount`);
+  }
+
+  const standaloneCouponCreate = requestByName(collection, "Create Coupon");
+  const standaloneCouponBody = standaloneCouponCreate
+    && standaloneCouponCreate.request
+    && standaloneCouponCreate.request.body
+    && standaloneCouponCreate.request.body.raw || "";
+  if (!standaloneCouponBody.includes("{{couponCode}}MGMT")) {
+    fail(`${relativePath}: standalone Create Coupon must use a distinct management coupon code`);
+  }
 }
 
 function requestIndexesByName(collection) {
@@ -379,6 +393,8 @@ function validateRunnerStateRepairs(relativePath, collection) {
   if (relativePath === apiCollectionFile) {
     validateRequestOrder(relativePath, collection, ["Clear Cart", "Re-add Item for Order", "Place Order"]);
     validateRequestOrder(relativePath, collection, ["Delete Address", "Re-add Address for Order", "Place Order"]);
+    validateRequestOrder(relativePath, collection, ["Seed Inventory for Orders", "Place Order"]);
+    validateRequestOrder(relativePath, collection, ["Create Coupon for Coupon Order", "Place Order (with Coupon)"]);
     validateRequestOrder(relativePath, collection, ["Place Order", "Re-add Item for Coupon Order", "Place Order (with Coupon)"]);
     validateRequestOrder(relativePath, collection, ["Add to Wishlist", "Remove from Wishlist", "Re-add to Wishlist for Move", "Move to Cart"]);
   }
