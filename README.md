@@ -46,11 +46,13 @@ A production-grade ecommerce platform built as a microservices architecture usin
 ## Kafka Event Flows
 
 ```
-customer-service ──► order-events ──► inventory-service
-                                   ──► notification-service
-                                   ──► review-service
+order-service    ──► order-events ──► inventory-service
+                                  ──► notification-service
+                                  ──► review-service
 
 payment-service  ──► payment-events ──► notification-service
+
+inventory-service ─► inventory-events ─► order-service
 ```
 
 Kafka consumers retry failed records twice with a 1 second backoff, then publish the original record to a dead-letter topic:

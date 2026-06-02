@@ -239,8 +239,6 @@ services:
         condition: service_healthy
       cloud-config:
         condition: service_started
-      kafka:
-        condition: service_healthy
       mysql:
         condition: service_healthy
     environment:
@@ -253,7 +251,6 @@ services:
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
       - SPRING_PROFILES_ACTIVE=dev
-      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:

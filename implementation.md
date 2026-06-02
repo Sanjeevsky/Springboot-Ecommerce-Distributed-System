@@ -52,7 +52,7 @@
 | api-gateway | 8081 | ✅ | ✅ | ✅ | — | — | ✅ |
 | auth-server | 8083 | ✅ | ✅ | ✅ | — | — | ✅ |
 | catalog-service | 8084 | ✅ | ✅ | ✅ | — | — | ✅ |
-| customer-service | 8082 | ✅ | ✅ | ✅ | pub | feign | ✅ |
+| customer-service | 8082 | ✅ | ✅ | ✅ | — | feign | ✅ |
 | shopping-cart-service | 8086 | ✅ | ✅ | ✅ | — | feign | ✅ |
 | payment-service | 8085 | ✅ | ✅ | ✅ | pub | — | ✅ |
 | order-service | 8092 | ✅ | ✅ | ✅ | pub | feign | ✅ |

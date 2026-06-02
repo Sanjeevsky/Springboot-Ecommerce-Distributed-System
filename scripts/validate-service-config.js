@@ -440,6 +440,34 @@ for (const service of Object.keys(expectedApplicationNames)) {
   }
 }
 
+const customerServicePomText = fs.readFileSync(path.join(root, "customer-service", "pom.xml"), "utf8");
+const customerKafkaConfigPath = path.join(
+  root,
+  "customer-service",
+  "src",
+  "main",
+  "java",
+  "com",
+  "sanjeevsky",
+  "customerservice",
+  "config",
+  "KafkaConfig.java"
+);
+const customerComposeBlock = composeServiceBlock("customer-service");
+if (customerServicePomText.includes("<artifactId>spring-kafka</artifactId>")
+    || fs.existsSync(customerKafkaConfigPath)
+    || propertiesFiles("customer-service").some((file) => fs.readFileSync(file, "utf8").includes("spring.kafka."))
+    || customerComposeBlock.includes("SPRING_KAFKA_BOOTSTRAP_SERVERS")
+    || /kafka:\s*\n\s+condition:\s+service_healthy/.test(customerComposeBlock)) {
+  fail("customer-service: Kafka wiring must stay removed because the service has no Kafka publisher or listener");
+}
+
+if (readmeText.includes("customer-service ──► order-events")
+    || !readmeText.includes("order-service    ──► order-events")
+    || !readmeText.includes("inventory-service ─► inventory-events ─► order-service")) {
+  fail("README.md: Kafka event flow must document order-service and inventory-service as event publishers");
+}
+
 const shoppingCartProperties = propertiesFiles("shopping-cart-service");
 if (!shoppingCartProperties.some((file) => hasProperty(file, "clients.catalog.url"))) {
   fail("shopping-cart-service: expected clients.catalog.url property for Docker catalog dependency override");
