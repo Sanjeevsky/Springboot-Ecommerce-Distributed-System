@@ -135,6 +135,36 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
   if (showSqlValues.some((value) => value.toLowerCase() === "true")) {
     fail(`${service}: spring.jpa.show-sql must stay disabled for full-stack Docker smoke stability`);
   }
+
+  for (const file of files) {
+    const text = fs.readFileSync(file, "utf8");
+    const relativeFile = path.relative(root, file);
+    if (/^spring\.datasource\.password\s*=\s*123456\s*$/m.test(text)) {
+      fail(`${relativeFile}: datasource password must read from MYSQL_PASSWORD with a local fallback`);
+    }
+    if (/^spring\.boot\.admin\.client\.password\s*=\s*client\s*$/m.test(text)) {
+      fail(`${relativeFile}: Spring Boot Admin client password must read from SPRING_BOOT_ADMIN_CLIENT_PASSWORD`);
+    }
+  }
+
+  const datasourcePasswordValues = files.flatMap((file) => propertyValues(file, "spring.datasource.password"));
+  if (datasourcePasswordValues.length
+      && !datasourcePasswordValues.every((value) => value.startsWith("${MYSQL_PASSWORD:"))) {
+    fail(`${service}: spring.datasource.password must use \${MYSQL_PASSWORD:...} in application properties`);
+  }
+
+  const adminClientPasswordValues = files.flatMap((file) => propertyValues(file, "spring.boot.admin.client.password"));
+  if (adminClientPasswordValues.length
+      && !adminClientPasswordValues.every((value) => value.startsWith("${SPRING_BOOT_ADMIN_CLIENT_PASSWORD:"))) {
+    fail(`${service}: spring.boot.admin.client.password must use \${SPRING_BOOT_ADMIN_CLIENT_PASSWORD:...}`);
+  }
+}
+
+const springServerSecurityPasswords = propertiesFiles("spring-server")
+  .flatMap((file) => propertyValues(file, "spring.security.user.password"));
+if (!springServerSecurityPasswords.length
+    || !springServerSecurityPasswords.every((value) => value.startsWith("${SPRING_SECURITY_USER_PASSWORD:"))) {
+  fail("spring-server: spring.security.user.password must use ${SPRING_SECURITY_USER_PASSWORD:...}");
 }
 
 const readmeCoverageServices = [
@@ -253,6 +283,17 @@ for (const service of Object.keys(expectedApplicationNames)) {
 const composeText = fs.readFileSync(path.join(root, "docker-compose.yml"), "utf8");
 if (/SPRING_ZIPKIN_ENABLED=true/.test(composeText)) {
   fail("docker-compose.yml: tracing must default to opt-in with SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}");
+}
+if (composeText.includes("MYSQL_ROOT_PASSWORD: 123456")
+    || composeText.includes("SPRING_DATASOURCE_PASSWORD=123456")) {
+  fail("docker-compose.yml: MySQL passwords must use overridable local defaults");
+}
+if (!composeText.includes("MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}")
+    || !composeText.includes("-p$${MYSQL_ROOT_PASSWORD}")) {
+  fail("docker-compose.yml: mysql service and healthcheck must share MYSQL_ROOT_PASSWORD");
+}
+if ((composeText.match(/SPRING_DATASOURCE_PASSWORD=\$\{MYSQL_ROOT_PASSWORD:-123456\}/g) || []).length !== 11) {
+  fail("docker-compose.yml: database-backed services must use SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}");
 }
 
 const gatewayYamlText = fs.readFileSync(path.join(root, "api-gateway", "src", "main", "resources", "application.yml"), "utf8");

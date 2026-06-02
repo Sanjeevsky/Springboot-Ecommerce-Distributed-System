@@ -6,7 +6,7 @@ services:
     image: mysql:8.0
     command: --max-connections=60 --innodb-buffer-pool-size=64M --performance-schema=OFF --table-open-cache=200 --table-definition-cache=200
     environment:
-      MYSQL_ROOT_PASSWORD: 123456
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
       MYSQL_DATABASE: auth-db
     ports:
       - "3306:3306"
@@ -14,7 +14,7 @@ services:
       - mysql-data:/var/lib/mysql
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p123456"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -186,7 +186,7 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/auth-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
       - SPRING_CONFIG_IMPORT=optional:classpath:/docker-no-config.properties
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
@@ -216,7 +216,7 @@ services:
       - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://service-discovery:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/product-catalog-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
       - SPRING_CONFIG_IMPORT=optional:classpath:/docker-no-config.properties
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
@@ -248,7 +248,7 @@ services:
       - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://service-discovery:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/customer-service-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
       - SPRING_CONFIG_IMPORT=optional:classpath:/docker-no-config.properties
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
@@ -277,7 +277,7 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/shopping-cart-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
       - SPRING_CONFIG_IMPORT=optional:classpath:/docker-no-config.properties
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
@@ -308,7 +308,7 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/payment-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
       - SPRING_CONFIG_IMPORT=optional:classpath:/docker-no-config.properties
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
@@ -361,7 +361,7 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/notification-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
       - SPRING_CONFIG_IMPORT=optional:classpath:/docker-no-config.properties
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
@@ -391,7 +391,7 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/inventory-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
       - SPRING_CONFIG_IMPORT=optional:classpath:/docker-no-config.properties
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
@@ -418,7 +418,7 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/coupon-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
       - SPRING_CONFIG_IMPORT=optional:classpath:/docker-no-config.properties
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
@@ -446,7 +446,7 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/review-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
       - SPRING_CONFIG_IMPORT=optional:classpath:/docker-no-config.properties
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
@@ -473,7 +473,7 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/wishlist-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
       - SPRING_CONFIG_IMPORT=optional:classpath:/docker-no-config.properties
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
@@ -502,7 +502,7 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/order-service-db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
       - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=123456
+      - SPRING_DATASOURCE_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
       - SPRING_CONFIG_IMPORT=optional:classpath:/docker-no-config.properties
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
