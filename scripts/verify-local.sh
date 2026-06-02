@@ -13,6 +13,12 @@ RUN_MAVEN_TESTS="${RUN_MAVEN_TESTS:-1}"
 WAIT_RETRIES="${WAIT_RETRIES:-60}"
 WAIT_SLEEP_SECONDS="${WAIT_SLEEP_SECONDS:-5}"
 GATEWAY_DISCOVERY_STABILIZE_SECONDS="${GATEWAY_DISCOVERY_STABILIZE_SECONDS:-10}"
+MAVEN_TEST_SYSTEM_PROPS=(
+  "-Dspring.config.name=application-test"
+  "-Dspring.cloud.config.enabled=false"
+  "-Dspring.cloud.config.import-check.enabled=false"
+  "-Dspring.config.import="
+)
 
 MAVEN_TEST_MODULES=(
   api-gateway
@@ -143,6 +149,7 @@ if [[ "$RUN_MAVEN_TESTS" == "1" ]]; then
     log "Running Maven tests for $module"
     mvn -B -f "$module/pom.xml" test \
       -DfailIfNoTests=false \
+      "${MAVEN_TEST_SYSTEM_PROPS[@]}" \
       "-Dtest=!*ApplicationTests"
   done
 fi

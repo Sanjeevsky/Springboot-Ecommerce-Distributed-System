@@ -9,7 +9,6 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
@@ -24,8 +23,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 "eureka.client.enabled=false",
                 "spring.boot.admin.client.enabled=false",
                 "spring.zipkin.enabled=false",
+                "spring.cloud.config.enabled=false",
+                "spring.cloud.config.import-check.enabled=false",
+                "spring.config.import=",
                 "feign.circuitbreaker.enabled=false",
-                "spring.datasource.url=jdbc:h2:mem:cart-integration-db;DB_CLOSE_DELAY=-1;MODE=MySQL",
+                "spring.datasource.url=jdbc:h2:mem:cart-integration-db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL",
                 "spring.datasource.driver-class-name=org.h2.Driver",
                 "spring.datasource.username=sa",
                 "spring.datasource.password=",
@@ -37,7 +39,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         }
 )
 @AutoConfigureMockMvc
-@TestPropertySource(properties = "spring.config.import=")
 class CartIntegrationTest {
 
     @MockBean

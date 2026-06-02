@@ -45,6 +45,28 @@ function dockerfile(service) {
   return fs.existsSync(file) ? file : null;
 }
 
+function integrationTestFiles(service) {
+  const testRoot = path.join(root, service, "src", "test", "java");
+  if (!fs.existsSync(testRoot)) {
+    return [];
+  }
+
+  const files = [];
+  const stack = [testRoot];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+      } else if (/IntegrationTest\.java$/.test(entry.name)) {
+        files.push(fullPath);
+      }
+    }
+  }
+  return files;
+}
+
 function applicationNameValues(file) {
   return fs.readFileSync(file, "utf8")
     .split(/\r?\n/)
@@ -135,6 +157,41 @@ for (const service of Object.keys(expectedApplicationNames)) {
 const composeText = fs.readFileSync(path.join(root, "docker-compose.yml"), "utf8");
 if (/SPRING_ZIPKIN_ENABLED=true/.test(composeText)) {
   fail("docker-compose.yml: tracing must default to opt-in with SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}");
+}
+
+const verifyLocalText = fs.readFileSync(path.join(root, "scripts", "verify-local.sh"), "utf8");
+for (const requiredFlag of [
+  "-Dspring.config.name=application-test",
+  "-Dspring.cloud.config.enabled=false",
+  "-Dspring.cloud.config.import-check.enabled=false",
+  "-Dspring.config.import=",
+]) {
+  if (!verifyLocalText.includes(requiredFlag)) {
+    fail(`scripts/verify-local.sh: Maven tests must pass ${requiredFlag} to avoid Config Server lookups`);
+  }
+}
+
+for (const service of Object.keys(expectedApplicationNames)) {
+  for (const file of integrationTestFiles(service)) {
+    const text = fs.readFileSync(file, "utf8");
+    const relativeFile = path.relative(root, file);
+    if (!text.includes('"spring.cloud.config.enabled=false"')) {
+      fail(`${relativeFile}: integration tests must disable Spring Cloud Config`);
+    }
+    if (!text.includes('"spring.cloud.config.import-check.enabled=false"')) {
+      fail(`${relativeFile}: integration tests must disable Spring Cloud Config import checks`);
+    }
+    if (service === "auth-server" && !text.includes('"jwt.secret=')) {
+      fail(`${relativeFile}: auth integration tests must define jwt.secret when production config is not loaded`);
+    }
+    if (["inventory-service", "notification-service", "review-service"].includes(service)
+        && !text.includes('"spring.kafka.bootstrap-servers=')) {
+      fail(`${relativeFile}: Kafka-backed integration tests must define spring.kafka.bootstrap-servers when production config is not loaded`);
+    }
+    if (/DB_CLOSE_DELAY=-1;MODE=MySQL/.test(text)) {
+      fail(`${relativeFile}: H2 integration database URL must include DB_CLOSE_ON_EXIT=FALSE`);
+    }
+  }
 }
 
 if (failed) {

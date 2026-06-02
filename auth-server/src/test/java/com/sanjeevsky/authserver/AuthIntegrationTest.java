@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -17,7 +16,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 "eureka.client.enabled=false",
                 "spring.boot.admin.client.enabled=false",
                 "spring.zipkin.enabled=false",
-                "spring.datasource.url=jdbc:h2:mem:auth-integration-db;DB_CLOSE_DELAY=-1;MODE=MySQL",
+                "spring.cloud.config.enabled=false",
+                "spring.cloud.config.import-check.enabled=false",
+                "spring.config.import=",
+                "jwt.secret=test-jwt-secret",
+                "spring.datasource.url=jdbc:h2:mem:auth-integration-db;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL",
                 "spring.datasource.driver-class-name=org.h2.Driver",
                 "spring.datasource.username=sa",
                 "spring.datasource.password=",
@@ -27,7 +30,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         }
 )
 @AutoConfigureMockMvc
-@TestPropertySource(properties = "spring.config.import=")
 class AuthIntegrationTest {
 
     @Autowired
