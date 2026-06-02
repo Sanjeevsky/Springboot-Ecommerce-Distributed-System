@@ -174,6 +174,23 @@ if (/SPRING_ZIPKIN_ENABLED=true/.test(composeText)) {
   fail("docker-compose.yml: tracing must default to opt-in with SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}");
 }
 
+const gatewayYamlText = fs.readFileSync(path.join(root, "api-gateway", "src", "main", "resources", "application.yml"), "utf8");
+if (!/discovery:\s*\n\s+locator:\s*\n\s+enabled:\s*false\b/.test(gatewayYamlText)) {
+  fail("api-gateway application.yml: discovery locator must stay disabled so raw service-id routes are not exposed");
+}
+
+const gatewayConfigText = fs.readFileSync(
+  path.join(root, "api-gateway", "src", "main", "java", "com", "sanjeevsky", "apigateway", "config", "GatewayConfig.java"),
+  "utf8"
+);
+if (!gatewayConfigText.includes('.path("/cart-service/**")')
+    || !gatewayConfigText.includes('.uri("lb://shopping-cart-service")')) {
+  fail("api-gateway GatewayConfig: cart must use the standard /cart-service/** route to shopping-cart-service");
+}
+if (gatewayConfigText.includes('.path("/shopping-cart-service/**")')) {
+  fail("api-gateway GatewayConfig: raw /shopping-cart-service/** route must not be exposed");
+}
+
 function composeServiceBlock(service) {
   const pattern = new RegExp(`^  ${service}:\\n([\\s\\S]*?)(?=^  [a-zA-Z0-9_-]+:|^volumes:|^networks:|(?![\\s\\S]))`, "m");
   const match = composeText.match(pattern);

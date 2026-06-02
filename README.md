@@ -28,7 +28,7 @@ A production-grade ecommerce platform built as a microservices architecture usin
 | cloud-config | 8071 | Spring Cloud Config Server |
 | spring-server | 9000 | Spring Boot Admin UI |
 | kafka-ui | 8080 | Kafka topics, brokers, and consumer groups UI |
-| api-gateway | 8081 | JWT auth + routing to all services |
+| api-gateway | 8081 | JWT auth + explicit standard-prefix routing to all services |
 | auth-server | 8083 | Register / login / JWT issuance |
 | catalog-service | 8084 | Products, categories, brands (Redis cached) |
 | customer-service | 8082 | Customer profiles, address management |
@@ -118,6 +118,8 @@ docker-compose up -d
 | API Gateway | http://localhost:8081 |
 
 Zipkin runs in the Docker stack, but service tracing is disabled by default to keep full-stack local verification within typical Docker Desktop memory limits. Set `SPRING_ZIPKIN_ENABLED=true` before `docker compose up` to emit spans.
+
+The API Gateway uses explicit standard-prefix routes such as `/cart-service/**`, `/order-service/**`, and `/catalog-service/**`. Spring Cloud Gateway discovery-locator routes are disabled so raw service-id paths such as `/shopping-cart-service/**` are not exposed alongside the standard application routes.
 
 Kafka broker endpoints:
 
