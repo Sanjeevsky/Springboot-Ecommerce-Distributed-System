@@ -260,31 +260,31 @@ function validateAsyncRunnerRetries(relativePath, collection) {
     const code = requestEventCode(item);
 
     if (method === "POST" && url.endsWith("/review-service/review")) {
-      if (!code.includes("postman.setNextRequest") || !code.includes("_reviewRetryCount")) {
+      if (!code.includes("pm.execution.setNextRequest") || !code.includes("_reviewRetryCount")) {
         fail(`${relativePath}: ${requestPath}: review submit must retry while Kafka review eligibility is catching up`);
       }
     }
 
     if (method === "GET" && url.endsWith("/notification-service/notifications")) {
-      if (!code.includes("postman.setNextRequest") || !code.includes("_notificationRetryCount")) {
+      if (!code.includes("pm.execution.setNextRequest") || !code.includes("_notificationRetryCount")) {
         fail(`${relativePath}: ${requestPath}: notification list must retry before notificationId is used later`);
       }
     }
 
     if (method === "POST" && url.endsWith("/cart-service/cart/add")) {
-      if (!code.includes("postman.setNextRequest") || !code.includes("_cartAddRetryCount")) {
+      if (!code.includes("pm.execution.setNextRequest") || !code.includes("_cartAddRetryCount")) {
         fail(`${relativePath}: ${requestPath}: cart add must retry transient catalog/cart cold-start failures`);
       }
     }
 
     if (method === "POST" && url.endsWith("/order-service/order")) {
-      if (!code.includes("postman.setNextRequest") || !code.includes("_orderCreateRetryCount")) {
+      if (!code.includes("pm.execution.setNextRequest") || !code.includes("_orderCreateRetryCount")) {
         fail(`${relativePath}: ${requestPath}: order create must retry transient checkout/payment cold-start failures`);
       }
     }
 
     if (method === "GET" && url.endsWith("/payment-service/{{paymentId}}") && code.includes("Payment is SUCCESS")) {
-      if (!code.includes("postman.setNextRequest") || !code.includes("_paymentSuccessRetryCount")) {
+      if (!code.includes("pm.execution.setNextRequest") || !code.includes("_paymentSuccessRetryCount")) {
         fail(`${relativePath}: ${requestPath}: payment success verification must retry while order confirmation is becoming visible`);
       }
     }
