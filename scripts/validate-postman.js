@@ -18,6 +18,8 @@ const bannedMarkers = [
   { pattern: /\bpinCode\b/, reason: "address contract uses zipCode" },
   { pattern: /\bmaxUses\b/, reason: "coupon contract uses maxUsageCount" },
   { pattern: /2026-12-31T23:59:59/, reason: "coupon expiryDate expects yyyy-MM-dd" },
+  { pattern: /"expiryDate"\s*:\s*"2026-12-31"/, reason: "coupon fixtures should not expire during normal runner use" },
+  { pattern: /"expiryDate"\s*:\s*"2027-12-31"/, reason: "coupon fixtures should not expire during normal runner use" },
 ];
 
 let failed = false;

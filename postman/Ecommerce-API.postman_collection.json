@@ -1822,7 +1822,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10.0,\n  \"minOrderAmount\": 500.0,\n  \"maxUsageCount\": 100,\n  \"expiryDate\": \"2026-12-31\",\n  \"active\": true\n}"
+              "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10.0,\n  \"minOrderAmount\": 500.0,\n  \"maxUsageCount\": 100,\n  \"expiryDate\": \"2099-12-31\",\n  \"active\": true\n}"
             }
           },
           "event": [

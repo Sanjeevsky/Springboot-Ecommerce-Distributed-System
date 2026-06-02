@@ -1182,7 +1182,7 @@
             "header": [{ "key": "Content-Type", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10,\n  \"minOrderAmount\": 50000,\n  \"maxUsageCount\": 100,\n  \"expiryDate\": \"2027-12-31\",\n  \"active\": true\n}",
+              "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10,\n  \"minOrderAmount\": 50000,\n  \"maxUsageCount\": 100,\n  \"expiryDate\": \"2099-12-31\",\n  \"active\": true\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": {
