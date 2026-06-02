@@ -70,6 +70,10 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("Confirming payment for paymentId: {}", paymentId);
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found with id: " + paymentId));
+        if (payment.getStatus() == PaymentStatus.SUCCESS) {
+            log.info("Payment already confirmed for paymentId: {}", paymentId);
+            return payment;
+        }
         payment.setStatus(PaymentStatus.SUCCESS);
         Payment confirmed = paymentRepository.save(payment);
 
@@ -88,6 +92,10 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("Failing payment for paymentId: {}", paymentId);
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found with id: " + paymentId));
+        if (payment.getStatus() == PaymentStatus.FAILED) {
+            log.info("Payment already failed for paymentId: {}", paymentId);
+            return payment;
+        }
         payment.setStatus(PaymentStatus.FAILED);
         return paymentRepository.save(payment);
     }
@@ -104,6 +112,10 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("Refunding payment for paymentId: {}", paymentId);
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found with id: " + paymentId));
+        if (payment.getStatus() == PaymentStatus.REFUNDED) {
+            log.info("Payment already refunded for paymentId: {}", paymentId);
+            return payment;
+        }
         payment.setStatus(PaymentStatus.REFUNDED);
         Payment refunded = paymentRepository.save(payment);
 

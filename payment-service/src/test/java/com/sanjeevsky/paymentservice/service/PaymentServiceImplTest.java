@@ -113,6 +113,19 @@ class PaymentServiceImplTest {
     }
 
     @Test
+    void confirmPayment_alreadySuccess_returnsExistingPaymentWithoutPublishing() {
+        Payment payment = pendingPayment();
+        payment.setStatus(PaymentStatus.SUCCESS);
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
+
+        Payment result = paymentService.confirmPayment(PAYMENT_ID);
+
+        assertThat(result).isSameAs(payment);
+        verify(paymentRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
     void confirmPayment_notFound_throwsPaymentNotFoundException() {
         when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.empty());
 
@@ -132,6 +145,18 @@ class PaymentServiceImplTest {
         Payment result = paymentService.failPayment(PAYMENT_ID);
 
         assertThat(result.getStatus()).isEqualTo(PaymentStatus.FAILED);
+    }
+
+    @Test
+    void failPayment_alreadyFailed_returnsExistingPaymentWithoutSaving() {
+        Payment payment = pendingPayment();
+        payment.setStatus(PaymentStatus.FAILED);
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
+
+        Payment result = paymentService.failPayment(PAYMENT_ID);
+
+        assertThat(result).isSameAs(payment);
+        verify(paymentRepository, never()).save(any());
     }
 
     @Test
@@ -174,6 +199,19 @@ class PaymentServiceImplTest {
 
         assertThat(result.getStatus()).isEqualTo(PaymentStatus.REFUNDED);
         verify(paymentRepository).save(payment);
+    }
+
+    @Test
+    void refundPayment_alreadyRefunded_returnsExistingPaymentWithoutPublishing() {
+        Payment payment = pendingPayment();
+        payment.setStatus(PaymentStatus.REFUNDED);
+        when(paymentRepository.findById(PAYMENT_ID)).thenReturn(Optional.of(payment));
+
+        Payment result = paymentService.refundPayment(PAYMENT_ID);
+
+        assertThat(result).isSameAs(payment);
+        verify(paymentRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test
