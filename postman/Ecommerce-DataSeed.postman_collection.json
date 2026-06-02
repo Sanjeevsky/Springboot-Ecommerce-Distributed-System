@@ -1053,8 +1053,14 @@
           "  setRunnerVar('paymentIdempotencyKey', 'payment-' + runId);",
           "}",
           "",
+          "function missingRunnerVariables() {",
+          "  return ['runId', 'runnerEmail', 'couponCode', 'orderIdempotencyKey', 'couponOrderIdempotencyKey', 'paymentIdempotencyKey'].some(function (key) {",
+          "    return !pm.collectionVariables.get(key);",
+          "  });",
+          "}",
+          "",
           "var requestName = pm.info.requestName || \"\";",
-          "if (requestName === 'Register' || requestName.indexOf('Register User') !== -1 || !pm.collectionVariables.get('runId')) {",
+          "if (requestName === 'Register' || requestName.indexOf('Register User') !== -1 || missingRunnerVariables()) {",
           "  seedRunnerVariables();",
           "}"
         ]

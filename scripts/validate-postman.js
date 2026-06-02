@@ -152,13 +152,16 @@ for (const relativePath of collectionFiles) {
   validateBannedMarkers(relativePath);
 
   const declaredVariables = new Set(environmentVariables);
+  const collectionVariables = new Set();
   for (const variable of collection.variable || []) {
     if (variable && variable.key) {
+      collectionVariables.add(variable.key);
       declaredVariables.add(variable.key);
     }
   }
 
   const referencedVariables = new Set();
+  const scriptSetVariables = new Set();
   const events = [...(collection.event || [])];
   for (const { path: requestPath, item } of walkItems(collection.item)) {
     events.push(...(item.event || []).map((event) => ({ ...event, requestPath })));
@@ -172,6 +175,7 @@ for (const relativePath of collectionFiles) {
     validateScript(relativePath, ownerPath, event);
     collectVariablesFromText(code, referencedVariables);
     collectScriptSetVariables(code, declaredVariables);
+    collectScriptSetVariables(code, scriptSetVariables);
   }
 
   const missingVariables = [...referencedVariables]
@@ -179,6 +183,13 @@ for (const relativePath of collectionFiles) {
     .sort();
   for (const name of missingVariables) {
     fail(`${relativePath}: references {{${name}}} but no collection/environment/script setter defines it`);
+  }
+
+  const environmentMissingVariables = [...new Set([...collectionVariables, ...scriptSetVariables])]
+    .filter((name) => !environmentVariables.has(name))
+    .sort();
+  for (const name of environmentMissingVariables) {
+    fail(`${relativePath}: defines or sets ${name} but Ecommerce-Local environment does not declare it`);
   }
 }
 

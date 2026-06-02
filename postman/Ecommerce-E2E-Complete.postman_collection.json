@@ -28,6 +28,7 @@
     { "key": "addressId",       "value": "",                      "type": "default" },
     { "key": "orderId",         "value": "",                      "type": "default" },
     { "key": "paymentId",       "value": "",                      "type": "default" },
+    { "key": "directPaymentOrderId", "value": "",                 "type": "default" },
     { "key": "orderIdempotencyKey",       "value": "",            "type": "default" },
     { "key": "couponOrderIdempotencyKey", "value": "",            "type": "default" },
     { "key": "paymentIdempotencyKey",     "value": "",            "type": "default" },

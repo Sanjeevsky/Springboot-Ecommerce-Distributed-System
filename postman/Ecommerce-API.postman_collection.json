@@ -47,6 +47,10 @@
       "value": ""
     },
     {
+      "key": "directPaymentOrderId",
+      "value": ""
+    },
+    {
       "key": "runId",
       "value": ""
     },
@@ -1224,6 +1228,73 @@
       "name": "Payment Service",
       "item": [
         {
+          "name": "Initiate Payment",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var directPaymentOrderId = pm.variables.replaceIn('{{$guid}}');",
+                  "pm.collectionVariables.set('directPaymentOrderId', directPaymentOrderId);",
+                  "try { pm.environment.set('directPaymentOrderId', directPaymentOrderId); } catch (e) {}",
+                  "console.log('directPaymentOrderId:', directPaymentOrderId);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Initiate Payment: status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "var data = json.data;",
+                  "pm.test('Payment ID present', () => pm.expect(data.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('paymentId', data.id);",
+                  "try { pm.environment.set('paymentId', data.id); } catch (e) {}",
+                  "if (data.status) {",
+                  "  pm.collectionVariables.set('paymentStatus', data.status);",
+                  "  try { pm.environment.set('paymentStatus', data.status); } catch (e) {}",
+                  "}",
+                  "console.log('paymentId:', data.id, '| status:', data.status);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{paymentIdempotencyKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment-service/initiate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "initiate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{directPaymentOrderId}}\",\n  \"userId\": \"{{runnerEmail}}\",\n  \"amount\": 119999.0\n}"
+            }
+          }
+        },
+        {
           "name": "Get Payment",
           "request": {
             "method": "GET",
@@ -2054,8 +2125,14 @@
           "  setRunnerVar('paymentIdempotencyKey', 'payment-' + runId);",
           "}",
           "",
+          "function missingRunnerVariables() {",
+          "  return ['runId', 'runnerEmail', 'couponCode', 'orderIdempotencyKey', 'couponOrderIdempotencyKey', 'paymentIdempotencyKey'].some(function (key) {",
+          "    return !pm.collectionVariables.get(key);",
+          "  });",
+          "}",
+          "",
           "var requestName = pm.info.requestName || \"\";",
-          "if (requestName === 'Register' || requestName.indexOf('Register User') !== -1 || !pm.collectionVariables.get('runId')) {",
+          "if (requestName === 'Register' || requestName.indexOf('Register User') !== -1 || missingRunnerVariables()) {",
           "  seedRunnerVariables();",
           "}"
         ]
