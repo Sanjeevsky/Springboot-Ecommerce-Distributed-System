@@ -225,6 +225,7 @@ if (!springServerSecurityPasswords.length
 }
 
 const readmeCoverageServices = [
+  "api-gateway",
   "auth-server",
   "catalog-service",
   "customer-service",
