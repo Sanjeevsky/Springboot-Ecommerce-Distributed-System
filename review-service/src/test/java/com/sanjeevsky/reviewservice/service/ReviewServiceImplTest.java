@@ -78,6 +78,32 @@ class ReviewServiceImplTest {
     }
 
     @Test
+    void addReview_trimsUserIdBeforeEligibilityCheck() {
+        Review incoming = Review.builder()
+                .productId(PRODUCT_ID)
+                .rating(4)
+                .title("Good")
+                .comment("Nice product")
+                .build();
+        when(eligibilityRepository.existsByUserIdAndProductId(USER_ID, PRODUCT_ID)).thenReturn(true);
+        when(reviewRepository.save(any(Review.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Review result = reviewService.addReview("  " + USER_ID + "  ", incoming);
+
+        assertThat(result.getUserId()).isEqualTo(USER_ID);
+        verify(eligibilityRepository).existsByUserIdAndProductId(USER_ID, PRODUCT_ID);
+    }
+
+    @Test
+    void addReview_blankUserId_throwsInvalidReviewRequestException() {
+        assertThatThrownBy(() -> reviewService.addReview(" ", pendingReview(5)))
+                .isInstanceOf(InvalidReviewRequestException.class)
+                .hasMessage("Review userId is required");
+
+        verifyNoInteractions(eligibilityRepository, reviewRepository);
+    }
+
+    @Test
     void addReview_notEligible_throwsUnauthorizedReviewException() {
         Review incoming = Review.builder()
                 .productId(PRODUCT_ID)
@@ -152,6 +178,15 @@ class ReviewServiceImplTest {
         verify(reviewRepository).findByProductIdAndStatus(PRODUCT_ID, "APPROVED");
     }
 
+    @Test
+    void getApprovedReviews_nullProductId_throwsInvalidReviewRequestException() {
+        assertThatThrownBy(() -> reviewService.getApprovedReviews(null))
+                .isInstanceOf(InvalidReviewRequestException.class)
+                .hasMessage("Review productId is required");
+
+        verify(reviewRepository, never()).findByProductIdAndStatus(any(), any());
+    }
+
     // ─── getProductSummary ────────────────────────────────────────────────────
 
     @Test
@@ -190,6 +225,15 @@ class ReviewServiceImplTest {
         ReviewSummary summary = reviewService.getProductSummary(PRODUCT_ID);
 
         assertThat(summary.getAverageRating()).isEqualTo(4.7);
+    }
+
+    @Test
+    void getProductSummary_nullProductId_throwsInvalidReviewRequestException() {
+        assertThatThrownBy(() -> reviewService.getProductSummary(null))
+                .isInstanceOf(InvalidReviewRequestException.class)
+                .hasMessage("Review productId is required");
+
+        verify(reviewRepository, never()).findByProductIdAndStatus(any(), any());
     }
 
     // ─── moderateReview ───────────────────────────────────────────────────────
@@ -237,6 +281,15 @@ class ReviewServiceImplTest {
         verifyNoInteractions(reviewRepository);
     }
 
+    @Test
+    void moderateReview_nullReviewId_throwsInvalidReviewRequestException() {
+        assertThatThrownBy(() -> reviewService.moderateReview(null, "APPROVED"))
+                .isInstanceOf(InvalidReviewRequestException.class)
+                .hasMessage("Review id is required");
+
+        verifyNoInteractions(reviewRepository);
+    }
+
     // ─── getUserReviews ───────────────────────────────────────────────────────
 
     @Test
@@ -248,5 +301,25 @@ class ReviewServiceImplTest {
 
         assertThat(result).hasSize(2);
         verify(reviewRepository).findByUserId(USER_ID);
+    }
+
+    @Test
+    void getUserReviews_trimsUserIdBeforeLookup() {
+        List<Review> reviews = List.of(pendingReview(4));
+        when(reviewRepository.findByUserId(USER_ID)).thenReturn(reviews);
+
+        List<Review> result = reviewService.getUserReviews("  " + USER_ID + "  ");
+
+        assertThat(result).hasSize(1);
+        verify(reviewRepository).findByUserId(USER_ID);
+    }
+
+    @Test
+    void getUserReviews_blankUserId_throwsInvalidReviewRequestException() {
+        assertThatThrownBy(() -> reviewService.getUserReviews(" "))
+                .isInstanceOf(InvalidReviewRequestException.class)
+                .hasMessage("Review userId is required");
+
+        verify(reviewRepository, never()).findByUserId(any());
     }
 }

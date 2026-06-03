@@ -30,13 +30,14 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public Review addReview(String userId, Review review) {
+        String normalizedUserId = validateUserId(userId);
         validateReviewRequest(review);
-        log.info("Adding review for productId: {} by userId: {}", review.getProductId(), userId);
-        if (!eligibilityRepository.existsByUserIdAndProductId(userId, review.getProductId())) {
+        log.info("Adding review for productId: {} by userId: {}", review.getProductId(), normalizedUserId);
+        if (!eligibilityRepository.existsByUserIdAndProductId(normalizedUserId, review.getProductId())) {
             throw new UnauthorizedReviewException(
-                    "User " + userId + " has not purchased product " + review.getProductId());
+                    "User " + normalizedUserId + " has not purchased product " + review.getProductId());
         }
-        review.setUserId(userId);
+        review.setUserId(normalizedUserId);
         review.setStatus("PENDING");
         Review saved = reviewRepository.save(review);
         log.info("Review saved with id: {}", saved.getId());
@@ -45,12 +46,14 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public List<Review> getApprovedReviews(UUID productId) {
+        validateProductId(productId);
         log.info("Fetching approved reviews for productId: {}", productId);
         return reviewRepository.findByProductIdAndStatus(productId, "APPROVED");
     }
 
     @Override
     public ReviewSummary getProductSummary(UUID productId) {
+        validateProductId(productId);
         log.info("Fetching review summary for productId: {}", productId);
         List<Review> approvedReviews = reviewRepository.findByProductIdAndStatus(productId, "APPROVED");
 
@@ -85,6 +88,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public Review moderateReview(UUID id, String status) {
+        validateReviewId(id);
         String normalizedStatus = normalizeModerationStatus(status);
         log.info("Moderating review id: {} to status: {}", id, normalizedStatus);
         Review review = reviewRepository.findById(id)
@@ -97,8 +101,28 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public List<Review> getUserReviews(String userId) {
-        log.info("Fetching reviews for userId: {}", userId);
-        return reviewRepository.findByUserId(userId);
+        String normalizedUserId = validateUserId(userId);
+        log.info("Fetching reviews for userId: {}", normalizedUserId);
+        return reviewRepository.findByUserId(normalizedUserId);
+    }
+
+    private String validateUserId(String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new InvalidReviewRequestException("Review userId is required");
+        }
+        return userId.trim();
+    }
+
+    private void validateProductId(UUID productId) {
+        if (productId == null) {
+            throw new InvalidReviewRequestException("Review productId is required");
+        }
+    }
+
+    private void validateReviewId(UUID id) {
+        if (id == null) {
+            throw new InvalidReviewRequestException("Review id is required");
+        }
     }
 
     private void validateReviewRequest(Review review) {
