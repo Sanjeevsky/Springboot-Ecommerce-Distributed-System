@@ -315,7 +315,10 @@ All UIs include JWT Bearer auth — click **Authorize**, paste Bearer token from
 cd load-tests
 
 # Smoke (quick sanity — 2 VUs, 1 min)
-k6 run --env PRODUCT_ID=$PRODUCT_ID --env SCENARIO=smoke checkout-flow.js
+k6 run --env SCENARIO=smoke checkout-flow.js
+
+# Optional: reuse an existing seeded product
+k6 run --env PRODUCT_ID=$PRODUCT_ID --env VARIANT_ID=$VARIANT_ID --env SCENARIO=smoke checkout-flow.js
 
 # Load (20 VUs sustained)
 k6 run --env PRODUCT_ID=$PRODUCT_ID --env SCENARIO=load checkout-flow.js

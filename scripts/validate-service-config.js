@@ -1125,6 +1125,20 @@ if (catalogBrowseLoadTestText.includes("keyword=phone")
   fail("load-tests/catalog-browse.js: catalog browse load test must use current gateway catalog routes");
 }
 
+const checkoutFlowLoadTestText = fs.readFileSync(path.join(root, "load-tests", "checkout-flow.js"), "utf8");
+if (checkoutFlowLoadTestText.includes('PRODUCT_ID || "00000000-0000-0000-0000-000000000001"')
+    || checkoutFlowLoadTestText.includes("let addressId = data.addressId")
+    || !checkoutFlowLoadTestText.includes("function createCatalogSeed(headers)")
+    || !checkoutFlowLoadTestText.includes("/inventory-service/stock")
+    || !checkoutFlowLoadTestText.includes("quantity: 100000")) {
+  fail("load-tests/checkout-flow.js: checkout load test must self-seed product inventory and create per-user addresses");
+}
+const loadTestsReadmeText = fs.readFileSync(path.join(root, "load-tests", "README.md"), "utf8");
+if (!loadTestsReadmeText.includes("Optional: use an existing product/variant")
+    || !implementationText.includes("k6 run --env SCENARIO=smoke checkout-flow.js")) {
+  fail("load-test docs must document setup-time seeding and no-PRODUCT_ID smoke runs");
+}
+
 const wishlistProperties = propertiesFiles("wishlist-service");
 if (!wishlistProperties.some((file) => hasProperty(file, "clients.cart.url"))) {
   fail("wishlist-service: expected clients.cart.url property for Docker cart dependency override");

@@ -9,10 +9,9 @@
  *   Stress   : k6 run --env SCENARIO=stress   checkout-flow.js
  *   Soak     : k6 run --env SCENARIO=soak     checkout-flow.js
  *
- * Prerequisites (set once before running load tests):
- *   export PRODUCT_ID=<uuid>      # existing product in catalog
- *   export VARIANT_ID=<uuid>      # existing variant (optional)
- *   k6 run -e PRODUCT_ID=$PRODUCT_ID checkout-flow.js
+ * Product data is seeded during setup when PRODUCT_ID is not supplied.
+ * To reuse existing catalog data:
+ *   k6 run -e PRODUCT_ID=<uuid> -e VARIANT_ID=<uuid> checkout-flow.js
  */
 
 import http from "k6/http";
@@ -30,10 +29,10 @@ const ordersPlaced   = new Counter("orders_placed_total");
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
-const BASE_URL   = __ENV.BASE_URL   || "http://localhost:8081";
-const PRODUCT_ID = __ENV.PRODUCT_ID || "00000000-0000-0000-0000-000000000001";
+const BASE_URL   = __ENV.BASE_URL || "http://localhost:8081";
+const PRODUCT_ID = __ENV.PRODUCT_ID || null;
 const VARIANT_ID = __ENV.VARIANT_ID || null;
-const COUPON     = __ENV.COUPON     || null;
+const COUPON     = __ENV.COUPON || null;
 
 const SCENARIO = __ENV.SCENARIO || "smoke";
 
@@ -106,19 +105,84 @@ function extractData(resp) {
   }
 }
 
-// ── Setup — register one admin user for catalog seeding ──────────────────────
+function createCatalogSeed(headers) {
+  const suffix = randomString(8);
+  const brandResp = http.post(
+    `${BASE_URL}/catalog-service/add-brand?name=${encodeURIComponent(`LoadBrand_${suffix}`)}`,
+    null,
+    { headers }
+  );
+  const brand = extractData(brandResp);
+
+  const categoryResp = http.post(
+    `${BASE_URL}/catalog-service/addCategory?categoryName=${encodeURIComponent(`LoadCategory_${suffix}`)}`,
+    null,
+    { headers }
+  );
+  const category = extractData(categoryResp);
+
+  const subCategoryResp = http.post(
+    `${BASE_URL}/catalog-service/add-subcategory/${category.id}?subcategoryName=${encodeURIComponent(`LoadPhones_${suffix}`)}`,
+    null,
+    { headers }
+  );
+  const subCategory = extractData(subCategoryResp);
+
+  const productResp = http.post(
+    `${BASE_URL}/catalog-service/product/addProduct?brandId=${brand.id}&categoryId=${category.id}&subCategoryId=${subCategory.id}`,
+    jsonBody({
+      name: `Load Phone ${suffix}`,
+      description: "Load-test seeded product",
+      model: `LOAD-${suffix}`,
+      mrpPrice: 99999,
+      salePrice: 89999,
+      gstValue: 18,
+      status: 1,
+      discount: 10000,
+      images: [],
+      hasVariant: true,
+    }),
+    { headers }
+  );
+  const product = extractData(productResp);
+
+  const variantResp = http.post(
+    `${BASE_URL}/catalog-service/variant/add/${product.id}`,
+    jsonBody({
+      condition1Name: "Storage",
+      condition1Value: "256GB",
+      condition2Name: "Color",
+      condition2Value: "Load Black",
+      mrpPrice: 99999,
+      salePrice: 89999,
+    }),
+    { headers }
+  );
+  const variant = extractData(variantResp);
+
+  const stockResp = http.post(
+    `${BASE_URL}/inventory-service/stock`,
+    jsonBody({ productId: product.id, variantId: variant.id, quantity: 100000 }),
+    { headers }
+  );
+  check(stockResp, { "seed inventory 200": (r) => r.status === 200 || r.status === 201 });
+
+  return { productId: product.id, variantId: variant.id };
+}
+
+// ── Setup — register one user for optional catalog/inventory seeding ─────────
 
 export function setup() {
-  const adminEmail = `loadtest_admin_${randomString(6)}@test.com`;
+  const seedEmail = `loadtest_seed_${randomString(6)}@test.com`;
   http.post(
     `${BASE_URL}/auth-service/signup`,
-    jsonBody({ email: adminEmail, password: "Load@1234", firstName: "Load", lastName: "Admin", role: "USER" }),
+    jsonBody({ email: seedEmail, password: "Load@1234", firstName: "Load", lastName: "Seed", role: "USER" }),
     { headers: JSON_HEADERS }
   );
 
   const loginResp = http.post(
     `${BASE_URL}/auth-service/login`,
-    jsonBody({ email: adminEmail, password: "Load@1234" }),
+    jsonBody({ email: seedEmail, password: "Load@1234" }),
     { headers: JSON_HEADERS }
   );
 
@@ -126,22 +190,16 @@ export function setup() {
   const token = loginData ? (loginData.token || loginData) : "";
 
   let productId = PRODUCT_ID;
-  let addressId = null;
+  let variantId = VARIANT_ID;
 
-  if (token) {
+  if (token && !productId) {
     const headers = authHeaders(token);
-
-    // Create an address for the admin to reuse
-    const addrResp = http.post(
-      `${BASE_URL}/customer-service/address`,
-      jsonBody({ home: "1A", streetLocality: "Load Street", city: "TestCity", state: "TS", country: "IN", zipCode: 560001, landmark: "Gateway" }),
-      { headers }
-    );
-    const addrData = extractData(addrResp);
-    addressId = addrData ? addrData.id : null;
+    const seed = createCatalogSeed(headers);
+    productId = seed.productId;
+    variantId = seed.variantId;
   }
 
-  return { adminToken: token, productId, addressId };
+  return { seedToken: token, productId, variantId };
 }
 
 // ── Main VU scenario ──────────────────────────────────────────────────────────
@@ -150,8 +208,9 @@ export default function (data) {
   const email = `loaduser_${randomString(8)}@test.com`;
   const password = "Load@1234";
   let token = "";
-  let addressId = data.addressId;
+  let addressId = null;
   const productId = data.productId || PRODUCT_ID;
+  const variantId = data.variantId || VARIANT_ID;
 
   // ── 1. Register ────────────────────────────────────────────────────────────
   group("auth", function () {
@@ -209,7 +268,7 @@ export default function (data) {
   // ── 5. Add to cart ─────────────────────────────────────────────────────────
   group("cart", function () {
     const body = { productId, qty: 1 };
-    if (VARIANT_ID) body.variantId = VARIANT_ID;
+    if (variantId) body.variantId = variantId;
 
     const addResp = http.post(
       `${BASE_URL}/cart-service/cart/add`,

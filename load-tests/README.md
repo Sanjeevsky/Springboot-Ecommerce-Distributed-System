@@ -12,9 +12,9 @@ brew install k6          # macOS
 # System must be running
 docker-compose up -d
 
-# Seed a product and get its ID (run the e2e smoke test first, or use Postman)
+# Optional: use an existing product/variant instead of setup-time seed data
 export PRODUCT_ID=<uuid-from-catalog>
-export VARIANT_ID=<uuid-from-catalog>    # optional
+export VARIANT_ID=<uuid-from-catalog>
 ```
 
 ## Test Files
@@ -32,7 +32,7 @@ cd load-tests
 # Smoke test (quick sanity check)
 k6 run --env SCENARIO=smoke checkout-flow.js
 
-# With a specific product
+# With a specific existing product
 k6 run --env PRODUCT_ID=$PRODUCT_ID --env SCENARIO=smoke checkout-flow.js
 
 # Load test (20 VUs sustained)
