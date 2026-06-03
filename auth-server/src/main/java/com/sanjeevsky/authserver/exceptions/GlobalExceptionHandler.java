@@ -34,4 +34,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> credentialMismatchExceptionHandler(CredentialsMismatchException ex) {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.UNAUTHORIZED);
     }
+
+    @ExceptionHandler(InvalidAuthRequestException.class)
+    public ResponseEntity<ApiResponse<Void>> invalidAuthRequestExceptionHandler(InvalidAuthRequestException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
+    }
 }

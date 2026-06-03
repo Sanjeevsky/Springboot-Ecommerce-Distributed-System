@@ -1,6 +1,7 @@
 package com.sanjeevsky.authserver.service;
 
 import com.sanjeevsky.authserver.exceptions.CredentialsMismatchException;
+import com.sanjeevsky.authserver.exceptions.InvalidAuthRequestException;
 import com.sanjeevsky.authserver.exceptions.NoSuchUserExistsException;
 import com.sanjeevsky.authserver.exceptions.UserAlreadyExistsException;
 import com.sanjeevsky.authserver.jwtgenerator.JwtTokenGenerator;
@@ -31,6 +32,7 @@ public class UserServiceImp implements UserService {
 
     @Override
     public User registerUser(User user) {
+        validateRegistrationRequest(user);
         if (repository.findById(user.getEmail()).isPresent()) {
             throw new UserAlreadyExistsException("User Already Exists with this Email...!!");
         }
@@ -40,6 +42,7 @@ public class UserServiceImp implements UserService {
 
     @Override
     public LoginDTO authenticateUser(UserDTO user) {
+        validateLoginRequest(user);
         Optional<User> stored = repository.findById(user.getEmail());
         if (stored.isPresent()) {
             if (passwordEncoder.matches(user.getPassword(), stored.get().getPassword())) {
@@ -54,6 +57,7 @@ public class UserServiceImp implements UserService {
 
     @Override
     public String updatePassword(UpdatePasswordRequest request) {
+        validateUpdatePasswordRequest(request);
         User user = repository.findById(request.getEmail())
                 .orElseThrow(() -> new NoSuchUserExistsException("No user found with email: " + request.getEmail()));
         if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
@@ -62,5 +66,54 @@ public class UserServiceImp implements UserService {
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         repository.save(user);
         return "Password updated successfully";
+    }
+
+    private void validateRegistrationRequest(User user) {
+        if (user == null) {
+            throw new InvalidAuthRequestException("User request is required");
+        }
+        user.setEmail(normalizeEmail(user.getEmail()));
+        validatePassword(user.getPassword(), "Password");
+    }
+
+    private void validateLoginRequest(UserDTO user) {
+        if (user == null) {
+            throw new InvalidAuthRequestException("Login request is required");
+        }
+        user.setEmail(normalizeEmail(user.getEmail()));
+        validatePassword(user.getPassword(), "Password");
+    }
+
+    private void validateUpdatePasswordRequest(UpdatePasswordRequest request) {
+        if (request == null) {
+            throw new InvalidAuthRequestException("Update password request is required");
+        }
+        request.setEmail(normalizeEmail(request.getEmail()));
+        validateRequiredPassword(request.getOldPassword(), "Old password");
+        validatePassword(request.getNewPassword(), "New password");
+    }
+
+    private String normalizeEmail(String email) {
+        String normalized = email == null ? null : email.trim();
+        if (normalized == null || normalized.isEmpty()) {
+            throw new InvalidAuthRequestException("Email is required");
+        }
+        if (!normalized.contains("@")) {
+            throw new InvalidAuthRequestException("Invalid email format");
+        }
+        return normalized;
+    }
+
+    private void validatePassword(String password, String fieldName) {
+        validateRequiredPassword(password, fieldName);
+        if (password.length() < 6) {
+            throw new InvalidAuthRequestException(fieldName + " must be at least 6 characters");
+        }
+    }
+
+    private void validateRequiredPassword(String password, String fieldName) {
+        if (password == null || password.trim().isEmpty()) {
+            throw new InvalidAuthRequestException(fieldName + " is required");
+        }
     }
 }
