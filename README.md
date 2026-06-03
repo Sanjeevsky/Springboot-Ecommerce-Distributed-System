@@ -179,7 +179,7 @@ GET    /order-service/order/{id}
 GET    /order-service/orders
 ```
 
-`POST /order-service/order` and `POST /payment-service/initiate` accept an optional `Idempotency-Key` header. Retries with the same key for the same user return the existing order/payment and do not replay side effects such as payment initiation, cart clearing, coupon application, or Kafka event publication. The Postman runner collections generate per-run idempotency keys automatically.
+`POST /order-service/order` and `POST /payment-service/initiate` accept an optional `Idempotency-Key` header. Retries with the same key for the same user return the existing order/payment and do not replay side effects such as payment initiation, cart clearing, coupon application, or Kafka event publication. Payment retries that reuse a key for a different order or amount return `400 Bad Request`. The Postman runner collections generate per-run idempotency keys automatically.
 
 Order creation pre-checks the current inventory entry for the exact product variant in the cart and returns `400 Bad Request` with an insufficient-stock message when requested quantity exceeds available stock.
 
@@ -284,11 +284,11 @@ GitHub Actions runs Postman static validation and Java 11 module tests on pushes
 | catalog-service | 28 | — |
 | customer-service | 13 | — |
 | order-service | 29 | — |
-| payment-service | 22 | 11 |
+| payment-service | 24 | 12 |
 | shopping-cart-service | 14 | 6 |
 | coupon-service | 13 | 8 |
 | review-service | 19 | 8 |
 | wishlist-service | 8 | 8 |
 | inventory-service | 18 | 8 |
 | notification-service | 11 | 5 |
-| **Total** | **183** | **62** |
+| **Total** | **185** | **63** |

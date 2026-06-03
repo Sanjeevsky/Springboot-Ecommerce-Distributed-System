@@ -48,7 +48,11 @@ class PaymentIntegrationTest {
     private static final String USER    = "buyer@example.com";
 
     private String initiateBody(UUID orderId) {
-        return "{\"orderId\":\"" + orderId + "\",\"userId\":\"" + USER + "\",\"amount\":500.0}";
+        return initiateBody(orderId, 500.0);
+    }
+
+    private String initiateBody(UUID orderId, double amount) {
+        return "{\"orderId\":\"" + orderId + "\",\"userId\":\"" + USER + "\",\"amount\":" + amount + "}";
     }
 
     private String extractPaymentId(MvcResult result) throws Exception {
@@ -88,6 +92,24 @@ class PaymentIntegrationTest {
                         .content(initiateBody(oid)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.id").value(paymentId));
+    }
+
+    @Test
+    void initiatePayment_withSameIdempotencyKeyDifferentPayload_returns400() throws Exception {
+        UUID oid = UUID.fromString("88888888-8888-8888-8888-888888888888");
+        mockMvc.perform(post("/payment-service/initiate")
+                        .header("Idempotency-Key", "payment-conflict-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(initiateBody(oid)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/payment-service/initiate")
+                        .header("Idempotency-Key", "payment-conflict-1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(initiateBody(oid, 600.0)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("different payment request")));
     }
 
     // ─── Confirm ──────────────────────────────────────────────────────────────

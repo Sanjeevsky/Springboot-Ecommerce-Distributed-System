@@ -1,6 +1,7 @@
 package com.sanjeevsky.paymentservice.service.impl;
 
 import com.sanjeevsky.paymentservice.events.PaymentEventPublisher;
+import com.sanjeevsky.paymentservice.exceptions.InvalidPaymentRequestException;
 import com.sanjeevsky.paymentservice.exceptions.InvalidPaymentTransitionException;
 import com.sanjeevsky.paymentservice.exceptions.PaymentNotFoundException;
 import com.sanjeevsky.paymentservice.model.Payment;
@@ -14,6 +15,7 @@ import com.sanjeevsky.platform.events.PaymentRefundedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @Slf4j
@@ -37,6 +39,7 @@ public class PaymentServiceImpl implements PaymentService {
         if (idempotencyKey != null) {
             return paymentRepository.findByUserIdAndIdempotencyKey(request.getUserId(), idempotencyKey)
                     .map(existing -> {
+                        validateIdempotentReplay(existing, request, idempotencyKey);
                         log.info("Returning existing paymentId: {} for userId: {}, idempotencyKey: {}",
                                 existing.getId(), request.getUserId(), idempotencyKey);
                         return existing;
@@ -155,6 +158,14 @@ public class PaymentServiceImpl implements PaymentService {
         }
         String trimmed = idempotencyKey.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void validateIdempotentReplay(Payment existing, PaymentRequest request, String idempotencyKey) {
+        if (!Objects.equals(existing.getOrderId(), request.getOrderId())
+                || Double.compare(existing.getAmount(), request.getAmount()) != 0) {
+            throw new InvalidPaymentRequestException(
+                    "Idempotency key " + idempotencyKey + " was already used for a different payment request");
+        }
     }
 
     private InvalidPaymentTransitionException invalidTransition(Payment payment, PaymentStatus targetStatus) {

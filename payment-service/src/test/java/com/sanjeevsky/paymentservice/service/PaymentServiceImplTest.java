@@ -1,6 +1,7 @@
 package com.sanjeevsky.paymentservice.service;
 
 import com.sanjeevsky.paymentservice.events.PaymentEventPublisher;
+import com.sanjeevsky.paymentservice.exceptions.InvalidPaymentRequestException;
 import com.sanjeevsky.paymentservice.exceptions.InvalidPaymentTransitionException;
 import com.sanjeevsky.paymentservice.exceptions.PaymentNotFoundException;
 import com.sanjeevsky.paymentservice.model.Payment;
@@ -95,6 +96,38 @@ class PaymentServiceImplTest {
         Payment result = paymentService.initiatePayment(req);
 
         assertThat(result).isSameAs(existing);
+        verify(paymentRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void initiatePayment_withSameIdempotencyKeyDifferentOrder_throwsInvalidPaymentRequestException() {
+        Payment existing = pendingPayment();
+        existing.setIdempotencyKey("payment-1");
+        PaymentRequest req = new PaymentRequest(UUID.randomUUID(), USER_ID, 250.0);
+        req.setIdempotencyKey("payment-1");
+        when(paymentRepository.findByUserIdAndIdempotencyKey(USER_ID, "payment-1")).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> paymentService.initiatePayment(req))
+                .isInstanceOf(InvalidPaymentRequestException.class)
+                .hasMessageContaining("already used for a different payment request");
+
+        verify(paymentRepository, never()).save(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
+    @Test
+    void initiatePayment_withSameIdempotencyKeyDifferentAmount_throwsInvalidPaymentRequestException() {
+        Payment existing = pendingPayment();
+        existing.setIdempotencyKey("payment-1");
+        PaymentRequest req = new PaymentRequest(ORDER_ID, USER_ID, 300.0);
+        req.setIdempotencyKey("payment-1");
+        when(paymentRepository.findByUserIdAndIdempotencyKey(USER_ID, "payment-1")).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> paymentService.initiatePayment(req))
+                .isInstanceOf(InvalidPaymentRequestException.class)
+                .hasMessageContaining("already used for a different payment request");
+
         verify(paymentRepository, never()).save(any());
         verifyNoInteractions(eventPublisher);
     }

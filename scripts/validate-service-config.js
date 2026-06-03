@@ -190,6 +190,12 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
   for (const file of files) {
     const text = fs.readFileSync(file, "utf8");
     const relativeFile = path.relative(root, file);
+    for (const configImport of propertyValues(file, "spring.config.import")
+      .filter((value) => value.includes("configserver:"))) {
+      if (!configImport.endsWith("/")) {
+        fail(`${relativeFile}: configserver spring.config.import URLs must end with / for Spring Config Data resolution`);
+      }
+    }
     if (/^spring\.datasource\.password\s*=\s*123456\s*$/m.test(text)) {
       fail(`${relativeFile}: datasource password must read from MYSQL_PASSWORD with a local fallback`);
     }
@@ -482,6 +488,23 @@ if (readmeText.includes("customer-service ──► order-events")
 if (!implementationText.includes("| order-service | 8092 | ✅ | ✅ | ✅ | pub/cons | feign | ✅ |")
     || !implementationText.includes("| inventory-service | 8088 | ✅ | ✅ | ✅ | pub/cons | — | ✅ |")) {
   fail("implementation.md: service matrix must document order-service and inventory-service as Kafka pub/cons services");
+}
+
+const paymentServiceImplText = fs.readFileSync(
+  path.join(root, "payment-service", "src", "main", "java", "com", "sanjeevsky", "paymentservice", "service", "impl", "PaymentServiceImpl.java"),
+  "utf8"
+);
+const paymentIntegrationTestText = fs.readFileSync(
+  path.join(root, "payment-service", "src", "test", "java", "com", "sanjeevsky", "paymentservice", "PaymentIntegrationTest.java"),
+  "utf8"
+);
+if (!paymentServiceImplText.includes("validateIdempotentReplay")
+    || !paymentServiceImplText.includes("InvalidPaymentRequestException")
+    || !paymentServiceImplText.includes("Double.compare")) {
+  fail("payment-service: idempotent payment replays must reject conflicting orderId/amount payloads");
+}
+if (!paymentIntegrationTestText.includes("initiatePayment_withSameIdempotencyKeyDifferentPayload_returns400")) {
+  fail("payment-service: integration tests must cover conflicting idempotency-key payment initiation");
 }
 
 const prometheusText = fs.readFileSync(path.join(root, "observability", "prometheus.yml"), "utf8");
