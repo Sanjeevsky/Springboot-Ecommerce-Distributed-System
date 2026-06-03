@@ -1329,6 +1329,25 @@ if (!verifyLocalText.includes("RUN_DIRECT_HEALTH_CHECKS")
     || !verifyLocalText.includes("INVENTORY_SERVICE_PORT")) {
   fail("scripts/verify-local.sh: local smoke verifier must wait for direct service actuator health before Postman runs");
 }
+for (const requiredHealthCheckMarker of [
+  "$BASE_URL/actuator/health",
+  "${CLOUD_CONFIG_PORT:-8071}",
+  "${AUTH_SERVICE_PORT:-8083}",
+  "${CUSTOMER_SERVICE_PORT:-8082}",
+  "${CATALOG_SERVICE_PORT:-8084}",
+  "${SHOPPING_CART_SERVICE_PORT:-8086}",
+  "${PAYMENT_SERVICE_PORT:-8085}",
+  "${INVENTORY_SERVICE_PORT:-8088}",
+  "${ORDER_SERVICE_PORT:-8092}",
+  "${NOTIFICATION_SERVICE_PORT:-8087}",
+  "${COUPON_SERVICE_PORT:-8089}",
+  "${WISHLIST_SERVICE_PORT:-8091}",
+  "${REVIEW_SERVICE_PORT:-8090}",
+]) {
+  if (!verifyLocalText.includes(requiredHealthCheckMarker)) {
+    fail(`scripts/verify-local.sh: missing direct health check marker ${requiredHealthCheckMarker}`);
+  }
+}
 
 if (!verifyLocalText.includes("CONFIGSERVER")) {
   fail("scripts/verify-local.sh: local smoke verifier must wait for cloud-config Eureka registration");
