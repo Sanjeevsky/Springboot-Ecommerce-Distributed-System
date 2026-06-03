@@ -456,6 +456,15 @@ for (const service of Object.keys(expectedApplicationNames)) {
     fail(`docker-compose.yml: missing service block for ${service}`);
   } else if (!block.includes("restart: unless-stopped")) {
     fail(`docker-compose.yml: ${service} must use restart: unless-stopped for local smoke stability`);
+  } else {
+    const importsConfigServer = propertiesFiles(service)
+      .some((file) => propertyValues(file, "spring.config.import")
+        .some((value) => value.includes("configserver:")));
+    if (importsConfigServer
+        && (!block.includes("SPRING_CLOUD_CONFIG_ENABLED=false")
+          || !block.includes("SPRING_CLOUD_CONFIG_IMPORT_CHECK_ENABLED=false"))) {
+      fail(`docker-compose.yml: ${service} must disable Spring Cloud Config client for Docker startup stability`);
+    }
   }
 }
 
