@@ -74,6 +74,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Payment confirmPayment(UUID paymentId) {
+        validatePaymentId(paymentId);
         log.info("Confirming payment for paymentId: {}", paymentId);
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found with id: " + paymentId));
@@ -99,6 +100,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Payment failPayment(UUID paymentId) {
+        validatePaymentId(paymentId);
         log.info("Failing payment for paymentId: {}", paymentId);
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found with id: " + paymentId));
@@ -115,6 +117,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Payment getByPaymentId(UUID paymentId) {
+        validatePaymentId(paymentId);
         log.info("Fetching payment for paymentId: {}", paymentId);
         return paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found with id: " + paymentId));
@@ -122,6 +125,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Payment refundPayment(UUID paymentId) {
+        validatePaymentId(paymentId);
         log.info("Refunding payment for paymentId: {}", paymentId);
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found with id: " + paymentId));
@@ -147,6 +151,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public PaymentStatus getStatusByOrderId(UUID orderId) {
+        validateOrderId(orderId);
         log.info("Fetching payment status for orderId: {}", orderId);
         Payment payment = paymentRepository.findByOrderId(orderId)
                 .orElseThrow(() -> new PaymentNotFoundException("Payment not found for orderId: " + orderId));
@@ -176,6 +181,18 @@ public class PaymentServiceImpl implements PaymentService {
             throw new InvalidPaymentRequestException("Payment amount must be greater than zero");
         }
         request.setUserId(userId);
+    }
+
+    private void validatePaymentId(UUID paymentId) {
+        if (paymentId == null) {
+            throw new InvalidPaymentRequestException("Payment id is required");
+        }
+    }
+
+    private void validateOrderId(UUID orderId) {
+        if (orderId == null) {
+            throw new InvalidPaymentRequestException("Payment orderId is required");
+        }
     }
 
     private void validateIdempotentReplay(Payment existing, PaymentRequest request, String idempotencyKey) {

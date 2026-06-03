@@ -227,6 +227,16 @@ class PaymentServiceImplTest {
                 .hasMessageContaining(PAYMENT_ID.toString());
     }
 
+    @Test
+    void confirmPayment_nullPaymentId_throwsInvalidPaymentRequestException() {
+        assertThatThrownBy(() -> paymentService.confirmPayment(null))
+                .isInstanceOf(InvalidPaymentRequestException.class)
+                .hasMessage("Payment id is required");
+
+        verify(paymentRepository, never()).findById(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
     // ─── failPayment ───────────────────────────────────────────────────────────
 
     @Test
@@ -284,6 +294,16 @@ class PaymentServiceImplTest {
                 .isInstanceOf(PaymentNotFoundException.class);
     }
 
+    @Test
+    void failPayment_nullPaymentId_throwsInvalidPaymentRequestException() {
+        assertThatThrownBy(() -> paymentService.failPayment(null))
+                .isInstanceOf(InvalidPaymentRequestException.class)
+                .hasMessage("Payment id is required");
+
+        verify(paymentRepository, never()).findById(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
     // ─── getByPaymentId ────────────────────────────────────────────────────────
 
     @Test
@@ -302,6 +322,15 @@ class PaymentServiceImplTest {
 
         assertThatThrownBy(() -> paymentService.getByPaymentId(PAYMENT_ID))
                 .isInstanceOf(PaymentNotFoundException.class);
+    }
+
+    @Test
+    void getByPaymentId_nullPaymentId_throwsInvalidPaymentRequestException() {
+        assertThatThrownBy(() -> paymentService.getByPaymentId(null))
+                .isInstanceOf(InvalidPaymentRequestException.class)
+                .hasMessage("Payment id is required");
+
+        verify(paymentRepository, never()).findById(any());
     }
 
     // ─── refundPayment ────────────────────────────────────────────────────────
@@ -367,6 +396,16 @@ class PaymentServiceImplTest {
                 .hasMessageContaining(PAYMENT_ID.toString());
     }
 
+    @Test
+    void refundPayment_nullPaymentId_throwsInvalidPaymentRequestException() {
+        assertThatThrownBy(() -> paymentService.refundPayment(null))
+                .isInstanceOf(InvalidPaymentRequestException.class)
+                .hasMessage("Payment id is required");
+
+        verify(paymentRepository, never()).findById(any());
+        verifyNoInteractions(eventPublisher);
+    }
+
     // ─── getStatusByOrderId ────────────────────────────────────────────────────
 
     @Test
@@ -386,5 +425,14 @@ class PaymentServiceImplTest {
         assertThatThrownBy(() -> paymentService.getStatusByOrderId(ORDER_ID))
                 .isInstanceOf(PaymentNotFoundException.class)
                 .hasMessageContaining(ORDER_ID.toString());
+    }
+
+    @Test
+    void getStatusByOrderId_nullOrderId_throwsInvalidPaymentRequestException() {
+        assertThatThrownBy(() -> paymentService.getStatusByOrderId(null))
+                .isInstanceOf(InvalidPaymentRequestException.class)
+                .hasMessage("Payment orderId is required");
+
+        verify(paymentRepository, never()).findByOrderId(any());
     }
 }
