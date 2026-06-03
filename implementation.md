@@ -96,7 +96,9 @@ management.endpoints.web.exposure.include=*
 **1.3 Docker-compose (completed)**
 - Observability starts with the default stack.
 - Business services run by default.
-- Docker overrides enable Zipkin and point Kafka clients at `kafka:29092`.
+- Docker keeps Zipkin available but leaves service tracing disabled by default; set `SPRING_ZIPKIN_ENABLED=true` to emit spans.
+- Docker disables Spring Cloud Config clients for app containers so local startup uses packaged service properties instead of resolving `localhost:8071` inside containers.
+- Docker overrides point Kafka clients at `kafka:29092`.
 - Kafka UI is available at `http://localhost:8080`.
 - Grafana provisioning is mounted from `observability/grafana`.
 

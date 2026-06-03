@@ -125,6 +125,7 @@ Zipkin runs in the Docker stack, but service tracing is disabled by default to k
 
 Auth tokens are signed by `auth-server` and verified by `api-gateway`; both read the same `JWT_SECRET` value. Docker Compose defaults it to `local-dev-secret` for local runs, and you can override it before starting the stack.
 Local infrastructure credentials keep development defaults but are overridable: `MYSQL_ROOT_PASSWORD` controls Docker MySQL and service datasource passwords, `MYSQL_PASSWORD` controls direct local service properties, and Spring Boot Admin uses `SPRING_SECURITY_USER_PASSWORD` / `SPRING_BOOT_ADMIN_CLIENT_PASSWORD`.
+Docker Compose disables the Spring Cloud Config client for app containers so the local stack uses packaged service properties and does not try to resolve `localhost:8071` from inside containers. The `cloud-config` service still runs for manual config-server checks.
 
 The API Gateway uses explicit standard-prefix routes such as `/cart-service/**`, `/order-service/**`, and `/catalog-service/**`. Spring Cloud Gateway discovery-locator routes are disabled so raw service-id paths such as `/shopping-cart-service/**` are not exposed alongside the standard application routes.
 
