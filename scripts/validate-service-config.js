@@ -1286,6 +1286,9 @@ const verifyLocalText = fs.readFileSync(path.join(root, "scripts", "verify-local
 const buildDockerJarsText = fs.readFileSync(path.join(root, "scripts", "build-docker-jars.sh"), "utf8");
 const ciWorkflowText = fs.readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8");
 const expectedServiceModules = Object.keys(expectedApplicationNames);
+const expectedRequiredEurekaApps = Object.entries(expectedApplicationNames)
+  .filter(([service]) => !["service-discovery", "spring-server"].includes(service))
+  .map(([, applicationName]) => applicationName.toUpperCase());
 requireMavenTestFlags("scripts/verify-local.sh", verifyLocalText);
 requireMavenTestFlags(".github/workflows/ci.yml", ciWorkflowText);
 requireSameOrderedValues(
@@ -1305,6 +1308,12 @@ requireSameValues(
   expectedServiceModules,
   shellArrayValues(buildDockerJarsText, "DEFAULT_MODULES", "scripts/build-docker-jars.sh"),
   "scripts/build-docker-jars.sh"
+);
+requireSameValues(
+  "required Eureka app",
+  expectedRequiredEurekaApps,
+  shellArrayValues(verifyLocalText, "REQUIRED_EUREKA_APPS"),
+  "scripts/verify-local.sh"
 );
 
 if (!verifyLocalText.includes("MAVEN_JAVA_HOME")
