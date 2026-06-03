@@ -32,20 +32,20 @@ cd load-tests
 # Smoke test (quick sanity check)
 k6 run --env SCENARIO=smoke checkout-flow.js
 
-# With a specific existing product
-k6 run --env PRODUCT_ID=$PRODUCT_ID --env SCENARIO=smoke checkout-flow.js
-
 # Load test (20 VUs sustained)
-k6 run --env PRODUCT_ID=$PRODUCT_ID --env SCENARIO=load checkout-flow.js
+k6 run --env SCENARIO=load checkout-flow.js
 
 # Stress test (ramps to 100 VUs)
-k6 run --env PRODUCT_ID=$PRODUCT_ID --env SCENARIO=stress checkout-flow.js
+k6 run --env SCENARIO=stress checkout-flow.js
 
 # Soak test (10 VUs for 30 min)
-k6 run --env PRODUCT_ID=$PRODUCT_ID --env SCENARIO=soak checkout-flow.js
+k6 run --env SCENARIO=soak checkout-flow.js
 
-# With coupon code
-k6 run --env PRODUCT_ID=$PRODUCT_ID --env COUPON=SAVE10 --env SCENARIO=load checkout-flow.js
+# With an existing coupon code
+k6 run --env COUPON=SAVE10 --env SCENARIO=load checkout-flow.js
+
+# With a specific existing product
+k6 run --env PRODUCT_ID=$PRODUCT_ID --env VARIANT_ID=$VARIANT_ID --env SCENARIO=smoke checkout-flow.js
 
 # Catalog browse
 k6 run catalog-browse.js

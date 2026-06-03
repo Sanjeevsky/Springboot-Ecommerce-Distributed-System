@@ -1148,8 +1148,13 @@ if (checkoutFlowLoadTestText.includes('PRODUCT_ID || "00000000-0000-0000-0000-00
 }
 const loadTestsReadmeText = fs.readFileSync(path.join(root, "load-tests", "README.md"), "utf8");
 if (!loadTestsReadmeText.includes("Optional: use existing catalog data")
-    || !implementationText.includes("k6 run --env SCENARIO=smoke checkout-flow.js")) {
-  fail("load-test docs must document setup-time seeding and no-PRODUCT_ID smoke runs");
+    || !loadTestsReadmeText.includes("k6 run --env SCENARIO=smoke checkout-flow.js")
+    || !loadTestsReadmeText.includes("k6 run --env SCENARIO=load checkout-flow.js")
+    || !loadTestsReadmeText.includes("k6 run --env SCENARIO=stress checkout-flow.js")
+    || !implementationText.includes("k6 run --env SCENARIO=smoke checkout-flow.js")
+    || !implementationText.includes("k6 run --env SCENARIO=load checkout-flow.js")
+    || !implementationText.includes("k6 run --env SCENARIO=stress checkout-flow.js")) {
+  fail("load-test docs must document setup-time seeding and no-PRODUCT_ID checkout runs");
 }
 if (!loadTestsReadmeText.includes("k6 run catalog-browse.js")
     || !implementationText.includes("k6 run catalog-browse.js")) {

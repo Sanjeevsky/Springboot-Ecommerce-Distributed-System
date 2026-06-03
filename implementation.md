@@ -317,14 +317,14 @@ cd load-tests
 # Smoke (quick sanity — 2 VUs, 1 min)
 k6 run --env SCENARIO=smoke checkout-flow.js
 
-# Optional: reuse an existing seeded product
-k6 run --env PRODUCT_ID=$PRODUCT_ID --env VARIANT_ID=$VARIANT_ID --env SCENARIO=smoke checkout-flow.js
-
 # Load (20 VUs sustained)
-k6 run --env PRODUCT_ID=$PRODUCT_ID --env SCENARIO=load checkout-flow.js
+k6 run --env SCENARIO=load checkout-flow.js
 
 # Stress (ramps to 100 VUs)
-k6 run --env PRODUCT_ID=$PRODUCT_ID --env SCENARIO=stress checkout-flow.js
+k6 run --env SCENARIO=stress checkout-flow.js
+
+# Optional: reuse an existing seeded product
+k6 run --env PRODUCT_ID=$PRODUCT_ID --env VARIANT_ID=$VARIANT_ID --env SCENARIO=smoke checkout-flow.js
 
 # Catalog reads (Redis cache)
 k6 run catalog-browse.js
