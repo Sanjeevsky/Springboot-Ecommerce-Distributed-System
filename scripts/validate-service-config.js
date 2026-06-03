@@ -490,6 +490,24 @@ if (!implementationText.includes("| order-service | 8092 | ✅ | ✅ | ✅ | pub
   fail("implementation.md: service matrix must document order-service and inventory-service as Kafka pub/cons services");
 }
 
+const orderServiceImplText = fs.readFileSync(
+  path.join(root, "order-service", "src", "main", "java", "com", "sanjeevsky", "orderservice", "service", "impl", "OrderServiceImpl.java"),
+  "utf8"
+);
+const orderServiceTestText = fs.readFileSync(
+  path.join(root, "order-service", "src", "test", "java", "com", "sanjeevsky", "orderservice", "service", "OrderServiceImplTest.java"),
+  "utf8"
+);
+if (!orderServiceImplText.includes("validateIdempotentReplay")
+    || !orderServiceImplText.includes("getOriginalAddressId")
+    || !orderServiceImplText.includes("getCouponCode")) {
+  fail("order-service: idempotent order replays must reject conflicting address/coupon payloads");
+}
+if (!orderServiceTestText.includes("createOrder_withSameIdempotencyKeyDifferentAddress_throwsInvalidRequestException")
+    || !orderServiceTestText.includes("createOrder_withSameIdempotencyKeyDifferentCoupon_throwsInvalidRequestException")) {
+  fail("order-service: unit tests must cover conflicting idempotency-key order creation");
+}
+
 const paymentServiceImplText = fs.readFileSync(
   path.join(root, "payment-service", "src", "main", "java", "com", "sanjeevsky", "paymentservice", "service", "impl", "PaymentServiceImpl.java"),
   "utf8"

@@ -74,7 +74,10 @@ class OrderServiceImplTest {
                 .userId(USER)
                 .status(OrderStatus.PENDING)
                 .paymentId(PAYMENT_ID)
-                .shippingAddress(ShippingAddress.builder().city("NYC").build())
+                .shippingAddress(ShippingAddress.builder()
+                        .originalAddressId(ADDRESS_ID)
+                        .city("NYC")
+                        .build())
                 .orderItems(List.of(OrderItem.builder()
                         .productId(UUID.randomUUID())
                         .variantId(UUID.randomUUID())
@@ -209,6 +212,35 @@ class OrderServiceImplTest {
     }
 
     @Test
+    void createOrder_withSameIdempotencyKeyDifferentAddress_throwsInvalidRequestException() {
+        pendingOrder.setIdempotencyKey("checkout-1");
+        when(orderRepository.findByUserIdAndIdempotencyKey(USER, "checkout-1"))
+                .thenReturn(Optional.of(pendingOrder));
+
+        assertThatThrownBy(() -> orderService.createOrder(USER, UUID.randomUUID(), null, "checkout-1"))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessageContaining("different order request");
+
+        verify(orderRepository, never()).save(any());
+        verifyNoInteractions(cartFeignClient, customerFeignClient, couponFeignClient, paymentFeignClient, eventPublisher);
+    }
+
+    @Test
+    void createOrder_withSameIdempotencyKeyDifferentCoupon_throwsInvalidRequestException() {
+        pendingOrder.setIdempotencyKey("checkout-1");
+        pendingOrder.setCouponCode("SAVE10");
+        when(orderRepository.findByUserIdAndIdempotencyKey(USER, "checkout-1"))
+                .thenReturn(Optional.of(pendingOrder));
+
+        assertThatThrownBy(() -> orderService.createOrder(USER, ADDRESS_ID, "SAVE20", "checkout-1"))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessageContaining("different order request");
+
+        verify(orderRepository, never()).save(any());
+        verifyNoInteractions(cartFeignClient, customerFeignClient, couponFeignClient, paymentFeignClient, eventPublisher);
+    }
+
+    @Test
     void createOrder_withSameIdempotencyKey_completesExistingOrderWithoutPayment() {
         pendingOrder.setIdempotencyKey("checkout-1");
         pendingOrder.setPaymentId(null);
@@ -327,6 +359,7 @@ class OrderServiceImplTest {
 
         assertThat(result.getOrderTotal()).isEqualTo(90.0);
         assertThat(result.getDiscount()).isEqualTo(10.0);
+        assertThat(result.getCouponCode()).isEqualTo("SAVE10");
         verify(couponFeignClient).applyCoupon("SAVE10");
     }
 
@@ -348,6 +381,7 @@ class OrderServiceImplTest {
 
         assertThat(result.getOrderTotal()).isEqualTo(100.0);
         assertThat(result.getDiscount()).isEqualTo(0.0);
+        assertThat(result.getCouponCode()).isEqualTo("BADCODE");
         verify(couponFeignClient, org.mockito.Mockito.never()).applyCoupon(any());
     }
 

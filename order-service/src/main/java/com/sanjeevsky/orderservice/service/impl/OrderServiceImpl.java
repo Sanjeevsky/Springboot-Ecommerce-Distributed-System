@@ -64,12 +64,14 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public Order createOrder(String userId, UUID addressId, String couponCode, String idempotencyKey) {
         String normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
+        String normalizedCouponCode = normalizeCouponCode(couponCode);
         log.info("Creating order for user={}, addressId={}, couponCode={}, idempotencyKey={}",
-                userId, addressId, couponCode, normalizedIdempotencyKey);
+                userId, addressId, normalizedCouponCode, normalizedIdempotencyKey);
 
         if (normalizedIdempotencyKey != null) {
             return orderRepository.findByUserIdAndIdempotencyKey(userId, normalizedIdempotencyKey)
                     .map(existing -> {
+                        validateIdempotentReplay(existing, addressId, normalizedCouponCode, normalizedIdempotencyKey);
                         if (existing.getPaymentId() == null) {
                             log.info("Completing existing order id={} for user={}, idempotencyKey={}",
                                     existing.getId(), userId, normalizedIdempotencyKey);
@@ -79,10 +81,10 @@ public class OrderServiceImpl implements OrderService {
                                 existing.getId(), userId, normalizedIdempotencyKey);
                         return existing;
                     })
-                    .orElseGet(() -> createNewOrder(userId, addressId, couponCode, normalizedIdempotencyKey));
+                    .orElseGet(() -> createNewOrder(userId, addressId, normalizedCouponCode, normalizedIdempotencyKey));
         }
 
-        return createNewOrder(userId, addressId, couponCode, null);
+        return createNewOrder(userId, addressId, normalizedCouponCode, null);
     }
 
     private Order createNewOrder(String userId, UUID addressId, String couponCode, String idempotencyKey) {
@@ -125,13 +127,11 @@ public class OrderServiceImpl implements OrderService {
 
         double cartTotal = cart.getTotalAmount();
         double discount = 0;
-        String appliedCoupon = null;
 
         if (couponCode != null && !couponCode.isBlank()) {
             CouponValidationResult validation = couponFeignClient.validateCoupon(couponCode, cartTotal);
             if (validation.isValid()) {
                 discount = validation.getDiscountAmount();
-                appliedCoupon = couponCode;
                 log.info("Coupon {} applied: discount={}", couponCode, discount);
                 couponFeignClient.applyCoupon(couponCode);
             } else {
@@ -150,6 +150,7 @@ public class OrderServiceImpl implements OrderService {
                 .discount(discount)
                 .shippingCharges(0)
                 .idempotencyKey(idempotencyKey)
+                .couponCode(couponCode)
                 .build();
 
         orderItems.forEach(item -> item.setOrder(order));
@@ -248,6 +249,25 @@ public class OrderServiceImpl implements OrderService {
         }
         String trimmed = idempotencyKey.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String normalizeCouponCode(String couponCode) {
+        if (couponCode == null) {
+            return null;
+        }
+        String trimmed = couponCode.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void validateIdempotentReplay(Order existing, UUID addressId, String couponCode, String idempotencyKey) {
+        UUID existingAddressId = existing.getShippingAddress() == null
+                ? null
+                : existing.getShippingAddress().getOriginalAddressId();
+        if (!Objects.equals(existingAddressId, addressId)
+                || !Objects.equals(normalizeCouponCode(existing.getCouponCode()), couponCode)) {
+            throw new InvalidRequestException(
+                    "Idempotency key " + idempotencyKey + " was already used for a different order request");
+        }
     }
 
     private String paymentIdempotencyKey(String idempotencyKey) {
