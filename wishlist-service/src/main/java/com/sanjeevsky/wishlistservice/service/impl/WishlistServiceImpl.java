@@ -2,6 +2,7 @@ package com.sanjeevsky.wishlistservice.service.impl;
 
 import com.sanjeevsky.wishlistservice.clients.CartFeignClient;
 import com.sanjeevsky.wishlistservice.dto.AddToWishlistRequest;
+import com.sanjeevsky.wishlistservice.exceptions.InvalidWishlistRequestException;
 import com.sanjeevsky.wishlistservice.exceptions.WishlistItemAlreadyExistsException;
 import com.sanjeevsky.wishlistservice.exceptions.WishlistItemNotFoundException;
 import com.sanjeevsky.wishlistservice.model.WishlistItem;
@@ -29,6 +30,7 @@ public class WishlistServiceImpl implements WishlistService {
 
     @Override
     public WishlistItem addToWishlist(String userId, AddToWishlistRequest request) {
+        validateAddToWishlistRequest(userId, request);
         log.info("Adding productId: {} to wishlist for userId: {}", request.getProductId(), userId);
 
         wishlistRepository.findByUserIdAndProductId(userId, request.getProductId()).ifPresent(existing -> {
@@ -50,12 +52,15 @@ public class WishlistServiceImpl implements WishlistService {
 
     @Override
     public List<WishlistItem> getWishlist(String userId) {
+        validateUserId(userId);
         log.info("Fetching wishlist for userId: {}", userId);
         return wishlistRepository.findByUserId(userId);
     }
 
     @Override
     public void removeFromWishlist(String userId, UUID productId) {
+        validateUserId(userId);
+        validateProductId(productId);
         log.info("Removing productId: {} from wishlist for userId: {}", productId, userId);
         wishlistRepository.findByUserIdAndProductId(userId, productId)
                 .orElseThrow(() -> new WishlistItemNotFoundException(
@@ -66,6 +71,8 @@ public class WishlistServiceImpl implements WishlistService {
 
     @Override
     public WishlistItem moveToCart(String userId, UUID productId) {
+        validateUserId(userId);
+        validateProductId(productId);
         log.info("Moving productId: {} to cart for userId: {}", productId, userId);
         WishlistItem item = wishlistRepository.findByUserIdAndProductId(userId, productId)
                 .orElseThrow(() -> new WishlistItemNotFoundException(
@@ -87,5 +94,36 @@ public class WishlistServiceImpl implements WishlistService {
         wishlistRepository.deleteByUserIdAndProductId(userId, productId);
         log.info("ProductId: {} removed from wishlist after move-to-cart for userId: {}", productId, userId);
         return item;
+    }
+
+    private void validateAddToWishlistRequest(String userId, AddToWishlistRequest request) {
+        validateUserId(userId);
+        if (request == null) {
+            throw new InvalidWishlistRequestException("Wishlist request is required");
+        }
+        validateProductId(request.getProductId());
+        if (isBlank(request.getProductName())) {
+            throw new InvalidWishlistRequestException("Wishlist productName is required");
+        }
+        if (request.getSalePrice() <= 0) {
+            throw new InvalidWishlistRequestException("Wishlist salePrice must be greater than zero");
+        }
+        request.setProductName(request.getProductName().trim());
+    }
+
+    private void validateUserId(String userId) {
+        if (isBlank(userId)) {
+            throw new InvalidWishlistRequestException("Wishlist userId is required");
+        }
+    }
+
+    private void validateProductId(UUID productId) {
+        if (productId == null) {
+            throw new InvalidWishlistRequestException("Wishlist productId is required");
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

@@ -48,6 +48,11 @@ class WishlistIntegrationTest {
         return "{\"productId\":\"" + productId + "\",\"productName\":\"Widget\",\"salePrice\":99.0}";
     }
 
+    private String addBody(UUID productId, String productName, double salePrice) {
+        return "{\"productId\":\"" + productId + "\",\"productName\":\"" + productName
+                + "\",\"salePrice\":" + salePrice + "}";
+    }
+
     // ─── Add ──────────────────────────────────────────────────────────────────
 
     @Test
@@ -76,6 +81,28 @@ class WishlistIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(addBody(PRODUCT_A)))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    void addToWishlist_blankProductName_returns400() throws Exception {
+        mockMvc.perform(post("/wishlist-service/wishlist")
+                        .header("X-User", "blank-name@example.com")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(addBody(PRODUCT_A, " ", 99.0)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("productName is required")));
+    }
+
+    @Test
+    void addToWishlist_nonPositiveSalePrice_returns400() throws Exception {
+        mockMvc.perform(post("/wishlist-service/wishlist")
+                        .header("X-User", "bad-price@example.com")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(addBody(PRODUCT_A, "Widget", 0.0)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("salePrice must be greater than zero")));
     }
 
     // ─── Get ──────────────────────────────────────────────────────────────────

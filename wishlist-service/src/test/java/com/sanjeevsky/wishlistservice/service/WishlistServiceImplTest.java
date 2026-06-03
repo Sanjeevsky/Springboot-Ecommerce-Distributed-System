@@ -2,6 +2,7 @@ package com.sanjeevsky.wishlistservice.service;
 
 import com.sanjeevsky.wishlistservice.clients.CartFeignClient;
 import com.sanjeevsky.wishlistservice.dto.AddToWishlistRequest;
+import com.sanjeevsky.wishlistservice.exceptions.InvalidWishlistRequestException;
 import com.sanjeevsky.wishlistservice.exceptions.WishlistItemAlreadyExistsException;
 import com.sanjeevsky.wishlistservice.exceptions.WishlistItemNotFoundException;
 import com.sanjeevsky.wishlistservice.model.WishlistItem;
@@ -84,6 +85,39 @@ class WishlistServiceImplTest {
         verify(wishlistRepository, never()).save(any());
     }
 
+    @Test
+    void addToWishlist_blankProductName_throwsInvalidWishlistRequestException() {
+        AddToWishlistRequest request = addRequest();
+        request.setProductName(" ");
+
+        assertThatThrownBy(() -> wishlistService.addToWishlist(USER_ID, request))
+                .isInstanceOf(InvalidWishlistRequestException.class)
+                .hasMessageContaining("Wishlist productName is required");
+
+        verifyNoInteractions(wishlistRepository, cartFeignClient);
+    }
+
+    @Test
+    void addToWishlist_nonPositiveSalePrice_throwsInvalidWishlistRequestException() {
+        AddToWishlistRequest request = addRequest();
+        request.setSalePrice(0.0);
+
+        assertThatThrownBy(() -> wishlistService.addToWishlist(USER_ID, request))
+                .isInstanceOf(InvalidWishlistRequestException.class)
+                .hasMessageContaining("Wishlist salePrice must be greater than zero");
+
+        verifyNoInteractions(wishlistRepository, cartFeignClient);
+    }
+
+    @Test
+    void addToWishlist_blankUserId_throwsInvalidWishlistRequestException() {
+        assertThatThrownBy(() -> wishlistService.addToWishlist(" ", addRequest()))
+                .isInstanceOf(InvalidWishlistRequestException.class)
+                .hasMessageContaining("Wishlist userId is required");
+
+        verifyNoInteractions(wishlistRepository, cartFeignClient);
+    }
+
     // ─── getWishlist ──────────────────────────────────────────────────────────
 
     @Test
@@ -126,6 +160,15 @@ class WishlistServiceImplTest {
                 .isInstanceOf(WishlistItemNotFoundException.class);
 
         verify(wishlistRepository, never()).deleteByUserIdAndProductId(any(), any());
+    }
+
+    @Test
+    void removeFromWishlist_nullProductId_throwsInvalidWishlistRequestException() {
+        assertThatThrownBy(() -> wishlistService.removeFromWishlist(USER_ID, null))
+                .isInstanceOf(InvalidWishlistRequestException.class)
+                .hasMessageContaining("Wishlist productId is required");
+
+        verifyNoInteractions(wishlistRepository, cartFeignClient);
     }
 
     // ─── moveToCart ───────────────────────────────────────────────────────────

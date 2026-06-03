@@ -774,6 +774,53 @@ for (const testName of [
   }
 }
 
+const wishlistDtoText = fs.readFileSync(
+  path.join(root, "wishlist-service", "src", "main", "java", "com", "sanjeevsky", "wishlistservice", "dto", "AddToWishlistRequest.java"),
+  "utf8"
+);
+const wishlistServiceImplText = fs.readFileSync(
+  path.join(root, "wishlist-service", "src", "main", "java", "com", "sanjeevsky", "wishlistservice", "service", "impl", "WishlistServiceImpl.java"),
+  "utf8"
+);
+const wishlistExceptionHandlerText = fs.readFileSync(
+  path.join(root, "wishlist-service", "src", "main", "java", "com", "sanjeevsky", "wishlistservice", "exceptions", "GlobalExceptionHandler.java"),
+  "utf8"
+);
+const wishlistServiceTestText = fs.readFileSync(
+  path.join(root, "wishlist-service", "src", "test", "java", "com", "sanjeevsky", "wishlistservice", "service", "WishlistServiceImplTest.java"),
+  "utf8"
+);
+const wishlistIntegrationTestText = fs.readFileSync(
+  path.join(root, "wishlist-service", "src", "test", "java", "com", "sanjeevsky", "wishlistservice", "WishlistIntegrationTest.java"),
+  "utf8"
+);
+if (!wishlistDtoText.includes("@NotBlank(message = \"productName is required\")")
+    || !wishlistDtoText.includes("@Positive(message = \"salePrice must be greater than zero\")")
+    || !wishlistServiceImplText.includes("validateAddToWishlistRequest(userId, request)")
+    || !wishlistServiceImplText.includes("Wishlist userId is required")
+    || !wishlistServiceImplText.includes("Wishlist salePrice must be greater than zero")
+    || !wishlistExceptionHandlerText.includes("InvalidWishlistRequestException.class")) {
+  fail("wishlist-service: wishlist requests must validate product name, price, productId, and userId");
+}
+for (const testName of [
+  "addToWishlist_blankProductName_throwsInvalidWishlistRequestException",
+  "addToWishlist_nonPositiveSalePrice_throwsInvalidWishlistRequestException",
+  "addToWishlist_blankUserId_throwsInvalidWishlistRequestException",
+  "removeFromWishlist_nullProductId_throwsInvalidWishlistRequestException",
+]) {
+  if (!wishlistServiceTestText.includes(testName)) {
+    fail(`wishlist-service: missing service test ${testName}`);
+  }
+}
+for (const testName of [
+  "addToWishlist_blankProductName_returns400",
+  "addToWishlist_nonPositiveSalePrice_returns400",
+]) {
+  if (!wishlistIntegrationTestText.includes(testName)) {
+    fail(`wishlist-service: missing integration test ${testName}`);
+  }
+}
+
 const paymentServiceImplText = fs.readFileSync(
   path.join(root, "payment-service", "src", "main", "java", "com", "sanjeevsky", "paymentservice", "service", "impl", "PaymentServiceImpl.java"),
   "utf8"
