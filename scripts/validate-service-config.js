@@ -177,11 +177,11 @@ function durationMillis(value) {
   return match[2] === "s" ? amount * 1000 : amount;
 }
 
-function shellArrayValues(text, arrayName) {
+function shellArrayValues(text, arrayName, relativePath = "scripts/verify-local.sh") {
   const escapedName = arrayName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const match = text.match(new RegExp(`^${escapedName}=\\(\\n([\\s\\S]*?)^\\)`, "m"));
   if (!match) {
-    fail(`scripts/verify-local.sh: missing ${arrayName} array`);
+    fail(`${relativePath}: missing ${arrayName} array`);
     return [];
   }
 
@@ -221,7 +221,7 @@ function duplicateValues(values) {
   return [...duplicates];
 }
 
-function requireSameOrderedValues(label, expectedValues, actualValues, actualDescription) {
+function requireSameValues(label, expectedValues, actualValues, actualDescription) {
   const duplicates = duplicateValues(actualValues);
   if (duplicates.length) {
     fail(`${actualDescription}: duplicate ${label} entries: ${duplicates.join(", ")}`);
@@ -231,7 +231,14 @@ function requireSameOrderedValues(label, expectedValues, actualValues, actualDes
   const extra = actualValues.filter((value) => !expectedValues.includes(value));
   if (missing.length || extra.length) {
     fail(`${actualDescription}: ${label} entries must match expected services; missing [${missing.join(", ") || "none"}], extra [${extra.join(", ") || "none"}]`);
-  } else if (expectedValues.join("\n") !== actualValues.join("\n")) {
+    return false;
+  }
+  return duplicates.length === 0;
+}
+
+function requireSameOrderedValues(label, expectedValues, actualValues, actualDescription) {
+  if (requireSameValues(label, expectedValues, actualValues, actualDescription)
+      && expectedValues.join("\n") !== actualValues.join("\n")) {
     fail(`${actualDescription}: ${label} entries must stay in the same order as expected services`);
   }
 }
@@ -1255,6 +1262,12 @@ requireSameOrderedValues(
   expectedServiceModules,
   githubActionsMatrixValues(ciWorkflowText, "module"),
   ".github/workflows/ci.yml"
+);
+requireSameValues(
+  "Docker build module",
+  expectedServiceModules,
+  shellArrayValues(buildDockerJarsText, "DEFAULT_MODULES", "scripts/build-docker-jars.sh"),
+  "scripts/build-docker-jars.sh"
 );
 
 if (!verifyLocalText.includes("MAVEN_JAVA_HOME")
