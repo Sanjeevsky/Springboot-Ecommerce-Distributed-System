@@ -13,6 +13,8 @@ const apiCollectionFile = "postman/Ecommerce-API.postman_collection.json";
 const dataSeedCollectionFile = "postman/Ecommerce-DataSeed.postman_collection.json";
 const e2eCollectionFile = "postman/Ecommerce-E2E-Complete.postman_collection.json";
 const environmentFiles = ["postman/Ecommerce-Local.postman_environment.json"];
+const localGatewayBaseUrl = "http://localhost:8081";
+const directLocalServiceUrlPattern = /^https?:\/\/(?:localhost|127\.0\.0\.1):(?:8071|8761|808[2-9]|809[0-2])(?:\/|$)/;
 
 const bannedMarkers = [
   { pattern: /\/raw\b/i, reason: "raw endpoints should not be used" },
@@ -310,6 +312,19 @@ function validateGatewayRoutedRequests(relativePath, collection) {
     if (url && !url.startsWith("{{baseUrl}}/")) {
       fail(`${relativePath}: ${requestPath}: request URL must route through {{baseUrl}} instead of ${url}`);
     }
+  }
+}
+
+function validateBaseUrlDefault(relativePath, ownerPath, value) {
+  if (!value) {
+    fail(`${relativePath}: ${ownerPath}: baseUrl must default to ${localGatewayBaseUrl}`);
+    return;
+  }
+  if (value !== localGatewayBaseUrl) {
+    fail(`${relativePath}: ${ownerPath}: baseUrl must default to gateway ${localGatewayBaseUrl}, found ${value}`);
+  }
+  if (directLocalServiceUrlPattern.test(value)) {
+    fail(`${relativePath}: ${ownerPath}: baseUrl must not point at a direct local service port`);
   }
 }
 
@@ -656,6 +671,9 @@ for (const environmentFile of environmentFiles) {
   for (const entry of (environment && environment.values) || []) {
     if (entry && entry.key) {
       environmentVariables.add(entry.key);
+      if (entry.key === "baseUrl") {
+        validateBaseUrlDefault(environmentFile, "environment baseUrl", entry.value);
+      }
     }
   }
 }
@@ -686,6 +704,9 @@ for (const relativePath of collectionFiles) {
     if (variable && variable.key) {
       collectionVariables.add(variable.key);
       declaredVariables.add(variable.key);
+      if (variable.key === "baseUrl") {
+        validateBaseUrlDefault(relativePath, "collection baseUrl", variable.value);
+      }
     }
   }
 
