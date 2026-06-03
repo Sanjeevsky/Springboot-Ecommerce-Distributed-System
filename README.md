@@ -289,6 +289,6 @@ GitHub Actions runs Postman static validation and Java 11 module tests on pushes
 | coupon-service | 13 | 8 |
 | review-service | 19 | 8 |
 | wishlist-service | 8 | 8 |
-| inventory-service | 18 | 8 |
+| inventory-service | 21 | 8 |
 | notification-service | 11 | 5 |
-| **Total** | **187** | **63** |
+| **Total** | **190** | **63** |

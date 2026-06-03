@@ -1,6 +1,7 @@
 package com.sanjeevsky.inventoryservice.service.impl;
 
 import com.sanjeevsky.inventoryservice.exceptions.InsufficientStockException;
+import com.sanjeevsky.inventoryservice.exceptions.InvalidInventoryRequestException;
 import com.sanjeevsky.inventoryservice.exceptions.InventoryNotFoundException;
 import com.sanjeevsky.inventoryservice.model.Inventory;
 import com.sanjeevsky.inventoryservice.model.InventoryTransaction;
@@ -28,6 +29,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public Inventory addStock(UUID productId, UUID variantId, int quantity) {
         log.info("Adding stock: productId={}, variantId={}, quantity={}", productId, variantId, quantity);
+        validatePositiveQuantity(quantity, "Stock quantity");
 
         Optional<Inventory> existing = variantId != null
                 ? inventoryRepository.findByProductIdAndVariantId(productId, variantId)
@@ -80,6 +82,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public Inventory reserveStock(UUID orderId, UUID productId, UUID variantId, int qty) {
         log.info("Reserving stock: orderId={}, productId={}, variantId={}, qty={}", orderId, productId, variantId, qty);
+        validatePositiveQuantity(qty, "Reservation quantity");
 
         Inventory inventory = getStock(productId, variantId);
 
@@ -115,6 +118,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public Inventory releaseStock(UUID orderId, UUID productId, UUID variantId, int qty) {
         log.info("Releasing stock: orderId={}, productId={}, variantId={}, qty={}", orderId, productId, variantId, qty);
+        validatePositiveQuantity(qty, "Release quantity");
 
         Inventory inventory = getStock(productId, variantId);
 
@@ -138,5 +142,11 @@ public class InventoryServiceImpl implements InventoryService {
 
         log.info("Stock released for productId={}, variantId={}, reservedQty={}", productId, variantId, inventory.getReservedQty());
         return inventory;
+    }
+
+    private void validatePositiveQuantity(int quantity, String label) {
+        if (quantity <= 0) {
+            throw new InvalidInventoryRequestException(label + " must be greater than zero");
+        }
     }
 }

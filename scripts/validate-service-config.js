@@ -525,6 +525,30 @@ if (!paymentIntegrationTestText.includes("initiatePayment_withSameIdempotencyKey
   fail("payment-service: integration tests must cover conflicting idempotency-key payment initiation");
 }
 
+const inventoryServiceImplText = fs.readFileSync(
+  path.join(root, "inventory-service", "src", "main", "java", "com", "sanjeevsky", "inventoryservice", "service", "impl", "InventoryServiceImpl.java"),
+  "utf8"
+);
+const inventoryServiceImplTestText = fs.readFileSync(
+  path.join(root, "inventory-service", "src", "test", "java", "com", "sanjeevsky", "inventoryservice", "service", "InventoryServiceImplTest.java"),
+  "utf8"
+);
+if (!inventoryServiceImplText.includes("validatePositiveQuantity(quantity, \"Stock quantity\")")
+    || !inventoryServiceImplText.includes("validatePositiveQuantity(qty, \"Reservation quantity\")")
+    || !inventoryServiceImplText.includes("validatePositiveQuantity(qty, \"Release quantity\")")
+    || !inventoryServiceImplText.includes("InvalidInventoryRequestException")) {
+  fail("inventory-service: stock mutations must reject non-positive quantities at the service boundary");
+}
+for (const testName of [
+  "addStock_nonPositiveQuantity_throwsInvalidInventoryRequestException",
+  "reserveStock_nonPositiveQuantity_throwsInvalidInventoryRequestException",
+  "releaseStock_nonPositiveQuantity_throwsInvalidInventoryRequestException",
+]) {
+  if (!inventoryServiceImplTestText.includes(testName)) {
+    fail(`inventory-service: missing service test ${testName}`);
+  }
+}
+
 const prometheusText = fs.readFileSync(path.join(root, "observability", "prometheus.yml"), "utf8");
 const grafanaOverviewText = fs.readFileSync(
   path.join(root, "observability", "grafana", "dashboards", "ecommerce-overview.json"),

@@ -1,6 +1,7 @@
 package com.sanjeevsky.inventoryservice.service;
 
 import com.sanjeevsky.inventoryservice.exceptions.InsufficientStockException;
+import com.sanjeevsky.inventoryservice.exceptions.InvalidInventoryRequestException;
 import com.sanjeevsky.inventoryservice.exceptions.InventoryNotFoundException;
 import com.sanjeevsky.inventoryservice.model.Inventory;
 import com.sanjeevsky.inventoryservice.model.InventoryTransaction;
@@ -96,6 +97,15 @@ class InventoryServiceImplTest {
         verify(transactionRepository).save(captor.capture());
         assertThat(captor.getValue().getType()).isEqualTo("RESTOCK");
         assertThat(captor.getValue().getQuantity()).isEqualTo(15);
+    }
+
+    @Test
+    void addStock_nonPositiveQuantity_throwsInvalidInventoryRequestException() {
+        assertThatThrownBy(() -> inventoryService.addStock(PRODUCT_ID, VARIANT_ID, 0))
+                .isInstanceOf(InvalidInventoryRequestException.class)
+                .hasMessageContaining("Stock quantity must be greater than zero");
+
+        verifyNoInteractions(inventoryRepository, transactionRepository);
     }
 
     // ─── getStock ─────────────────────────────────────────────────────────────
@@ -210,6 +220,15 @@ class InventoryServiceImplTest {
         verify(transactionRepository, never()).save(any());
     }
 
+    @Test
+    void reserveStock_nonPositiveQuantity_throwsInvalidInventoryRequestException() {
+        assertThatThrownBy(() -> inventoryService.reserveStock(ORDER_ID, PRODUCT_ID, VARIANT_ID, -1))
+                .isInstanceOf(InvalidInventoryRequestException.class)
+                .hasMessageContaining("Reservation quantity must be greater than zero");
+
+        verifyNoInteractions(inventoryRepository, transactionRepository);
+    }
+
     // ─── releaseStock ─────────────────────────────────────────────────────────
 
     @Test
@@ -267,6 +286,15 @@ class InventoryServiceImplTest {
         assertThat(result.getReservedQty()).isEqualTo(15);
         verify(inventoryRepository, never()).save(any());
         verify(transactionRepository, never()).save(any());
+    }
+
+    @Test
+    void releaseStock_nonPositiveQuantity_throwsInvalidInventoryRequestException() {
+        assertThatThrownBy(() -> inventoryService.releaseStock(ORDER_ID, PRODUCT_ID, VARIANT_ID, 0))
+                .isInstanceOf(InvalidInventoryRequestException.class)
+                .hasMessageContaining("Release quantity must be greater than zero");
+
+        verifyNoInteractions(inventoryRepository, transactionRepository);
     }
 
     // ─── getStockByProduct ────────────────────────────────────────────────────
