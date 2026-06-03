@@ -1102,6 +1102,14 @@ if (!shoppingCartIntegrationTestText.includes("updateItem_negativeQty_returnsBad
   fail("shopping-cart-service: integration tests must reject negative cart update quantities");
 }
 
+const catalogBrowseLoadTestText = fs.readFileSync(path.join(root, "load-tests", "catalog-browse.js"), "utf8");
+if (catalogBrowseLoadTestText.includes("keyword=phone")
+    || catalogBrowseLoadTestText.includes("/catalog-service/brands")
+    || !catalogBrowseLoadTestText.includes("/catalog-service/product/search?q=phone&page=0&size=10")
+    || !catalogBrowseLoadTestText.includes("/catalog-service/getBrands")) {
+  fail("load-tests/catalog-browse.js: catalog browse load test must use current gateway catalog routes");
+}
+
 const wishlistProperties = propertiesFiles("wishlist-service");
 if (!wishlistProperties.some((file) => hasProperty(file, "clients.cart.url"))) {
   fail("wishlist-service: expected clients.cart.url property for Docker cart dependency override");

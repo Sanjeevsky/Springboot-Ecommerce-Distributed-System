@@ -73,7 +73,7 @@ export default function (data) {
     // Search products by keyword
     const start = Date.now();
     const searchResp = http.get(
-      `${BASE_URL}/catalog-service/product/search?keyword=phone&page=0&size=10`,
+      `${BASE_URL}/catalog-service/product/search?q=phone&page=0&size=10`,
       { headers }
     );
     searchDuration.add(Date.now() - start);
@@ -81,7 +81,7 @@ export default function (data) {
     sleep(0.2);
 
     // List brands
-    const brandsResp = http.get(`${BASE_URL}/catalog-service/brands`, { headers });
+    const brandsResp = http.get(`${BASE_URL}/catalog-service/getBrands`, { headers });
     check(brandsResp, { "brands 200": (r) => r.status === 200 });
     sleep(0.1);
   });
