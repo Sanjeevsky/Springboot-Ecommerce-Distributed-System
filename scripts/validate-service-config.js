@@ -177,6 +177,65 @@ function durationMillis(value) {
   return match[2] === "s" ? amount * 1000 : amount;
 }
 
+function shellArrayValues(text, arrayName) {
+  const escapedName = arrayName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = text.match(new RegExp(`^${escapedName}=\\(\\n([\\s\\S]*?)^\\)`, "m"));
+  if (!match) {
+    fail(`scripts/verify-local.sh: missing ${arrayName} array`);
+    return [];
+  }
+
+  return match[1]
+    .split(/\r?\n/)
+    .map((line) => line.replace(/#.*/, "").trim())
+    .filter(Boolean)
+    .map((line) => line.replace(/^["']|["']$/g, ""));
+}
+
+function githubActionsMatrixValues(text, matrixName) {
+  const escapedName = matrixName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = text.match(new RegExp(`^\\s*${escapedName}:\\s*\\n((?:\\s+-\\s+[^\\n]+\\n)+)`, "m"));
+  if (!match) {
+    fail(`.github/workflows/ci.yml: missing ${matrixName} matrix`);
+    return [];
+  }
+
+  return match[1]
+    .split(/\r?\n/)
+    .map((line) => {
+      const item = line.match(/^\s+-\s+(.+?)\s*$/);
+      return item ? item[1].replace(/^["']|["']$/g, "") : "";
+    })
+    .filter(Boolean);
+}
+
+function duplicateValues(values) {
+  const seen = new Set();
+  const duplicates = new Set();
+  for (const value of values) {
+    if (seen.has(value)) {
+      duplicates.add(value);
+    }
+    seen.add(value);
+  }
+  return [...duplicates];
+}
+
+function requireSameOrderedValues(label, expectedValues, actualValues, actualDescription) {
+  const duplicates = duplicateValues(actualValues);
+  if (duplicates.length) {
+    fail(`${actualDescription}: duplicate ${label} entries: ${duplicates.join(", ")}`);
+  }
+
+  const missing = expectedValues.filter((value) => !actualValues.includes(value));
+  const extra = actualValues.filter((value) => !expectedValues.includes(value));
+  if (missing.length || extra.length) {
+    fail(`${actualDescription}: ${label} entries must match expected services; missing [${missing.join(", ") || "none"}], extra [${extra.join(", ") || "none"}]`);
+  } else if (expectedValues.join("\n") !== actualValues.join("\n")) {
+    fail(`${actualDescription}: ${label} entries must stay in the same order as expected services`);
+  }
+}
+
 for (const [service, expectedName] of Object.entries(expectedApplicationNames)) {
   const files = propertiesFiles(service);
   if (files.length === 0) {
@@ -1181,10 +1240,21 @@ const mavenTestConfigFlags = [
 
 const verifyLocalText = fs.readFileSync(path.join(root, "scripts", "verify-local.sh"), "utf8");
 const buildDockerJarsText = fs.readFileSync(path.join(root, "scripts", "build-docker-jars.sh"), "utf8");
+const ciWorkflowText = fs.readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8");
+const expectedServiceModules = Object.keys(expectedApplicationNames);
 requireMavenTestFlags("scripts/verify-local.sh", verifyLocalText);
-requireMavenTestFlags(
-  ".github/workflows/ci.yml",
-  fs.readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8")
+requireMavenTestFlags(".github/workflows/ci.yml", ciWorkflowText);
+requireSameOrderedValues(
+  "Maven test module",
+  expectedServiceModules,
+  shellArrayValues(verifyLocalText, "MAVEN_TEST_MODULES"),
+  "scripts/verify-local.sh"
+);
+requireSameOrderedValues(
+  "Maven test module",
+  expectedServiceModules,
+  githubActionsMatrixValues(ciWorkflowText, "module"),
+  ".github/workflows/ci.yml"
 );
 
 if (!verifyLocalText.includes("MAVEN_JAVA_HOME")
