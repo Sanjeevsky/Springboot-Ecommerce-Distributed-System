@@ -3,6 +3,7 @@ package com.sanjeevsky.catalogservice.service;
 import com.sanjeevsky.catalogservice.exceptions.BrandAlreadyExistsException;
 import com.sanjeevsky.catalogservice.exceptions.BrandListEmptyException;
 import com.sanjeevsky.catalogservice.exceptions.BrandNotExistsException;
+import com.sanjeevsky.catalogservice.exceptions.InvalidCatalogRequestException;
 import com.sanjeevsky.catalogservice.model.Brand;
 import com.sanjeevsky.catalogservice.repository.BrandRepository;
 import com.sanjeevsky.catalogservice.service.impl.BrandServiceImpl;
@@ -115,5 +116,25 @@ class BrandServiceImplTest {
                 .isInstanceOf(BrandAlreadyExistsException.class);
 
         verify(brandRepository, never()).save(any());
+    }
+
+    @Test
+    void addBrand_blankName_throwsInvalidCatalogRequestException() {
+        assertThatThrownBy(() -> brandService.addBrand(" "))
+                .isInstanceOf(InvalidCatalogRequestException.class)
+                .hasMessageContaining("Brand name is required");
+
+        verifyNoInteractions(brandRepository);
+    }
+
+    @Test
+    void addBrand_trimsNameBeforeLookupAndSave() {
+        when(brandRepository.findOneByName("Puma")).thenReturn(Optional.empty());
+        when(brandRepository.save(any(Brand.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Brand result = brandService.addBrand(" Puma ");
+
+        verify(brandRepository).findOneByName("Puma");
+        assertThat(result.getName()).isEqualTo("Puma");
     }
 }

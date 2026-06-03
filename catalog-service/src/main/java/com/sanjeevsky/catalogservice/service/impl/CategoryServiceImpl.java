@@ -3,6 +3,7 @@ package com.sanjeevsky.catalogservice.service.impl;
 import com.sanjeevsky.catalogservice.exceptions.CategoryAlreadyExistsException;
 import com.sanjeevsky.catalogservice.exceptions.CategoryListEmptyException;
 import com.sanjeevsky.catalogservice.exceptions.CategoryNotExistsException;
+import com.sanjeevsky.catalogservice.exceptions.InvalidCatalogRequestException;
 import com.sanjeevsky.catalogservice.model.Category;
 import com.sanjeevsky.catalogservice.repository.CategoryRepository;
 import com.sanjeevsky.catalogservice.service.CategoryService;
@@ -34,7 +35,8 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public Category getCategoryName(String name){
-        Optional<Category> category = categoryRepository.findOneByCategoryName(name);
+        String categoryName = normalizeName(name, "Category name is required");
+        Optional<Category> category = categoryRepository.findOneByCategoryName(categoryName);
         if (category.isEmpty()) {
             throw new CategoryNotExistsException(CATEGORY_DOES_NOT_EXISTS);
         }
@@ -52,9 +54,17 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public Category addCategory(String categoryName){
-        Optional<Category> category = categoryRepository.findOneByCategoryName(categoryName);
+        String normalizedName = normalizeName(categoryName, "Category name is required");
+        Optional<Category> category = categoryRepository.findOneByCategoryName(normalizedName);
         if (category.isPresent()) throw new CategoryAlreadyExistsException("Category with given name already exists.");
-        Category build = Category.builder().categoryName(categoryName).build();
+        Category build = Category.builder().categoryName(normalizedName).build();
         return categoryRepository.save(build);
+    }
+
+    private String normalizeName(String value, String message) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new InvalidCatalogRequestException(message);
+        }
+        return value.trim();
     }
 }

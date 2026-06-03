@@ -3,6 +3,7 @@ package com.sanjeevsky.catalogservice.service.impl;
 import com.sanjeevsky.catalogservice.exceptions.BrandAlreadyExistsException;
 import com.sanjeevsky.catalogservice.exceptions.BrandListEmptyException;
 import com.sanjeevsky.catalogservice.exceptions.BrandNotExistsException;
+import com.sanjeevsky.catalogservice.exceptions.InvalidCatalogRequestException;
 import com.sanjeevsky.catalogservice.model.Brand;
 import com.sanjeevsky.catalogservice.repository.BrandRepository;
 import com.sanjeevsky.catalogservice.service.BrandService;
@@ -34,7 +35,8 @@ public class BrandServiceImpl implements BrandService {
 
     @Override
     public Brand getBrandByName(String name){
-        Optional<Brand> brand = brandRepository.findOneByName(name);
+        String brandName = normalizeName(name, "Brand name is required");
+        Optional<Brand> brand = brandRepository.findOneByName(brandName);
         if (brand.isEmpty()) {
             throw new BrandNotExistsException(BRAND_DOES_NOT_EXISTS);
         }
@@ -52,11 +54,18 @@ public class BrandServiceImpl implements BrandService {
 
     @Override
     public Brand addBrand(String name){
-        Optional<Brand> brand = brandRepository.findOneByName(name);
+        String brandName = normalizeName(name, "Brand name is required");
+        Optional<Brand> brand = brandRepository.findOneByName(brandName);
         if (brand.isPresent()) {
             throw new BrandAlreadyExistsException(BRAND_ALREADY_EXISTS);
         }
-        return brandRepository.save(Brand.builder().name(name).build());
+        return brandRepository.save(Brand.builder().name(brandName).build());
     }
 
+    private String normalizeName(String value, String message) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new InvalidCatalogRequestException(message);
+        }
+        return value.trim();
+    }
 }

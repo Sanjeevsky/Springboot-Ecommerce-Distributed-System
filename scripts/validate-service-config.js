@@ -591,12 +591,36 @@ const productServiceImplText = fs.readFileSync(
   path.join(root, "catalog-service", "src", "main", "java", "com", "sanjeevsky", "catalogservice", "service", "impl", "ProductServiceImpl.java"),
   "utf8"
 );
+const brandServiceImplText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "main", "java", "com", "sanjeevsky", "catalogservice", "service", "impl", "BrandServiceImpl.java"),
+  "utf8"
+);
+const categoryServiceImplText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "main", "java", "com", "sanjeevsky", "catalogservice", "service", "impl", "CategoryServiceImpl.java"),
+  "utf8"
+);
+const subCategoryServiceImplText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "main", "java", "com", "sanjeevsky", "catalogservice", "service", "impl", "SubCategoryServiceImpl.java"),
+  "utf8"
+);
 const variantServiceTestText = fs.readFileSync(
   path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "service", "VariantServiceImplTest.java"),
   "utf8"
 );
 const productServiceTestText = fs.readFileSync(
   path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "service", "ProductServiceImplTest.java"),
+  "utf8"
+);
+const brandServiceTestText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "service", "BrandServiceImplTest.java"),
+  "utf8"
+);
+const categoryServiceTestText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "service", "CategoryServiceImplTest.java"),
+  "utf8"
+);
+const subCategoryServiceTestText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "service", "SubCategoryServiceImplTest.java"),
   "utf8"
 );
 const variantControllerTestText = fs.readFileSync(
@@ -619,6 +643,13 @@ if (!productDtoText.includes("@PositiveOrZero(message = \"GST value must not be 
     || !productServiceImplText.includes("Product sort must be one of")
     || !catalogGlobalExceptionHandlerText.includes("InvalidProductRequestException.class")) {
   fail("catalog-service: product creation and listing must validate product economics, active status, and pagination");
+}
+if (!brandServiceImplText.includes("normalizeName(name, \"Brand name is required\")")
+    || !categoryServiceImplText.includes("normalizeName(categoryName, \"Category name is required\")")
+    || !subCategoryServiceImplText.includes("normalizeName(subcategoryName, \"Subcategory name is required\")")
+    || !subCategoryServiceImplText.includes("Category id is required")
+    || !catalogGlobalExceptionHandlerText.includes("InvalidCatalogRequestException.class")) {
+  fail("catalog-service: brand/category/subcategory names must be trimmed and reject blank values");
 }
 if (!variantControllerText.includes("@Valid @RequestBody VariantDTO variantDTO")
     || !variantDtoText.includes("@NotBlank(message = \"Primary condition name is required\")")
@@ -649,6 +680,34 @@ for (const testName of [
 ]) {
   if (!productCatalogControllerTestText.includes(testName)) {
     fail(`catalog-service: missing controller test ${testName}`);
+  }
+}
+for (const testName of [
+  "addBrand_blankName_throwsInvalidCatalogRequestException",
+  "addBrand_trimsNameBeforeLookupAndSave",
+]) {
+  if (!brandServiceTestText.includes(testName)) {
+    fail(`catalog-service: missing brand service test ${testName}`);
+  }
+}
+for (const testName of [
+  "addCategory_blankName_throwsInvalidCatalogRequestException",
+  "addCategory_trimsNameBeforeLookupAndSave",
+]) {
+  if (!categoryServiceTestText.includes(testName)) {
+    fail(`catalog-service: missing category service test ${testName}`);
+  }
+}
+for (const testName of [
+  "getSubCategory_exists_returnsSubCategory",
+  "getSubCategory_notFound_throwsSubCategoryListEmptyException",
+  "getAllSubCategory_empty_throwsSubCategoryListEmptyException",
+  "addSubCategory_categoryExists_trimsNameAndSaves",
+  "addSubCategory_blankName_throwsInvalidCatalogRequestException",
+  "addSubCategory_missingCategory_throwsCategoryNotExistsException",
+]) {
+  if (!subCategoryServiceTestText.includes(testName)) {
+    fail(`catalog-service: missing subcategory service test ${testName}`);
   }
 }
 for (const testName of [

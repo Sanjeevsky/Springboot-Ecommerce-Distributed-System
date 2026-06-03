@@ -3,6 +3,7 @@ package com.sanjeevsky.catalogservice.service;
 import com.sanjeevsky.catalogservice.exceptions.CategoryAlreadyExistsException;
 import com.sanjeevsky.catalogservice.exceptions.CategoryListEmptyException;
 import com.sanjeevsky.catalogservice.exceptions.CategoryNotExistsException;
+import com.sanjeevsky.catalogservice.exceptions.InvalidCatalogRequestException;
 import com.sanjeevsky.catalogservice.model.Category;
 import com.sanjeevsky.catalogservice.repository.CategoryRepository;
 import com.sanjeevsky.catalogservice.service.impl.CategoryServiceImpl;
@@ -114,5 +115,25 @@ class CategoryServiceImplTest {
                 .isInstanceOf(CategoryAlreadyExistsException.class);
 
         verify(categoryRepository, never()).save(any());
+    }
+
+    @Test
+    void addCategory_blankName_throwsInvalidCatalogRequestException() {
+        assertThatThrownBy(() -> categoryService.addCategory(" "))
+                .isInstanceOf(InvalidCatalogRequestException.class)
+                .hasMessageContaining("Category name is required");
+
+        verifyNoInteractions(categoryRepository);
+    }
+
+    @Test
+    void addCategory_trimsNameBeforeLookupAndSave() {
+        when(categoryRepository.findOneByCategoryName("Sports")).thenReturn(Optional.empty());
+        when(categoryRepository.save(any(Category.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Category result = categoryService.addCategory(" Sports ");
+
+        verify(categoryRepository).findOneByCategoryName("Sports");
+        assertThat(result.getCategoryName()).isEqualTo("Sports");
     }
 }

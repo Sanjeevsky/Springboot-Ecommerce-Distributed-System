@@ -1,6 +1,7 @@
 package com.sanjeevsky.catalogservice.service.impl;
 
 import com.sanjeevsky.catalogservice.exceptions.CategoryNotExistsException;
+import com.sanjeevsky.catalogservice.exceptions.InvalidCatalogRequestException;
 import com.sanjeevsky.catalogservice.exceptions.SubCategoryListEmptyException;
 import com.sanjeevsky.catalogservice.model.Category;
 import com.sanjeevsky.catalogservice.model.SubCategory;
@@ -47,10 +48,20 @@ public class SubCategoryServiceImpl implements SubCategoryService {
 
     @Override
     public SubCategory addSubCategory(UUID categoryId, String subcategoryName){
+        if (categoryId == null) {
+            throw new InvalidCatalogRequestException("Category id is required");
+        }
+        String normalizedName = normalizeName(subcategoryName, "Subcategory name is required");
         Optional<Category> category = categoryRepository.findById(categoryId);
         if (category.isEmpty()) throw new CategoryNotExistsException(CATEGORY_DOES_NOT_EXISTS);
-        SubCategory subCategory = SubCategory.builder().category(category.get()).subcategoryName(subcategoryName).build();
+        SubCategory subCategory = SubCategory.builder().category(category.get()).subcategoryName(normalizedName).build();
         return subCategoryRepository.save(subCategory);
     }
 
+    private String normalizeName(String value, String message) {
+        if (value == null || value.trim().isEmpty()) {
+            throw new InvalidCatalogRequestException(message);
+        }
+        return value.trim();
+    }
 }
