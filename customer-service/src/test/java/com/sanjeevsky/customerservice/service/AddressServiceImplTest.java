@@ -1,6 +1,7 @@
 package com.sanjeevsky.customerservice.service;
 
 import com.sanjeevsky.customerservice.exceptions.AddressDoesnotExistsException;
+import com.sanjeevsky.customerservice.exceptions.InvalidRequestException;
 import com.sanjeevsky.customerservice.exceptions.MandatoryFieldException;
 import com.sanjeevsky.customerservice.exceptions.NoAddressExistsException;
 import com.sanjeevsky.customerservice.model.Address;
@@ -67,6 +68,42 @@ class AddressServiceImplTest {
     }
 
     @Test
+    void addAddress_trimsFieldsBeforeSaving() {
+        Address addr = validAddress();
+        addr.setCity("  Mumbai  ");
+        addr.setStreetLocality("  MG Road  ");
+        addr.setLandmark("  Near station  ");
+
+        Address result = addressService.addAddress(addr, "  " + USER + "  ");
+
+        assertThat(result.getUser()).isEqualTo(USER);
+        assertThat(result.getCity()).isEqualTo("Mumbai");
+        assertThat(result.getStreetLocality()).isEqualTo("MG Road");
+        assertThat(result.getLandmark()).isEqualTo("Near station");
+        verify(repository).save(addr);
+    }
+
+    @Test
+    void addAddress_nullAddress_throwsInvalidRequestException() {
+        assertThatThrownBy(() -> addressService.addAddress(null, USER))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Address request is required");
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void addAddress_blankUser_throwsInvalidRequestException() {
+        Address addr = validAddress();
+
+        assertThatThrownBy(() -> addressService.addAddress(addr, " "))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Address user is required");
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
     void addAddress_emptyCity_throwsMandatoryFieldException() {
         Address addr = validAddress();
         addr.setCity("");
@@ -122,6 +159,15 @@ class AddressServiceImplTest {
                 .isInstanceOf(AddressDoesnotExistsException.class);
     }
 
+    @Test
+    void getAddress_nullId_throwsInvalidRequestException() {
+        assertThatThrownBy(() -> addressService.getAddress(null, USER))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Address id is required");
+
+        verify(repository, never()).findByIdAndUser(any(), any());
+    }
+
     // ─── getAddresses ─────────────────────────────────────────────────────────
 
     @Test
@@ -141,6 +187,15 @@ class AddressServiceImplTest {
                 .isInstanceOf(NoAddressExistsException.class);
     }
 
+    @Test
+    void getAddresses_blankUser_throwsInvalidRequestException() {
+        assertThatThrownBy(() -> addressService.getAddresses(" "))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Address user is required");
+
+        verify(repository, never()).findAllByUser(any());
+    }
+
     // ─── updateAddress ────────────────────────────────────────────────────────
 
     @Test
@@ -155,6 +210,34 @@ class AddressServiceImplTest {
 
         assertThat(result.getCity()).isEqualTo("Pune");
         assertThat(result.getState()).isEqualTo("Maharashtra");
+    }
+
+    @Test
+    void updateAddress_blankCity_throwsMandatoryFieldException() {
+        Address existing = validAddress();
+        when(repository.findByIdAndUser(ADDR_ID, USER)).thenReturn(Optional.of(existing));
+
+        Address patch = new Address();
+        patch.setCity(" ");
+
+        assertThatThrownBy(() -> addressService.updateAddress(ADDR_ID, patch, USER))
+                .isInstanceOf(MandatoryFieldException.class);
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void updateAddress_invalidZip_throwsMandatoryFieldException() {
+        Address existing = validAddress();
+        when(repository.findByIdAndUser(ADDR_ID, USER)).thenReturn(Optional.of(existing));
+
+        Address patch = new Address();
+        patch.setZipCode(-1);
+
+        assertThatThrownBy(() -> addressService.updateAddress(ADDR_ID, patch, USER))
+                .isInstanceOf(MandatoryFieldException.class);
+
+        verify(repository, never()).save(any());
     }
 
     @Test
@@ -183,5 +266,14 @@ class AddressServiceImplTest {
 
         assertThatThrownBy(() -> addressService.deleteAddress(ADDR_ID, USER))
                 .isInstanceOf(AddressDoesnotExistsException.class);
+    }
+
+    @Test
+    void deleteAddress_nullId_throwsInvalidRequestException() {
+        assertThatThrownBy(() -> addressService.deleteAddress(null, USER))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Address id is required");
+
+        verify(repository, never()).findByIdAndUser(any(), any());
     }
 }
