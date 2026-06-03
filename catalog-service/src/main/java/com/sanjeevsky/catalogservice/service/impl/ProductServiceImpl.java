@@ -14,6 +14,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -22,6 +24,10 @@ import static com.sanjeevsky.catalogservice.utils.ErrorConstants.PRODUCT_WITH_TH
 
 @Service
 public class ProductServiceImpl implements ProductService {
+
+    private static final int MAX_PAGE_SIZE = 100;
+    private static final List<String> ALLOWED_PRODUCT_SORT_FIELDS = Arrays.asList(
+            "name", "createdAt", "modifiedAt", "mrpPrice", "salePrice");
 
     private final ProductRepository productRepository;
     private final BrandService brandService;
@@ -66,12 +72,15 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Page<Product> listProducts(int page, int size, String sort) {
-        PageRequest pageable = PageRequest.of(page, size, Sort.by(sort).ascending());
+        validatePagination(page, size);
+        String sortField = normalizeProductSort(sort);
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(sortField).ascending());
         return productRepository.findAllByStatus(1, pageable);
     }
 
     @Override
     public Page<Product> searchProducts(String keyword, UUID categoryId, UUID brandId, int page, int size) {
+        validatePagination(page, size);
         PageRequest pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         String kw = (keyword != null && !keyword.isBlank()) ? keyword : null;
         return productRepository.search(kw, categoryId, brandId, pageable);
@@ -112,5 +121,23 @@ public class ProductServiceImpl implements ProductService {
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    private String normalizeProductSort(String sort) {
+        String sortField = isBlank(sort) ? "name" : sort.trim();
+        if (!ALLOWED_PRODUCT_SORT_FIELDS.contains(sortField)) {
+            throw new InvalidProductRequestException("Product sort must be one of: "
+                    + String.join(", ", ALLOWED_PRODUCT_SORT_FIELDS));
+        }
+        return sortField;
+    }
+
+    private void validatePagination(int page, int size) {
+        if (page < 0) {
+            throw new InvalidProductRequestException("Page index must not be negative");
+        }
+        if (size < 1 || size > MAX_PAGE_SIZE) {
+            throw new InvalidProductRequestException("Page size must be between 1 and " + MAX_PAGE_SIZE);
+        }
     }
 }

@@ -162,6 +162,46 @@ class ProductServiceImplTest {
         assertThat(result.getTotalElements()).isEqualTo(1);
     }
 
+    @Test
+    void listProducts_blankSort_defaultsToName() {
+        Page<Product> page = new PageImpl<>(List.of(product("Widget")));
+        when(productRepository.findAllByStatus(eq(1), any(Pageable.class))).thenReturn(page);
+
+        productService.listProducts(0, 10, " ");
+
+        verify(productRepository).findAllByStatus(eq(1), argThat(pageable ->
+                pageable.getPageNumber() == 0
+                        && pageable.getPageSize() == 10
+                        && pageable.getSort().getOrderFor("name") != null));
+    }
+
+    @Test
+    void listProducts_negativePage_throwsInvalidProductRequestException() {
+        assertThatThrownBy(() -> productService.listProducts(-1, 10, "name"))
+                .isInstanceOf(InvalidProductRequestException.class)
+                .hasMessageContaining("Page index must not be negative");
+
+        verifyNoInteractions(productRepository);
+    }
+
+    @Test
+    void listProducts_sizeAboveMaximum_throwsInvalidProductRequestException() {
+        assertThatThrownBy(() -> productService.listProducts(0, 101, "name"))
+                .isInstanceOf(InvalidProductRequestException.class)
+                .hasMessageContaining("Page size must be between 1 and 100");
+
+        verifyNoInteractions(productRepository);
+    }
+
+    @Test
+    void listProducts_invalidSort_throwsInvalidProductRequestException() {
+        assertThatThrownBy(() -> productService.listProducts(0, 10, "unknown"))
+                .isInstanceOf(InvalidProductRequestException.class)
+                .hasMessageContaining("Product sort must be one of");
+
+        verifyNoInteractions(productRepository);
+    }
+
     // ─── searchProducts ───────────────────────────────────────────────────────
 
     @Test
@@ -192,5 +232,14 @@ class ProductServiceImplTest {
         productService.searchProducts("", null, null, 0, 20);
 
         verify(productRepository).search(isNull(), isNull(), isNull(), any(Pageable.class));
+    }
+
+    @Test
+    void searchProducts_zeroSize_throwsInvalidProductRequestException() {
+        assertThatThrownBy(() -> productService.searchProducts("phone", null, null, 0, 0))
+                .isInstanceOf(InvalidProductRequestException.class)
+                .hasMessageContaining("Page size must be between 1 and 100");
+
+        verifyNoInteractions(productRepository);
     }
 }

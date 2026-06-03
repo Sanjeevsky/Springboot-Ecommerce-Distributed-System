@@ -613,8 +613,12 @@ if (!productDtoText.includes("@PositiveOrZero(message = \"GST value must not be 
     || !productServiceImplText.includes("validateProductRequest(product)")
     || !productServiceImplText.includes("Sale price cannot exceed MRP price")
     || !productServiceImplText.includes("Status must be 0 or 1")
+    || !productServiceImplText.includes("validatePagination(page, size)")
+    || !productServiceImplText.includes("normalizeProductSort(sort)")
+    || !productServiceImplText.includes("MAX_PAGE_SIZE = 100")
+    || !productServiceImplText.includes("Product sort must be one of")
     || !catalogGlobalExceptionHandlerText.includes("InvalidProductRequestException.class")) {
-  fail("catalog-service: product creation must validate product economics and active status");
+  fail("catalog-service: product creation and listing must validate product economics, active status, and pagination");
 }
 if (!variantControllerText.includes("@Valid @RequestBody VariantDTO variantDTO")
     || !variantDtoText.includes("@NotBlank(message = \"Primary condition name is required\")")
@@ -629,6 +633,11 @@ for (const testName of [
   "addProduct_salePriceAboveMrp_throwsInvalidProductRequestException",
   "addProduct_negativeDiscount_throwsInvalidProductRequestException",
   "addProduct_invalidStatus_throwsInvalidProductRequestException",
+  "listProducts_blankSort_defaultsToName",
+  "listProducts_negativePage_throwsInvalidProductRequestException",
+  "listProducts_sizeAboveMaximum_throwsInvalidProductRequestException",
+  "listProducts_invalidSort_throwsInvalidProductRequestException",
+  "searchProducts_zeroSize_throwsInvalidProductRequestException",
 ]) {
   if (!productServiceTestText.includes(testName)) {
     fail(`catalog-service: missing service test ${testName}`);
