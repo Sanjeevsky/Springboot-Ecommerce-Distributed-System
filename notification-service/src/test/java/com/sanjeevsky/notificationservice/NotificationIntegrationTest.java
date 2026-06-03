@@ -85,6 +85,26 @@ class NotificationIntegrationTest {
                 .andExpect(jsonPath("$.data").isEmpty());
     }
 
+    @Test
+    void getAllNotifications_trimsUserHeader() throws Exception {
+        String user = "trimmed@example.com";
+        save(user, "ORDER_PLACED", false);
+
+        mockMvc.perform(get("/notification-service/notifications")
+                        .header("X-User", "  " + user + "  "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1));
+    }
+
+    @Test
+    void getAllNotifications_blankUser_returnsBadRequest() throws Exception {
+        mockMvc.perform(get("/notification-service/notifications")
+                        .header("X-User", " "))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Notification userId is required"));
+    }
+
     // ─── Get unread ───────────────────────────────────────────────────────────
 
     @Test
@@ -98,6 +118,15 @@ class NotificationIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.length()").value(2))
                 .andExpect(jsonPath("$.data[?(@.read==true)]").doesNotExist());
+    }
+
+    @Test
+    void getUnreadNotifications_blankUser_returnsBadRequest() throws Exception {
+        mockMvc.perform(get("/notification-service/notifications/unread")
+                        .header("X-User", " "))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Notification userId is required"));
     }
 
     // ─── Mark as read ─────────────────────────────────────────────────────────
