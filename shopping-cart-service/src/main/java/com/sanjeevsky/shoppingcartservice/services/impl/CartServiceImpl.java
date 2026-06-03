@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,11 +29,12 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public Cart getOrCreateCart(String userId) {
-        log.info("getOrCreateCart called for userId={}", userId);
-        return cartRepository.findByUserId(userId).orElseGet(() -> {
-            log.info("No cart found for userId={}, creating new cart", userId);
+        String normalizedUserId = validateUserId(userId);
+        log.info("getOrCreateCart called for userId={}", normalizedUserId);
+        return cartRepository.findByUserId(normalizedUserId).orElseGet(() -> {
+            log.info("No cart found for userId={}, creating new cart", normalizedUserId);
             Cart newCart = Cart.builder()
-                    .userId(userId)
+                    .userId(normalizedUserId)
                     .totalAmount(0.0)
                     .build();
             return cartRepository.save(newCart);
@@ -42,14 +44,17 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public Cart addItem(String userId, UUID productId, UUID variantId, int qty) {
-        log.info("addItem called for userId={}, productId={}, qty={}", userId, productId, qty);
+        String normalizedUserId = validateUserId(userId);
+        validateProductId(productId);
         validateAddQuantity(qty);
-        Cart cart = getOrCreateCart(userId);
+        log.info("addItem called for userId={}, productId={}, qty={}", normalizedUserId, productId, qty);
+        Cart cart = getOrCreateCart(normalizedUserId);
 
         ProductResponse product = catalogFeignClient.getProduct(productId);
+        validateCatalogProduct(product, productId);
 
         Optional<CartItem> existingItem = cart.getItems().stream()
-                .filter(i -> i.getProductId().equals(productId))
+                .filter(i -> Objects.equals(i.getProductId(), productId))
                 .findFirst();
 
         if (existingItem.isPresent()) {
@@ -74,17 +79,19 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public Cart updateItem(String userId, UUID productId, int qty) {
-        log.info("updateItem called for userId={}, productId={}, qty={}", userId, productId, qty);
+        String normalizedUserId = validateUserId(userId);
+        validateProductId(productId);
         validateUpdateQuantity(qty);
+        log.info("updateItem called for userId={}, productId={}, qty={}", normalizedUserId, productId, qty);
         if (qty == 0) {
-            return removeItem(userId, productId);
+            return removeItem(normalizedUserId, productId);
         }
 
-        Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new CartNotFoundException("Cart not found for user: " + userId));
+        Cart cart = cartRepository.findByUserId(normalizedUserId)
+                .orElseThrow(() -> new CartNotFoundException("Cart not found for user: " + normalizedUserId));
 
         cart.getItems().stream()
-                .filter(i -> i.getProductId().equals(productId))
+                .filter(i -> Objects.equals(i.getProductId(), productId))
                 .findFirst()
                 .ifPresent(item -> item.setQty(qty));
 
@@ -95,11 +102,13 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public Cart removeItem(String userId, UUID productId) {
-        log.info("removeItem called for userId={}, productId={}", userId, productId);
-        Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new CartNotFoundException("Cart not found for user: " + userId));
+        String normalizedUserId = validateUserId(userId);
+        validateProductId(productId);
+        log.info("removeItem called for userId={}, productId={}", normalizedUserId, productId);
+        Cart cart = cartRepository.findByUserId(normalizedUserId)
+                .orElseThrow(() -> new CartNotFoundException("Cart not found for user: " + normalizedUserId));
 
-        cart.getItems().removeIf(i -> i.getProductId().equals(productId));
+        cart.getItems().removeIf(i -> Objects.equals(i.getProductId(), productId));
         recomputeTotal(cart);
         return cartRepository.save(cart);
     }
@@ -107,9 +116,10 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public Cart clearCart(String userId) {
-        log.info("clearCart called for userId={}", userId);
-        Cart cart = cartRepository.findByUserId(userId)
-                .orElseThrow(() -> new CartNotFoundException("Cart not found for user: " + userId));
+        String normalizedUserId = validateUserId(userId);
+        log.info("clearCart called for userId={}", normalizedUserId);
+        Cart cart = cartRepository.findByUserId(normalizedUserId)
+                .orElseThrow(() -> new CartNotFoundException("Cart not found for user: " + normalizedUserId));
 
         cart.getItems().clear();
         cart.setTotalAmount(0.0);
@@ -119,8 +129,9 @@ public class CartServiceImpl implements CartService {
     @Override
     @Transactional
     public Cart getCheckoutSnapshot(String userId) {
-        log.info("getCheckoutSnapshot called for userId={}", userId);
-        return getOrCreateCart(userId);
+        String normalizedUserId = validateUserId(userId);
+        log.info("getCheckoutSnapshot called for userId={}", normalizedUserId);
+        return getOrCreateCart(normalizedUserId);
     }
 
     private void recomputeTotal(Cart cart) {
@@ -139,6 +150,31 @@ public class CartServiceImpl implements CartService {
     private void validateUpdateQuantity(int qty) {
         if (qty < 0) {
             throw new InvalidCartRequestException("Cart item quantity must not be negative");
+        }
+    }
+
+    private String validateUserId(String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new InvalidCartRequestException("Cart userId is required");
+        }
+        return userId.trim();
+    }
+
+    private void validateProductId(UUID productId) {
+        if (productId == null) {
+            throw new InvalidCartRequestException("Cart productId is required");
+        }
+    }
+
+    private void validateCatalogProduct(ProductResponse product, UUID productId) {
+        if (product == null) {
+            throw new InvalidCartRequestException("Product not found: " + productId);
+        }
+        if (product.getName() == null || product.getName().trim().isEmpty()) {
+            throw new InvalidCartRequestException("Catalog product name is required");
+        }
+        if (!Double.isFinite(product.getSalePrice()) || Double.compare(product.getSalePrice(), 0.0) <= 0) {
+            throw new InvalidCartRequestException("Catalog product sale price must be greater than zero");
         }
     }
 }

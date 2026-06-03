@@ -201,6 +201,17 @@ class CartIntegrationTest {
     }
 
     @Test
+    void addItem_blankUser_returnsBadRequest() throws Exception {
+        mockMvc.perform(post("/cart-service/cart/add")
+                        .header("X-User", " ")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(String.format("{\"productId\":\"%s\",\"qty\":1}", PRODUCT_A)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value("Cart userId is required"));
+    }
+
+    @Test
     void addItem_catalogUnavailable_returns503() throws Exception {
         when(catalogFeignClient.getProduct(PRODUCT_A))
                 .thenThrow(new CatalogUnavailableException("Catalog service is temporarily unavailable"));

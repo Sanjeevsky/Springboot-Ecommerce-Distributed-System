@@ -92,6 +92,27 @@ class CartServiceImplTest {
         verify(cartRepository).save(any(Cart.class));
     }
 
+    @Test
+    void getOrCreateCart_trimsUserIdBeforeLookup() {
+        Cart existing = emptyCart();
+        when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(existing));
+
+        Cart result = cartService.getOrCreateCart("  " + USER_ID + "  ");
+
+        assertThat(result).isSameAs(existing);
+        verify(cartRepository).findByUserId(USER_ID);
+    }
+
+    @Test
+    void getOrCreateCart_blankUserId_throwsInvalidCartRequestException() {
+        assertThatThrownBy(() -> cartService.getOrCreateCart(" "))
+                .isInstanceOf(InvalidCartRequestException.class)
+                .hasMessage("Cart userId is required");
+
+        verify(cartRepository, never()).findByUserId(any());
+        verify(cartRepository, never()).save(any());
+    }
+
     // ─── addItem ───────────────────────────────────────────────────────────────
 
     @Test
@@ -133,6 +154,44 @@ class CartServiceImplTest {
 
         verifyNoInteractions(catalogFeignClient);
         verify(cartRepository, never()).findByUserId(any());
+        verify(cartRepository, never()).save(any());
+    }
+
+    @Test
+    void addItem_nullProductId_throwsInvalidCartRequestException() {
+        assertThatThrownBy(() -> cartService.addItem(USER_ID, null, null, 1))
+                .isInstanceOf(InvalidCartRequestException.class)
+                .hasMessage("Cart productId is required");
+
+        verifyNoInteractions(catalogFeignClient);
+        verify(cartRepository, never()).findByUserId(any());
+        verify(cartRepository, never()).save(any());
+    }
+
+    @Test
+    void addItem_missingCatalogProduct_throwsInvalidCartRequestException() {
+        Cart cart = emptyCart();
+        when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
+        when(catalogFeignClient.getProduct(PRODUCT_ID)).thenReturn(null);
+
+        assertThatThrownBy(() -> cartService.addItem(USER_ID, PRODUCT_ID, null, 1))
+                .isInstanceOf(InvalidCartRequestException.class)
+                .hasMessage("Product not found: " + PRODUCT_ID);
+
+        verify(cartRepository, never()).save(any());
+    }
+
+    @Test
+    void addItem_invalidCatalogProductPrice_throwsInvalidCartRequestException() {
+        Cart cart = emptyCart();
+        when(cartRepository.findByUserId(USER_ID)).thenReturn(Optional.of(cart));
+        when(catalogFeignClient.getProduct(PRODUCT_ID))
+                .thenReturn(new ProductResponse(PRODUCT_ID, "Widget", "desc", 0.0, 30.0, 5.0, 1, false));
+
+        assertThatThrownBy(() -> cartService.addItem(USER_ID, PRODUCT_ID, null, 1))
+                .isInstanceOf(InvalidCartRequestException.class)
+                .hasMessage("Catalog product sale price must be greater than zero");
+
         verify(cartRepository, never()).save(any());
     }
 
@@ -182,6 +241,16 @@ class CartServiceImplTest {
         verify(cartRepository, never()).save(any());
     }
 
+    @Test
+    void updateItem_nullProductId_throwsInvalidCartRequestException() {
+        assertThatThrownBy(() -> cartService.updateItem(USER_ID, null, 1))
+                .isInstanceOf(InvalidCartRequestException.class)
+                .hasMessage("Cart productId is required");
+
+        verify(cartRepository, never()).findByUserId(any());
+        verify(cartRepository, never()).save(any());
+    }
+
     // ─── removeItem ────────────────────────────────────────────────────────────
 
     @Test
@@ -208,6 +277,16 @@ class CartServiceImplTest {
                 .isInstanceOf(CartNotFoundException.class);
     }
 
+    @Test
+    void removeItem_blankUserId_throwsInvalidCartRequestException() {
+        assertThatThrownBy(() -> cartService.removeItem(" ", PRODUCT_ID))
+                .isInstanceOf(InvalidCartRequestException.class)
+                .hasMessage("Cart userId is required");
+
+        verify(cartRepository, never()).findByUserId(any());
+        verify(cartRepository, never()).save(any());
+    }
+
     // ─── clearCart ─────────────────────────────────────────────────────────────
 
     @Test
@@ -228,6 +307,16 @@ class CartServiceImplTest {
 
         assertThatThrownBy(() -> cartService.clearCart(USER_ID))
                 .isInstanceOf(CartNotFoundException.class);
+    }
+
+    @Test
+    void getCheckoutSnapshot_blankUserId_throwsInvalidCartRequestException() {
+        assertThatThrownBy(() -> cartService.getCheckoutSnapshot(" "))
+                .isInstanceOf(InvalidCartRequestException.class)
+                .hasMessage("Cart userId is required");
+
+        verify(cartRepository, never()).findByUserId(any());
+        verify(cartRepository, never()).save(any());
     }
 
     // ─── total recomputation ───────────────────────────────────────────────────
