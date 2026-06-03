@@ -56,6 +56,7 @@ class GatewayConfigTest {
             assertEquals(11, routes.size());
             assertRoute(routes, "auth-service", "lb://auth-service", "/auth-service/login");
             assertRoute(routes, "catalog-service", "lb://catalog-service", "/catalog-service/product/list");
+            assertRoute(routes, "cart-service", "lb://shopping-cart-service", "/cart-service/cart");
             assertRoute(routes, "customer-service", "lb://customer-service", "/customer-service/address");
             assertRoute(routes, "payment-service", "lb://payment-service", "/payment-service/initiate");
             assertRoute(routes, "inventory-service", "lb://inventory-service", "/inventory-service/stock");

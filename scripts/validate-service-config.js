@@ -503,6 +503,10 @@ const gatewayConfigText = fs.readFileSync(
   path.join(root, "api-gateway", "src", "main", "java", "com", "sanjeevsky", "apigateway", "config", "GatewayConfig.java"),
   "utf8"
 );
+const gatewayConfigTestText = fs.readFileSync(
+  path.join(root, "api-gateway", "src", "test", "java", "com", "sanjeevsky", "apigateway", "config", "GatewayConfigTest.java"),
+  "utf8"
+);
 if (gatewayConfigText.includes("@Autowired")) {
   fail("api-gateway GatewayConfig: route filter dependency must use constructor injection");
 }
@@ -512,6 +516,9 @@ if (!gatewayConfigText.includes('.path("/cart-service/**")')
 }
 if (gatewayConfigText.includes('.path("/shopping-cart-service/**")')) {
   fail("api-gateway GatewayConfig: raw /shopping-cart-service/** route must not be exposed");
+}
+if (!gatewayConfigTestText.includes('assertRoute(routes, "cart-service", "lb://shopping-cart-service", "/cart-service/cart")')) {
+  fail("api-gateway GatewayConfigTest: all-prefix route coverage must assert the standard cart route");
 }
 
 const routerValidatorText = fs.readFileSync(
