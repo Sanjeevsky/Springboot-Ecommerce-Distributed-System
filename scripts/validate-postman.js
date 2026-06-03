@@ -249,6 +249,10 @@ function requestMethod(item) {
   return item && item.request && (item.request.method || "").toUpperCase() || "";
 }
 
+function requestBodyRaw(item) {
+  return item && item.request && item.request.body && item.request.body.raw || "";
+}
+
 function requestEventCode(item) {
   return (item.event || [])
     .map((event) => scriptLines(event.script))
@@ -280,7 +284,8 @@ function validateAsyncRunnerRetries(relativePath, collection) {
     }
 
     if (method === "POST" && url.endsWith("/order-service/order")) {
-      if (!code.includes("pm.execution.setNextRequest") || !code.includes("_orderCreateRetryCount")) {
+      if (!code.includes("pm.execution.setNextRequest")
+          || (!code.includes("_orderCreateRetryCount") && !code.includes("_orderConflictRetryCount"))) {
         fail(`${relativePath}: ${requestPath}: order create must retry transient checkout/payment cold-start failures`);
       }
     }
@@ -363,8 +368,10 @@ function validateApiCollectionGuards(relativePath, collection) {
     fail(`${relativePath}: collection-level test must fail non-2xx API responses while preserving bounded retry flows`);
   }
   if (!collectionTestCode.includes("isExpectedRunnerNon2xx")
-      || !collectionTestCode.includes("Reject Order with Insufficient Inventory")) {
-    fail(`${relativePath}: collection-level test must allow only the expected insufficient-inventory 400 response`);
+      || !collectionTestCode.includes("Reject Order with Insufficient Inventory")
+      || !collectionTestCode.includes("Reject Order Idempotency Conflict")
+      || !collectionTestCode.includes("Reject Payment Idempotency Conflict")) {
+    fail(`${relativePath}: collection-level test must allow only expected negative 400 responses`);
   }
 
   const protectedRequests = [
@@ -465,6 +472,43 @@ function validateInsufficientInventoryCoverage(relativePath, collection) {
     expectations.reject,
     expectations.clear,
   ]);
+}
+
+function validateIdempotencyConflictCoverage(relativePath, collection) {
+  const expectations = {
+    [apiCollectionFile]: {
+      order: "Reject Order Idempotency Conflict",
+      payment: "Reject Payment Idempotency Conflict",
+    },
+    [e2eCollectionFile]: {
+      order: "40c — Reject Order Idempotency Conflict",
+      payment: "45a — Reject Payment Idempotency Conflict",
+    },
+  }[relativePath];
+
+  if (!expectations) {
+    return;
+  }
+
+  const orderConflict = requestByName(collection, expectations.order);
+  if (!orderConflict
+      || requestMethod(orderConflict) !== "POST"
+      || requestUrl(orderConflict) !== "{{baseUrl}}/order-service/order"
+      || requestHeaderValue(orderConflict, "Idempotency-Key") !== "{{orderIdempotencyKey}}"
+      || !requestBodyRaw(orderConflict).includes('"addressId": "{{productId}}"')
+      || !requestEventCode(orderConflict).includes("different order request")) {
+    fail(`${relativePath}: ${expectations.order} must assert conflicting order idempotency-key reuse returns 400`);
+  }
+
+  const paymentConflict = requestByName(collection, expectations.payment);
+  if (!paymentConflict
+      || requestMethod(paymentConflict) !== "POST"
+      || requestUrl(paymentConflict) !== "{{baseUrl}}/payment-service/initiate"
+      || requestHeaderValue(paymentConflict, "Idempotency-Key") !== "{{paymentIdempotencyKey}}"
+      || !requestBodyRaw(paymentConflict).includes('"orderId": "{{productId}}"')
+      || !requestEventCode(paymentConflict).includes("different payment request")) {
+    fail(`${relativePath}: ${expectations.payment} must assert conflicting payment idempotency-key reuse returns 400`);
+  }
 }
 
 function validateDataSeedCollectionGuards(relativePath, collection) {
@@ -631,6 +675,7 @@ for (const relativePath of collectionFiles) {
   validateE2eCollectionGuards(relativePath, collection);
   validateDataSeedCollectionGuards(relativePath, collection);
   validateInsufficientInventoryCoverage(relativePath, collection);
+  validateIdempotencyConflictCoverage(relativePath, collection);
   validateAsyncRunnerRetries(relativePath, collection);
   validateGatewayRoutedRequests(relativePath, collection);
   validateRunnerStateRepairs(relativePath, collection);

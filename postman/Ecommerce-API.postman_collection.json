@@ -1319,6 +1319,66 @@
           }
         },
         {
+          "name": "Reject Order Idempotency Conflict",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var retryKey = '_orderConflictRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 5;",
+                  "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Order dependencies not ready; retrying Reject Order Idempotency Conflict ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(retryKey);",
+                  "  try { pm.environment.unset(retryKey); } catch (e) {}",
+                  "  pm.test('Reject Order Idempotency Conflict: status 400', () => pm.response.to.have.status(400));",
+                  "  var json = pm.response.json();",
+                  "  var message = json.message || json.error || JSON.stringify(json);",
+                  "  pm.test('Order idempotency conflict message returned', () => pm.expect(message).to.include('different order request'));",
+                  "  console.log('Order idempotency conflict rejection:', message);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{orderIdempotencyKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/order-service/order",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressId\": \"{{productId}}\"\n}"
+            }
+          }
+        },
+        {
           "name": "Get Order",
           "request": {
             "method": "GET",
@@ -1889,6 +1949,55 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"orderId\": \"{{directPaymentOrderId}}\",\n  \"userId\": \"{{runnerEmail}}\",\n  \"amount\": 119999.0\n}"
+            }
+          }
+        },
+        {
+          "name": "Reject Payment Idempotency Conflict",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Reject Payment Idempotency Conflict: status 400', () => pm.response.to.have.status(400));",
+                  "var json = pm.response.json();",
+                  "var message = json.message || json.error || JSON.stringify(json);",
+                  "pm.test('Payment idempotency conflict message returned', () => pm.expect(message).to.include('different payment request'));",
+                  "console.log('Payment idempotency conflict rejection:', message);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{paymentIdempotencyKey}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/payment-service/initiate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "initiate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": \"{{productId}}\",\n  \"userId\": \"{{runnerEmail}}\",\n  \"amount\": 999.0\n}"
             }
           }
         },
@@ -3029,10 +3138,12 @@
           "      || rawUrl.indexOf('/order-service/order') !== -1",
           "      || rawUrl.indexOf('/inventory-service/stock') !== -1;",
           "}",
-          "",
-          "function isExpectedRunnerNon2xx(code) {",
-          "  return pm.info.requestName === 'Reject Order with Insufficient Inventory' && code === 400;",
-          "}",
+        "",
+        "function isExpectedRunnerNon2xx(code) {",
+        "  return code === 400 && (pm.info.requestName === 'Reject Order with Insufficient Inventory'",
+        "      || pm.info.requestName === 'Reject Order Idempotency Conflict'",
+        "      || pm.info.requestName === 'Reject Payment Idempotency Conflict');",
+        "}",
           "",
           "if (!isTransientRunnerRetry(pm.response.code) && !isExpectedRunnerNon2xx(pm.response.code)) {",
           "  pm.test('Runner request returned 2xx', function () {",
