@@ -42,6 +42,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @CacheEvict(value = "products", allEntries = true)
     public Product addProduct(UUID brandId, UUID categoryId, UUID subCategoryId, Product product){
+        validateProductRequest(product);
         if (productRepository.findByModelAndBrandId(product.getModel(), brandId).isPresent()) {
             throw new ProductAlreadyExistsException(PRODUCT_WITH_THIS_MODEL_AND_BRAND_ALREADY_EXISTS_IN_CATALOG);
         } else {
@@ -74,5 +75,42 @@ public class ProductServiceImpl implements ProductService {
         PageRequest pageable = PageRequest.of(page, size, Sort.by("name").ascending());
         String kw = (keyword != null && !keyword.isBlank()) ? keyword : null;
         return productRepository.search(kw, categoryId, brandId, pageable);
+    }
+
+    private void validateProductRequest(Product product) {
+        if (product == null) {
+            throw new InvalidProductRequestException("Product request is required");
+        }
+        if (isBlank(product.getName())) {
+            throw new InvalidProductRequestException("Product name is required");
+        }
+        if (isBlank(product.getModel())) {
+            throw new InvalidProductRequestException("Product model is required");
+        }
+        if (product.getMrpPrice() <= 0) {
+            throw new InvalidProductRequestException("MRP price must be positive");
+        }
+        if (product.getSalePrice() <= 0) {
+            throw new InvalidProductRequestException("Sale price must be positive");
+        }
+        if (product.getSalePrice() > product.getMrpPrice()) {
+            throw new InvalidProductRequestException("Sale price cannot exceed MRP price");
+        }
+        if (product.getGstValue() < 0) {
+            throw new InvalidProductRequestException("GST value must not be negative");
+        }
+        if (product.getDiscount() < 0) {
+            throw new InvalidProductRequestException("Discount must not be negative");
+        }
+        if (product.getStatus() != 0 && product.getStatus() != 1) {
+            throw new InvalidProductRequestException("Status must be 0 or 1");
+        }
+
+        product.setName(product.getName().trim());
+        product.setModel(product.getModel().trim());
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 }

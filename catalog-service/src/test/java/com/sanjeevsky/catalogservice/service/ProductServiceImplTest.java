@@ -1,6 +1,7 @@
 package com.sanjeevsky.catalogservice.service;
 
 import com.sanjeevsky.catalogservice.exceptions.NoSuchProductExistsException;
+import com.sanjeevsky.catalogservice.exceptions.InvalidProductRequestException;
 import com.sanjeevsky.catalogservice.exceptions.ProductAlreadyExistsException;
 import com.sanjeevsky.catalogservice.model.Brand;
 import com.sanjeevsky.catalogservice.model.Category;
@@ -44,7 +45,16 @@ class ProductServiceImplTest {
     private static final UUID SUB_ID      = UUID.randomUUID();
 
     private Product product(String name) {
-        return Product.builder().id(PRODUCT_ID).name(name).model("M1").status(1).build();
+        return Product.builder()
+                .id(PRODUCT_ID)
+                .name(name)
+                .model("M1")
+                .mrpPrice(100.0)
+                .salePrice(90.0)
+                .gstValue(18.0)
+                .discount(10.0)
+                .status(1)
+                .build();
     }
 
     // ─── addProduct ───────────────────────────────────────────────────────────
@@ -73,6 +83,53 @@ class ProductServiceImplTest {
                 .isInstanceOf(ProductAlreadyExistsException.class);
 
         verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    void addProduct_blankName_throwsInvalidProductRequestException() {
+        Product p = product(" ");
+
+        assertThatThrownBy(() -> productService.addProduct(BRAND_ID, CATEGORY_ID, SUB_ID, p))
+                .isInstanceOf(InvalidProductRequestException.class)
+                .hasMessageContaining("Product name is required");
+
+        verifyNoInteractions(productRepository, brandService, categoryService, subCategoryService);
+    }
+
+    @Test
+    void addProduct_salePriceAboveMrp_throwsInvalidProductRequestException() {
+        Product p = product("Widget");
+        p.setSalePrice(110.0);
+
+        assertThatThrownBy(() -> productService.addProduct(BRAND_ID, CATEGORY_ID, SUB_ID, p))
+                .isInstanceOf(InvalidProductRequestException.class)
+                .hasMessageContaining("Sale price cannot exceed MRP price");
+
+        verifyNoInteractions(productRepository, brandService, categoryService, subCategoryService);
+    }
+
+    @Test
+    void addProduct_negativeDiscount_throwsInvalidProductRequestException() {
+        Product p = product("Widget");
+        p.setDiscount(-1.0);
+
+        assertThatThrownBy(() -> productService.addProduct(BRAND_ID, CATEGORY_ID, SUB_ID, p))
+                .isInstanceOf(InvalidProductRequestException.class)
+                .hasMessageContaining("Discount must not be negative");
+
+        verifyNoInteractions(productRepository, brandService, categoryService, subCategoryService);
+    }
+
+    @Test
+    void addProduct_invalidStatus_throwsInvalidProductRequestException() {
+        Product p = product("Widget");
+        p.setStatus(2);
+
+        assertThatThrownBy(() -> productService.addProduct(BRAND_ID, CATEGORY_ID, SUB_ID, p))
+                .isInstanceOf(InvalidProductRequestException.class)
+                .hasMessageContaining("Status must be 0 or 1");
+
+        verifyNoInteractions(productRepository, brandService, categoryService, subCategoryService);
     }
 
     // ─── getProduct ───────────────────────────────────────────────────────────

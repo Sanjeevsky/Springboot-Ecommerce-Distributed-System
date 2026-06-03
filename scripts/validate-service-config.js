@@ -571,6 +571,10 @@ const variantControllerText = fs.readFileSync(
   path.join(root, "catalog-service", "src", "main", "java", "com", "sanjeevsky", "catalogservice", "controller", "VariantController.java"),
   "utf8"
 );
+const productDtoText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "main", "java", "com", "sanjeevsky", "catalogservice", "model", "dto", "ProductDTO.java"),
+  "utf8"
+);
 const variantDtoText = fs.readFileSync(
   path.join(root, "catalog-service", "src", "main", "java", "com", "sanjeevsky", "catalogservice", "model", "dto", "VariantDTO.java"),
   "utf8"
@@ -583,21 +587,60 @@ const variantServiceImplText = fs.readFileSync(
   path.join(root, "catalog-service", "src", "main", "java", "com", "sanjeevsky", "catalogservice", "service", "impl", "VariantServiceImpl.java"),
   "utf8"
 );
+const productServiceImplText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "main", "java", "com", "sanjeevsky", "catalogservice", "service", "impl", "ProductServiceImpl.java"),
+  "utf8"
+);
 const variantServiceTestText = fs.readFileSync(
   path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "service", "VariantServiceImplTest.java"),
+  "utf8"
+);
+const productServiceTestText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "service", "ProductServiceImplTest.java"),
   "utf8"
 );
 const variantControllerTestText = fs.readFileSync(
   path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "controller", "VariantControllerTest.java"),
   "utf8"
 );
+const productCatalogControllerTestText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "controller", "ProductCatalogControllerTest.java"),
+  "utf8"
+);
+if (!productDtoText.includes("@PositiveOrZero(message = \"GST value must not be negative\")")
+    || !productDtoText.includes("@PositiveOrZero(message = \"Discount must not be negative\")")
+    || !productDtoText.includes("@Max(value = 1, message = \"Status must be 0 or 1\")")
+    || !productServiceImplText.includes("validateProductRequest(product)")
+    || !productServiceImplText.includes("Sale price cannot exceed MRP price")
+    || !productServiceImplText.includes("Status must be 0 or 1")
+    || !catalogGlobalExceptionHandlerText.includes("InvalidProductRequestException.class")) {
+  fail("catalog-service: product creation must validate product economics and active status");
+}
 if (!variantControllerText.includes("@Valid @RequestBody VariantDTO variantDTO")
     || !variantDtoText.includes("@NotBlank(message = \"Primary condition name is required\")")
     || !variantDtoText.includes("@Positive(message = \"Sale price must be positive\")")
     || !variantServiceImplText.includes("validateVariantRequest(variant)")
     || !variantServiceImplText.includes("Sale price cannot exceed MRP price")
-    || !catalogGlobalExceptionHandlerText.includes("@ExceptionHandler(InvalidVariantRequestException.class)")) {
+    || !catalogGlobalExceptionHandlerText.includes("InvalidVariantRequestException.class")) {
   fail("catalog-service: variant creation must validate required conditions and prices");
+}
+for (const testName of [
+  "addProduct_blankName_throwsInvalidProductRequestException",
+  "addProduct_salePriceAboveMrp_throwsInvalidProductRequestException",
+  "addProduct_negativeDiscount_throwsInvalidProductRequestException",
+  "addProduct_invalidStatus_throwsInvalidProductRequestException",
+]) {
+  if (!productServiceTestText.includes(testName)) {
+    fail(`catalog-service: missing service test ${testName}`);
+  }
+}
+for (const testName of [
+  "addProduct_negativeGstValue_returns400",
+  "addProduct_serviceInvalidRequest_returns400",
+]) {
+  if (!productCatalogControllerTestText.includes(testName)) {
+    fail(`catalog-service: missing controller test ${testName}`);
+  }
 }
 for (const testName of [
   "addVariant_blankPrimaryConditionName_throwsInvalidVariantRequestException",

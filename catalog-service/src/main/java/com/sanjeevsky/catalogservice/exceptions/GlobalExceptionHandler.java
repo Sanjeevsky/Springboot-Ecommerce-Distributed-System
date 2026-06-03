@@ -20,8 +20,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ApiResponse.error(message), HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler(InvalidVariantRequestException.class)
-    public ResponseEntity<ApiResponse<Void>> handleInvalidVariantRequest(InvalidVariantRequestException ex) {
+    @ExceptionHandler({InvalidProductRequestException.class, InvalidVariantRequestException.class})
+    public ResponseEntity<ApiResponse<Void>> handleInvalidRequest(RuntimeException ex) {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
     }
 
