@@ -39,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -104,6 +105,24 @@ class OrderServiceImplTest {
     }
 
     @Test
+    void getOrderById_blankUser_throwsInvalidRequestException() {
+        assertThatThrownBy(() -> orderService.getOrderById(" ", ORDER_ID))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Order userId is required");
+
+        verify(orderRepository, never()).findByIdAndUserId(any(), anyString());
+    }
+
+    @Test
+    void getOrderById_nullOrderId_throwsInvalidRequestException() {
+        assertThatThrownBy(() -> orderService.getOrderById(USER, null))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Order id is required");
+
+        verify(orderRepository, never()).findByIdAndUserId(any(), anyString());
+    }
+
+    @Test
     void createOrder_emptyCart_throws() {
         when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(new CartSnapshot());
         assertThatThrownBy(() -> orderService.createOrder(USER, ADDRESS_ID, null))
@@ -122,6 +141,17 @@ class OrderServiceImplTest {
     }
 
     @Test
+    void createOrder_blankUser_throwsInvalidRequestException() {
+        assertThatThrownBy(() -> orderService.createOrder(" ", ADDRESS_ID, null))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Order userId is required");
+
+        verifyNoInteractions(cartFeignClient, customerFeignClient, couponFeignClient, paymentFeignClient, eventPublisher);
+        verify(orderRepository, never()).save(any());
+        verify(orderRepository, never()).findByUserIdAndIdempotencyKey(anyString(), anyString());
+    }
+
+    @Test
     void createOrder_success() {
         when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(cart(List.of(cartItem(100.0)), 100.0));
         when(customerFeignClient.getAddress(USER, ADDRESS_ID)).thenReturn(address());
@@ -134,6 +164,21 @@ class OrderServiceImplTest {
         assertThat(result.getOrderTotal()).isEqualTo(100.0);
         verify(cartFeignClient).clearCart(USER);
         verify(eventPublisher).publishOrderPlaced(any());
+    }
+
+    @Test
+    void createOrder_trimsUserIdBeforeDownstreamCalls() {
+        when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(cart(List.of(cartItem(100.0)), 100.0));
+        when(customerFeignClient.getAddress(USER, ADDRESS_ID)).thenReturn(address());
+        when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(paymentFeignClient.initiatePayment(any())).thenReturn(payment());
+
+        Order result = orderService.createOrder("  " + USER + "  ", ADDRESS_ID, null);
+
+        assertThat(result.getUserId()).isEqualTo(USER);
+        verify(cartFeignClient).getCheckoutSnapshot(USER);
+        verify(customerFeignClient).getAddress(USER, ADDRESS_ID);
+        verify(cartFeignClient).clearCart(USER);
     }
 
     @Test
@@ -311,6 +356,29 @@ class OrderServiceImplTest {
     }
 
     @Test
+    void confirmOrder_nullOrderId_throwsInvalidRequestException() {
+        assertThatThrownBy(() -> orderService.confirmOrder(USER, null))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Order id is required");
+
+        verify(orderRepository, never()).findByIdAndUserId(any(), anyString());
+        verifyNoInteractions(paymentFeignClient, eventPublisher);
+    }
+
+    @Test
+    void confirmOrder_missingPaymentId_throwsInvalidRequestException() {
+        pendingOrder.setPaymentId(null);
+        when(orderRepository.findByIdAndUserId(ORDER_ID, USER)).thenReturn(Optional.of(pendingOrder));
+
+        assertThatThrownBy(() -> orderService.confirmOrder(USER, ORDER_ID))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Order paymentId is required");
+
+        verify(orderRepository, never()).save(any());
+        verifyNoInteractions(paymentFeignClient, eventPublisher);
+    }
+
+    @Test
     void cancelOrder_success() {
         when(orderRepository.findByIdAndUserId(ORDER_ID, USER)).thenReturn(Optional.of(pendingOrder));
         when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -343,10 +411,29 @@ class OrderServiceImplTest {
     }
 
     @Test
+    void cancelOrder_nullOrderId_throwsInvalidRequestException() {
+        assertThatThrownBy(() -> orderService.cancelOrder(USER, null))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Order id is required");
+
+        verify(orderRepository, never()).findByIdAndUserId(any(), anyString());
+        verifyNoInteractions(paymentFeignClient, eventPublisher);
+    }
+
+    @Test
     void getOrdersByUser_returnsList() {
         when(orderRepository.findAllByUserId(USER)).thenReturn(List.of(pendingOrder));
         List<Order> orders = orderService.getOrdersByUser(USER);
         assertThat(orders).hasSize(1);
+    }
+
+    @Test
+    void getOrdersByUser_blankUser_throwsInvalidRequestException() {
+        assertThatThrownBy(() -> orderService.getOrdersByUser(" "))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessage("Order userId is required");
+
+        verify(orderRepository, never()).findAllByUserId(anyString());
     }
 
     // ─── Coupon integration ───────────────────────────────────────────────────

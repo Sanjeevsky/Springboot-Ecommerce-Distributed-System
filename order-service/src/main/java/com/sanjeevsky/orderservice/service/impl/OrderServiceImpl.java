@@ -51,8 +51,10 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Order getOrderById(String userId, UUID id) {
-        log.info("Fetching order id={} for user={}", id, userId);
-        return orderRepository.findByIdAndUserId(id, userId)
+        String normalizedUserId = validateUserId(userId);
+        validateOrderId(id);
+        log.info("Fetching order id={} for user={}", id, normalizedUserId);
+        return orderRepository.findByIdAndUserId(id, normalizedUserId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found: " + id));
     }
 
@@ -63,29 +65,30 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Order createOrder(String userId, UUID addressId, String couponCode, String idempotencyKey) {
+        String normalizedUserId = validateUserId(userId);
         validateCreateOrderRequest(addressId);
         String normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
         String normalizedCouponCode = normalizeCouponCode(couponCode);
         log.info("Creating order for user={}, addressId={}, couponCode={}, idempotencyKey={}",
-                userId, addressId, normalizedCouponCode, normalizedIdempotencyKey);
+                normalizedUserId, addressId, normalizedCouponCode, normalizedIdempotencyKey);
 
         if (normalizedIdempotencyKey != null) {
-            return orderRepository.findByUserIdAndIdempotencyKey(userId, normalizedIdempotencyKey)
+            return orderRepository.findByUserIdAndIdempotencyKey(normalizedUserId, normalizedIdempotencyKey)
                     .map(existing -> {
                         validateIdempotentReplay(existing, addressId, normalizedCouponCode, normalizedIdempotencyKey);
                         if (existing.getPaymentId() == null) {
                             log.info("Completing existing order id={} for user={}, idempotencyKey={}",
-                                    existing.getId(), userId, normalizedIdempotencyKey);
-                            return completeOrderCheckout(existing, userId, addressId, normalizedIdempotencyKey);
+                                    existing.getId(), normalizedUserId, normalizedIdempotencyKey);
+                            return completeOrderCheckout(existing, normalizedUserId, addressId, normalizedIdempotencyKey);
                         }
                         log.info("Returning existing order id={} for user={}, idempotencyKey={}",
-                                existing.getId(), userId, normalizedIdempotencyKey);
+                                existing.getId(), normalizedUserId, normalizedIdempotencyKey);
                         return existing;
                     })
-                    .orElseGet(() -> createNewOrder(userId, addressId, normalizedCouponCode, normalizedIdempotencyKey));
+                    .orElseGet(() -> createNewOrder(normalizedUserId, addressId, normalizedCouponCode, normalizedIdempotencyKey));
         }
 
-        return createNewOrder(userId, addressId, normalizedCouponCode, null);
+        return createNewOrder(normalizedUserId, addressId, normalizedCouponCode, null);
     }
 
     private void validateCreateOrderRequest(UUID addressId) {
@@ -193,23 +196,26 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Order confirmOrder(String userId, UUID orderId) {
-        log.info("Confirming order id={} for user={}", orderId, userId);
-        Order order = orderRepository.findByIdAndUserId(orderId, userId)
+        String normalizedUserId = validateUserId(userId);
+        validateOrderId(orderId);
+        log.info("Confirming order id={} for user={}", orderId, normalizedUserId);
+        Order order = orderRepository.findByIdAndUserId(orderId, normalizedUserId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
         if (order.getStatus() == OrderStatus.CONFIRMED) {
-            log.info("Order already confirmed id={} for user={}", orderId, userId);
+            log.info("Order already confirmed id={} for user={}", orderId, normalizedUserId);
             return order;
         }
         if (order.getStatus() != OrderStatus.PENDING) {
             throw new InvalidRequestException("Order is not in PENDING state");
         }
+        validatePaymentId(order.getPaymentId());
         paymentFeignClient.confirmPayment(order.getPaymentId());
         order.setStatus(OrderStatus.CONFIRMED);
         Order confirmed = orderRepository.save(order);
 
         eventPublisher.publishOrderConfirmed(OrderConfirmedEvent.builder()
                 .orderId(confirmed.getId())
-                .userId(userId)
+                .userId(normalizedUserId)
                 .totalAmount(confirmed.getOrderTotal())
                 .items(orderItemEvents(confirmed))
                 .build());
@@ -219,11 +225,13 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Order cancelOrder(String userId, UUID orderId) {
-        log.info("Cancelling order id={} for user={}", orderId, userId);
-        Order order = orderRepository.findByIdAndUserId(orderId, userId)
+        String normalizedUserId = validateUserId(userId);
+        validateOrderId(orderId);
+        log.info("Cancelling order id={} for user={}", orderId, normalizedUserId);
+        Order order = orderRepository.findByIdAndUserId(orderId, normalizedUserId)
                 .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
         if (order.getStatus() == OrderStatus.CANCELLED) {
-            log.info("Order already cancelled id={} for user={}", orderId, userId);
+            log.info("Order already cancelled id={} for user={}", orderId, normalizedUserId);
             return order;
         }
         if (order.getStatus() == OrderStatus.DELIVERED) {
@@ -237,7 +245,7 @@ public class OrderServiceImpl implements OrderService {
 
         eventPublisher.publishOrderCancelled(OrderCancelledEvent.builder()
                 .orderId(cancelled.getId())
-                .userId(userId)
+                .userId(normalizedUserId)
                 .reason("Cancelled by user")
                 .build());
 
@@ -246,8 +254,28 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public List<Order> getOrdersByUser(String userId) {
-        log.info("Fetching all orders for user={}", userId);
-        return orderRepository.findAllByUserId(userId);
+        String normalizedUserId = validateUserId(userId);
+        log.info("Fetching all orders for user={}", normalizedUserId);
+        return orderRepository.findAllByUserId(normalizedUserId);
+    }
+
+    private String validateUserId(String userId) {
+        if (userId == null || userId.trim().isEmpty()) {
+            throw new InvalidRequestException("Order userId is required");
+        }
+        return userId.trim();
+    }
+
+    private void validateOrderId(UUID orderId) {
+        if (orderId == null) {
+            throw new InvalidRequestException("Order id is required");
+        }
+    }
+
+    private void validatePaymentId(UUID paymentId) {
+        if (paymentId == null) {
+            throw new InvalidRequestException("Order paymentId is required");
+        }
     }
 
     private String normalizeIdempotencyKey(String idempotencyKey) {
