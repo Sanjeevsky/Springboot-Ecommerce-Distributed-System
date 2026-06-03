@@ -108,6 +108,15 @@ class InventoryServiceImplTest {
         verifyNoInteractions(inventoryRepository, transactionRepository);
     }
 
+    @Test
+    void addStock_nullProductId_throwsInvalidInventoryRequestException() {
+        assertThatThrownBy(() -> inventoryService.addStock(null, VARIANT_ID, 10))
+                .isInstanceOf(InvalidInventoryRequestException.class)
+                .hasMessageContaining("Inventory productId is required");
+
+        verifyNoInteractions(inventoryRepository, transactionRepository);
+    }
+
     // ─── getStock ─────────────────────────────────────────────────────────────
 
     @Test
@@ -158,6 +167,15 @@ class InventoryServiceImplTest {
 
         assertThatThrownBy(() -> inventoryService.getStockById(INVENTORY_ID))
                 .isInstanceOf(InventoryNotFoundException.class);
+    }
+
+    @Test
+    void getStockById_nullInventoryId_throwsInvalidInventoryRequestException() {
+        assertThatThrownBy(() -> inventoryService.getStockById(null))
+                .isInstanceOf(InvalidInventoryRequestException.class)
+                .hasMessageContaining("Inventory id is required");
+
+        verifyNoInteractions(inventoryRepository, transactionRepository);
     }
 
     // ─── reserveStock ─────────────────────────────────────────────────────────
@@ -225,6 +243,15 @@ class InventoryServiceImplTest {
         assertThatThrownBy(() -> inventoryService.reserveStock(ORDER_ID, PRODUCT_ID, VARIANT_ID, -1))
                 .isInstanceOf(InvalidInventoryRequestException.class)
                 .hasMessageContaining("Reservation quantity must be greater than zero");
+
+        verifyNoInteractions(inventoryRepository, transactionRepository);
+    }
+
+    @Test
+    void reserveStock_nullOrderId_throwsInvalidInventoryRequestException() {
+        assertThatThrownBy(() -> inventoryService.reserveStock(null, PRODUCT_ID, VARIANT_ID, 1))
+                .isInstanceOf(InvalidInventoryRequestException.class)
+                .hasMessageContaining("Inventory orderId is required");
 
         verifyNoInteractions(inventoryRepository, transactionRepository);
     }
@@ -307,5 +334,14 @@ class InventoryServiceImplTest {
         List<Inventory> result = inventoryService.getStockByProduct(PRODUCT_ID);
 
         assertThat(result).hasSize(2);
+    }
+
+    @Test
+    void getStockByProduct_nullProductId_throwsInvalidInventoryRequestException() {
+        assertThatThrownBy(() -> inventoryService.getStockByProduct(null))
+                .isInstanceOf(InvalidInventoryRequestException.class)
+                .hasMessageContaining("Inventory productId is required");
+
+        verifyNoInteractions(inventoryRepository, transactionRepository);
     }
 }

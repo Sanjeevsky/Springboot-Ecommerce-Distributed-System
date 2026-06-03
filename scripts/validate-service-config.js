@@ -877,13 +877,20 @@ const inventoryServiceImplTestText = fs.readFileSync(
 if (!inventoryServiceImplText.includes("validatePositiveQuantity(quantity, \"Stock quantity\")")
     || !inventoryServiceImplText.includes("validatePositiveQuantity(qty, \"Reservation quantity\")")
     || !inventoryServiceImplText.includes("validatePositiveQuantity(qty, \"Release quantity\")")
+    || !inventoryServiceImplText.includes("validateProductId(productId)")
+    || !inventoryServiceImplText.includes("validateOrderId(orderId)")
+    || !inventoryServiceImplText.includes("Inventory id is required")
     || !inventoryServiceImplText.includes("InvalidInventoryRequestException")) {
-  fail("inventory-service: stock mutations must reject non-positive quantities at the service boundary");
+  fail("inventory-service: stock operations must reject non-positive quantities and missing ids at the service boundary");
 }
 for (const testName of [
   "addStock_nonPositiveQuantity_throwsInvalidInventoryRequestException",
+  "addStock_nullProductId_throwsInvalidInventoryRequestException",
+  "getStockById_nullInventoryId_throwsInvalidInventoryRequestException",
   "reserveStock_nonPositiveQuantity_throwsInvalidInventoryRequestException",
+  "reserveStock_nullOrderId_throwsInvalidInventoryRequestException",
   "releaseStock_nonPositiveQuantity_throwsInvalidInventoryRequestException",
+  "getStockByProduct_nullProductId_throwsInvalidInventoryRequestException",
 ]) {
   if (!inventoryServiceImplTestText.includes(testName)) {
     fail(`inventory-service: missing service test ${testName}`);

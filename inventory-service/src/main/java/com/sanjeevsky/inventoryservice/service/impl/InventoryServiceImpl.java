@@ -29,6 +29,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public Inventory addStock(UUID productId, UUID variantId, int quantity) {
         log.info("Adding stock: productId={}, variantId={}, quantity={}", productId, variantId, quantity);
+        validateProductId(productId);
         validatePositiveQuantity(quantity, "Stock quantity");
 
         Optional<Inventory> existing = variantId != null
@@ -56,6 +57,7 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public Inventory getStock(UUID productId, UUID variantId) {
+        validateProductId(productId);
         if (variantId != null) {
             return inventoryRepository.findByProductIdAndVariantId(productId, variantId)
                     .orElseThrow(() -> new InventoryNotFoundException(
@@ -68,6 +70,9 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public Inventory getStockById(UUID inventoryId) {
+        if (inventoryId == null) {
+            throw new InvalidInventoryRequestException("Inventory id is required");
+        }
         return inventoryRepository.findById(inventoryId)
                 .orElseThrow(() -> new InventoryNotFoundException(
                         "Inventory not found for id=" + inventoryId));
@@ -75,6 +80,7 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public List<Inventory> getStockByProduct(UUID productId) {
+        validateProductId(productId);
         return inventoryRepository.findAllByProductId(productId);
     }
 
@@ -82,6 +88,8 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public Inventory reserveStock(UUID orderId, UUID productId, UUID variantId, int qty) {
         log.info("Reserving stock: orderId={}, productId={}, variantId={}, qty={}", orderId, productId, variantId, qty);
+        validateOrderId(orderId);
+        validateProductId(productId);
         validatePositiveQuantity(qty, "Reservation quantity");
 
         Inventory inventory = getStock(productId, variantId);
@@ -118,6 +126,8 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public Inventory releaseStock(UUID orderId, UUID productId, UUID variantId, int qty) {
         log.info("Releasing stock: orderId={}, productId={}, variantId={}, qty={}", orderId, productId, variantId, qty);
+        validateOrderId(orderId);
+        validateProductId(productId);
         validatePositiveQuantity(qty, "Release quantity");
 
         Inventory inventory = getStock(productId, variantId);
@@ -147,6 +157,18 @@ public class InventoryServiceImpl implements InventoryService {
     private void validatePositiveQuantity(int quantity, String label) {
         if (quantity <= 0) {
             throw new InvalidInventoryRequestException(label + " must be greater than zero");
+        }
+    }
+
+    private void validateProductId(UUID productId) {
+        if (productId == null) {
+            throw new InvalidInventoryRequestException("Inventory productId is required");
+        }
+    }
+
+    private void validateOrderId(UUID orderId) {
+        if (orderId == null) {
+            throw new InvalidInventoryRequestException("Inventory orderId is required");
         }
     }
 }
