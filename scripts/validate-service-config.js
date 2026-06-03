@@ -596,6 +596,18 @@ function composeServiceBlock(service) {
   return match ? match[0] : "";
 }
 
+const kafkaUiBlock = composeServiceBlock("kafka-ui");
+if (!kafkaUiBlock.includes('image: provectuslabs/kafka-ui')
+    || !kafkaUiBlock.includes('"8080:8080"')
+    || !kafkaUiBlock.includes("KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092")) {
+  fail("docker-compose.yml: kafka-ui must expose http://localhost:8080 and connect to kafka:29092");
+}
+if (!readmeText.includes("| Kafka UI | http://localhost:8080 |")
+    || !readmeText.includes("| Docker-internal services and Kafka UI | `kafka:29092` |")
+    || !implementationText.includes("| Kafka UI | http://localhost:8080 |")) {
+  fail("README.md and implementation.md must document Kafka UI at http://localhost:8080");
+}
+
 for (const service of Object.keys(expectedApplicationNames)) {
   const block = composeServiceBlock(service);
   if (!block) {
