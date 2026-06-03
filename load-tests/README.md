@@ -12,7 +12,7 @@ brew install k6          # macOS
 # System must be running
 docker-compose up -d
 
-# Optional: use an existing product/variant instead of setup-time seed data
+# Optional: use existing catalog data instead of setup-time seed data
 export PRODUCT_ID=<uuid-from-catalog>
 export VARIANT_ID=<uuid-from-catalog>
 ```
@@ -48,6 +48,9 @@ k6 run --env PRODUCT_ID=$PRODUCT_ID --env SCENARIO=soak checkout-flow.js
 k6 run --env PRODUCT_ID=$PRODUCT_ID --env COUPON=SAVE10 --env SCENARIO=load checkout-flow.js
 
 # Catalog browse
+k6 run catalog-browse.js
+
+# Catalog browse with a specific existing product
 k6 run --env PRODUCT_ID=$PRODUCT_ID catalog-browse.js
 
 # Output to JSON for analysis

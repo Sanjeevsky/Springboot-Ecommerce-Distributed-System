@@ -1131,6 +1131,12 @@ if (catalogBrowseLoadTestText.includes("keyword=phone")
     || !catalogBrowseLoadTestText.includes("/catalog-service/getBrands")) {
   fail("load-tests/catalog-browse.js: catalog browse load test must use current gateway catalog routes");
 }
+if (catalogBrowseLoadTestText.includes('PRODUCT_ID || "00000000-0000-0000-0000-000000000001"')
+    || !catalogBrowseLoadTestText.includes("function createCatalogSeed(headers)")
+    || !catalogBrowseLoadTestText.includes("/catalog-service/product/addProduct")
+    || !catalogBrowseLoadTestText.includes("hasVariant: false")) {
+  fail("load-tests/catalog-browse.js: catalog browse load test must self-seed product data when PRODUCT_ID is absent");
+}
 
 const checkoutFlowLoadTestText = fs.readFileSync(path.join(root, "load-tests", "checkout-flow.js"), "utf8");
 if (checkoutFlowLoadTestText.includes('PRODUCT_ID || "00000000-0000-0000-0000-000000000001"')
@@ -1141,9 +1147,13 @@ if (checkoutFlowLoadTestText.includes('PRODUCT_ID || "00000000-0000-0000-0000-00
   fail("load-tests/checkout-flow.js: checkout load test must self-seed product inventory and create per-user addresses");
 }
 const loadTestsReadmeText = fs.readFileSync(path.join(root, "load-tests", "README.md"), "utf8");
-if (!loadTestsReadmeText.includes("Optional: use an existing product/variant")
+if (!loadTestsReadmeText.includes("Optional: use existing catalog data")
     || !implementationText.includes("k6 run --env SCENARIO=smoke checkout-flow.js")) {
   fail("load-test docs must document setup-time seeding and no-PRODUCT_ID smoke runs");
+}
+if (!loadTestsReadmeText.includes("k6 run catalog-browse.js")
+    || !implementationText.includes("k6 run catalog-browse.js")) {
+  fail("load-test docs must document no-PRODUCT_ID catalog browse runs");
 }
 
 const wishlistProperties = propertiesFiles("wishlist-service");

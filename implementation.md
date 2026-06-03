@@ -327,6 +327,9 @@ k6 run --env PRODUCT_ID=$PRODUCT_ID --env SCENARIO=load checkout-flow.js
 k6 run --env PRODUCT_ID=$PRODUCT_ID --env SCENARIO=stress checkout-flow.js
 
 # Catalog reads (Redis cache)
+k6 run catalog-browse.js
+
+# Catalog reads with a specific existing product
 k6 run --env PRODUCT_ID=$PRODUCT_ID catalog-browse.js
 ```
 
