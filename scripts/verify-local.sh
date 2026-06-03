@@ -46,6 +46,7 @@ MAVEN_TEST_MODULES=(
 
 REQUIRED_EUREKA_APPS=(
   API-GATEWAY
+  CONFIGSERVER
   AUTH-SERVICE
   CATALOG-SERVICE
   INVENTORY-SERVICE
@@ -61,6 +62,7 @@ REQUIRED_EUREKA_APPS=(
 
 SERVICE_HEALTH_CHECKS=(
   "API gateway|$BASE_URL/actuator/health"
+  "cloud-config|http://$LOCAL_SERVICE_HOST:${CLOUD_CONFIG_PORT:-8071}/actuator/health"
   "auth-service|http://$LOCAL_SERVICE_HOST:${AUTH_SERVICE_PORT:-8083}/actuator/health"
   "customer-service|http://$LOCAL_SERVICE_HOST:${CUSTOMER_SERVICE_PORT:-8082}/actuator/health"
   "catalog-service|http://$LOCAL_SERVICE_HOST:${CATALOG_SERVICE_PORT:-8084}/actuator/health"

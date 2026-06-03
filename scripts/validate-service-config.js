@@ -1196,8 +1196,13 @@ if (!verifyLocalText.includes("MAVEN_JAVA_HOME")
 
 if (!verifyLocalText.includes("RUN_DIRECT_HEALTH_CHECKS")
     || !verifyLocalText.includes("SERVICE_HEALTH_CHECKS")
+    || !verifyLocalText.includes("CLOUD_CONFIG_PORT")
     || !verifyLocalText.includes("INVENTORY_SERVICE_PORT")) {
   fail("scripts/verify-local.sh: local smoke verifier must wait for direct service actuator health before Postman runs");
+}
+
+if (!verifyLocalText.includes("CONFIGSERVER")) {
+  fail("scripts/verify-local.sh: local smoke verifier must wait for cloud-config Eureka registration");
 }
 
 if (!verifyLocalText.includes("GATEWAY_ROUTE_CHECKS")
