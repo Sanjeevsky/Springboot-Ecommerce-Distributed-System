@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,7 +27,7 @@ public class ReviewController {
     @PostMapping("/review")
     public ResponseEntity<ApiResponse<Review>> addReview(
             @RequestHeader("X-User") String userId,
-            @RequestBody Review review) {
+            @RequestBody @Valid Review review) {
         log.info("Received request to add review from userId: {}", userId);
         return new ResponseEntity<>(ApiResponse.ok("Review submitted for moderation", reviewService.addReview(userId, review)), HttpStatus.CREATED);
     }

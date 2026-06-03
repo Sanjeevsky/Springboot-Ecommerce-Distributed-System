@@ -30,6 +30,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.FORBIDDEN);
     }
 
+    @ExceptionHandler(InvalidReviewRequestException.class)
+    public ResponseEntity<ApiResponse<Void>> invalidReviewRequest(InvalidReviewRequestException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> runtimeException(RuntimeException ex) {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);

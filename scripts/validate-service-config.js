@@ -567,6 +567,52 @@ for (const testName of [
   }
 }
 
+const reviewControllerText = fs.readFileSync(
+  path.join(root, "review-service", "src", "main", "java", "com", "sanjeevsky", "reviewservice", "controller", "ReviewController.java"),
+  "utf8"
+);
+const reviewModelText = fs.readFileSync(
+  path.join(root, "review-service", "src", "main", "java", "com", "sanjeevsky", "reviewservice", "model", "Review.java"),
+  "utf8"
+);
+const reviewServiceImplText = fs.readFileSync(
+  path.join(root, "review-service", "src", "main", "java", "com", "sanjeevsky", "reviewservice", "service", "impl", "ReviewServiceImpl.java"),
+  "utf8"
+);
+const reviewServiceTestText = fs.readFileSync(
+  path.join(root, "review-service", "src", "test", "java", "com", "sanjeevsky", "reviewservice", "service", "ReviewServiceImplTest.java"),
+  "utf8"
+);
+const reviewIntegrationTestText = fs.readFileSync(
+  path.join(root, "review-service", "src", "test", "java", "com", "sanjeevsky", "reviewservice", "ReviewIntegrationTest.java"),
+  "utf8"
+);
+if (!reviewControllerText.includes("@RequestBody @Valid Review review")
+    || !reviewModelText.includes("@NotNull(message = \"productId is required\")")
+    || !reviewServiceImplText.includes("validateReviewRequest(review)")
+    || !reviewServiceImplText.includes("normalizeModerationStatus(status)")
+    || !reviewServiceImplText.includes("Review status must be APPROVED or REJECTED")) {
+  fail("review-service: reviews must validate product/rating/title and moderation statuses");
+}
+for (const testName of [
+  "addReview_missingProductId_throwsInvalidReviewRequestException",
+  "addReview_invalidRating_throwsInvalidReviewRequestException",
+  "addReview_blankTitle_throwsInvalidReviewRequestException",
+  "moderateReview_invalidStatus_throwsInvalidReviewRequestException",
+]) {
+  if (!reviewServiceTestText.includes(testName)) {
+    fail(`review-service: missing service test ${testName}`);
+  }
+}
+for (const testName of [
+  "addReview_invalidRating_returns400",
+  "moderateReview_invalidStatus_returns400",
+]) {
+  if (!reviewIntegrationTestText.includes(testName)) {
+    fail(`review-service: missing integration test ${testName}`);
+  }
+}
+
 const paymentServiceImplText = fs.readFileSync(
   path.join(root, "payment-service", "src", "main", "java", "com", "sanjeevsky", "paymentservice", "service", "impl", "PaymentServiceImpl.java"),
   "utf8"

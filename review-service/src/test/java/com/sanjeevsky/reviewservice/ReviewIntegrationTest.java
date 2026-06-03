@@ -98,6 +98,20 @@ class ReviewIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
+    @Test
+    void addReview_invalidRating_returns400() throws Exception {
+        String user = "invalid-rating@example.com";
+        grantEligibility(user, PRODUCT_A);
+
+        mockMvc.perform(post("/review-service/review")
+                        .header("X-User", user)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(reviewBody(PRODUCT_A, 6)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("rating must be at most 5")));
+    }
+
     // ─── getApprovedReviews ───────────────────────────────────────────────────
 
     @Test
@@ -188,6 +202,15 @@ class ReviewIntegrationTest {
         mockMvc.perform(put("/review-service/review/" + UUID.randomUUID() + "/moderate")
                         .param("status", "APPROVED"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void moderateReview_invalidStatus_returns400() throws Exception {
+        mockMvc.perform(put("/review-service/review/" + UUID.randomUUID() + "/moderate")
+                        .param("status", "SPAM"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("APPROVED or REJECTED")));
     }
 
     // ─── getUserReviews ───────────────────────────────────────────────────────

@@ -9,6 +9,7 @@ import javax.persistence.*;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -29,16 +30,17 @@ public class Review {
 
     @Column(nullable = false)
     @Type(type = "org.hibernate.type.UUIDCharType")
+    @NotNull(message = "productId is required")
     private UUID productId;
 
     @Column(nullable = false)
     private String userId;
 
-    @Min(1)
-    @Max(5)
+    @Min(value = 1, message = "rating must be at least 1")
+    @Max(value = 5, message = "rating must be at most 5")
     private int rating;
 
-    @NotBlank
+    @NotBlank(message = "title is required")
     private String title;
 
     @Column(columnDefinition = "TEXT")

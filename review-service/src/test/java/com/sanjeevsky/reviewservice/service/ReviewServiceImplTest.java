@@ -1,6 +1,7 @@
 package com.sanjeevsky.reviewservice.service;
 
 import com.sanjeevsky.reviewservice.dto.ReviewSummary;
+import com.sanjeevsky.reviewservice.exceptions.InvalidReviewRequestException;
 import com.sanjeevsky.reviewservice.exceptions.ReviewNotFoundException;
 import com.sanjeevsky.reviewservice.exceptions.UnauthorizedReviewException;
 import com.sanjeevsky.reviewservice.model.Review;
@@ -94,6 +95,50 @@ class ReviewServiceImplTest {
         verify(reviewRepository, never()).save(any());
     }
 
+    @Test
+    void addReview_missingProductId_throwsInvalidReviewRequestException() {
+        Review incoming = Review.builder()
+                .rating(5)
+                .title("Love it")
+                .build();
+
+        assertThatThrownBy(() -> reviewService.addReview(USER_ID, incoming))
+                .isInstanceOf(InvalidReviewRequestException.class)
+                .hasMessageContaining("productId is required");
+
+        verifyNoInteractions(eligibilityRepository, reviewRepository);
+    }
+
+    @Test
+    void addReview_invalidRating_throwsInvalidReviewRequestException() {
+        Review incoming = Review.builder()
+                .productId(PRODUCT_ID)
+                .rating(6)
+                .title("Love it")
+                .build();
+
+        assertThatThrownBy(() -> reviewService.addReview(USER_ID, incoming))
+                .isInstanceOf(InvalidReviewRequestException.class)
+                .hasMessageContaining("rating must be between 1 and 5");
+
+        verifyNoInteractions(eligibilityRepository, reviewRepository);
+    }
+
+    @Test
+    void addReview_blankTitle_throwsInvalidReviewRequestException() {
+        Review incoming = Review.builder()
+                .productId(PRODUCT_ID)
+                .rating(5)
+                .title(" ")
+                .build();
+
+        assertThatThrownBy(() -> reviewService.addReview(USER_ID, incoming))
+                .isInstanceOf(InvalidReviewRequestException.class)
+                .hasMessageContaining("title is required");
+
+        verifyNoInteractions(eligibilityRepository, reviewRepository);
+    }
+
     // ─── getApprovedReviews ───────────────────────────────────────────────────
 
     @Test
@@ -181,6 +226,15 @@ class ReviewServiceImplTest {
         assertThatThrownBy(() -> reviewService.moderateReview(REVIEW_ID, "APPROVED"))
                 .isInstanceOf(ReviewNotFoundException.class)
                 .hasMessageContaining(REVIEW_ID.toString());
+    }
+
+    @Test
+    void moderateReview_invalidStatus_throwsInvalidReviewRequestException() {
+        assertThatThrownBy(() -> reviewService.moderateReview(REVIEW_ID, "SPAM"))
+                .isInstanceOf(InvalidReviewRequestException.class)
+                .hasMessageContaining("APPROVED or REJECTED");
+
+        verifyNoInteractions(reviewRepository);
     }
 
     // ─── getUserReviews ───────────────────────────────────────────────────────

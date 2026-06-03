@@ -1,6 +1,7 @@
 package com.sanjeevsky.reviewservice.service.impl;
 
 import com.sanjeevsky.reviewservice.dto.ReviewSummary;
+import com.sanjeevsky.reviewservice.exceptions.InvalidReviewRequestException;
 import com.sanjeevsky.reviewservice.exceptions.ReviewNotFoundException;
 import com.sanjeevsky.reviewservice.exceptions.UnauthorizedReviewException;
 import com.sanjeevsky.reviewservice.model.Review;
@@ -29,6 +30,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public Review addReview(String userId, Review review) {
+        validateReviewRequest(review);
         log.info("Adding review for productId: {} by userId: {}", review.getProductId(), userId);
         if (!eligibilityRepository.existsByUserIdAndProductId(userId, review.getProductId())) {
             throw new UnauthorizedReviewException(
@@ -83,12 +85,13 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public Review moderateReview(UUID id, String status) {
-        log.info("Moderating review id: {} to status: {}", id, status);
+        String normalizedStatus = normalizeModerationStatus(status);
+        log.info("Moderating review id: {} to status: {}", id, normalizedStatus);
         Review review = reviewRepository.findById(id)
                 .orElseThrow(() -> new ReviewNotFoundException("Review not found with id: " + id));
-        review.setStatus(status);
+        review.setStatus(normalizedStatus);
         Review updated = reviewRepository.save(review);
-        log.info("Review {} moderated to status: {}", id, status);
+        log.info("Review {} moderated to status: {}", id, normalizedStatus);
         return updated;
     }
 
@@ -96,5 +99,30 @@ public class ReviewServiceImpl implements ReviewService {
     public List<Review> getUserReviews(String userId) {
         log.info("Fetching reviews for userId: {}", userId);
         return reviewRepository.findByUserId(userId);
+    }
+
+    private void validateReviewRequest(Review review) {
+        if (review == null) {
+            throw new InvalidReviewRequestException("Review request is required");
+        }
+        if (review.getProductId() == null) {
+            throw new InvalidReviewRequestException("Review productId is required");
+        }
+        if (review.getRating() < 1 || review.getRating() > 5) {
+            throw new InvalidReviewRequestException("Review rating must be between 1 and 5");
+        }
+        String title = review.getTitle() == null ? null : review.getTitle().trim();
+        if (title == null || title.isEmpty()) {
+            throw new InvalidReviewRequestException("Review title is required");
+        }
+        review.setTitle(title);
+    }
+
+    private String normalizeModerationStatus(String status) {
+        String normalized = status == null ? null : status.trim().toUpperCase();
+        if (!"APPROVED".equals(normalized) && !"REJECTED".equals(normalized)) {
+            throw new InvalidReviewRequestException("Review status must be APPROVED or REJECTED");
+        }
+        return normalized;
     }
 }
