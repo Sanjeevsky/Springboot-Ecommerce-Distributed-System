@@ -230,16 +230,52 @@ function validateRouteCoverage(relativePath, collection) {
 }
 
 function validateCollectionRunnerSeeding(relativePath, collection) {
-  const collectionEventCode = (collection.event || [])
+  const collectionPreRequestCode = (collection.event || [])
     .filter((event) => event.listen === "prerequest")
     .map((event) => scriptLines(event.script))
     .join("\n");
 
-  if (!collectionEventCode.includes("seedRunnerVariables")) {
+  if (!collectionPreRequestCode.includes("seedRunnerVariables")) {
     fail(`${relativePath}: collection-level pre-request script must seed runner variables`);
   }
-  if (!collectionEventCode.includes("setRunnerVar")) {
+  if (!collectionPreRequestCode.includes("setRunnerVar")
+      || !collectionPreRequestCode.includes("pm.collectionVariables.set")
+      || !collectionPreRequestCode.includes("pm.environment.set")) {
     fail(`${relativePath}: collection-level pre-request script must save seeded values for runner use`);
+  }
+
+  const collectionTestCode = (collection.event || [])
+    .filter((event) => event.listen === "test")
+    .map((event) => scriptLines(event.script))
+    .join("\n");
+
+  if (!collectionTestCode.includes("saveRunnerVar")
+      || !collectionTestCode.includes("pm.collectionVariables.set")
+      || !collectionTestCode.includes("pm.environment.set")
+      || !collectionTestCode.includes("rawUrl")) {
+    fail(`${relativePath}: collection-level test script must persist response IDs into collection and environment variables`);
+  }
+
+  for (const savedVariable of [
+    "token",
+    "brandId",
+    "categoryId",
+    "subCategoryId",
+    "productId",
+    "variantId",
+    "addressId",
+    "orderId",
+    "paymentId",
+    "couponId",
+    "reviewId",
+    "notificationId",
+    "orderStatus",
+    "paymentStatus",
+  ]) {
+    if (!collectionTestCode.includes(`'${savedVariable}'`)
+        && !collectionTestCode.includes(`"${savedVariable}"`)) {
+      fail(`${relativePath}: collection-level test script must save ${savedVariable} for runner chaining`);
+    }
   }
 }
 
