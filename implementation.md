@@ -334,15 +334,14 @@ Thresholds: p95 < 2s, error rate < 1%, order success > 95%.
 ## Build & Run
 
 ```bash
-# 1. Build shared library
-export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home
-cd platform-commons && mvn install -q && cd ..
+# 1. Build service jars for Docker images
+scripts/build-docker-jars.sh
 
 # 2. Start full stack
-docker-compose up -d --build
+docker-compose up -d
 
 # 3. Verify all services registered in Eureka
-curl http://localhost:8761/eureka/apps | grep -o '<app>.*</app>'
+curl -sf http://localhost:8761/eureka/apps | grep -o '<name>[^<]*</name>'
 
 # 4. Run local verification
 RUN_MAVEN_TESTS=0 scripts/verify-local.sh

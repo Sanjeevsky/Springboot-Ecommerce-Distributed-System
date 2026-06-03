@@ -473,6 +473,12 @@ if (!readmeText.includes("optional `platform-tools` profile")
     || !implementationText.includes("SPRING_BOOT_ADMIN_CLIENT_ENABLED=true docker compose --profile platform-tools up -d")) {
   fail("README.md and implementation.md must document the optional Spring Boot Admin platform-tools profile");
 }
+if (implementationText.includes("grep -o '<app>.*</app>'")
+    || implementationText.includes("cd platform-commons && mvn install -q && cd ..")
+    || !implementationText.includes("scripts/build-docker-jars.sh")
+    || !implementationText.includes("grep -o '<name>[^<]*</name>'")) {
+  fail("implementation.md: Build & Run commands must use maintained Docker jar build and Eureka name checks");
+}
 if (/SPRING_ZIPKIN_ENABLED=true/.test(composeText)) {
   fail("docker-compose.yml: tracing must default to opt-in with SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}");
 }
