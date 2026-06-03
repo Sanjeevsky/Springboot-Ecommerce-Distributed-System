@@ -112,6 +112,16 @@ class OrderServiceImplTest {
     }
 
     @Test
+    void createOrder_missingAddressId_throwsInvalidRequestException() {
+        assertThatThrownBy(() -> orderService.createOrder(USER, null, null))
+                .isInstanceOf(InvalidRequestException.class)
+                .hasMessageContaining("Order addressId is required");
+
+        verifyNoInteractions(cartFeignClient, customerFeignClient, couponFeignClient, paymentFeignClient, eventPublisher);
+        verify(orderRepository, never()).save(any());
+    }
+
+    @Test
     void createOrder_success() {
         when(cartFeignClient.getCheckoutSnapshot(USER)).thenReturn(cart(List.of(cartItem(100.0)), 100.0));
         when(customerFeignClient.getAddress(USER, ADDRESS_ID)).thenReturn(address());

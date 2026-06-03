@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,7 +40,7 @@ public class OrderController {
     public ResponseEntity<ApiResponse<Order>> createOrder(
             @RequestHeader("X-User") String userId,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
-            @RequestBody CreateOrderRequest request) {
+            @RequestBody @Valid CreateOrderRequest request) {
         Order order = orderService.createOrder(userId, request.getAddressId(), request.getCouponCode(), idempotencyKey);
         return new ResponseEntity<>(ApiResponse.ok("Order placed successfully", order), HttpStatus.CREATED);
     }
@@ -64,6 +66,7 @@ public class OrderController {
     }
 
     public static class CreateOrderRequest {
+        @NotNull(message = "addressId is required")
         private UUID addressId;
         private String couponCode;
 

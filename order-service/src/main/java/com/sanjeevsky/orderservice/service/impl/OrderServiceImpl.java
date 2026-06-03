@@ -63,6 +63,7 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Order createOrder(String userId, UUID addressId, String couponCode, String idempotencyKey) {
+        validateCreateOrderRequest(addressId);
         String normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
         String normalizedCouponCode = normalizeCouponCode(couponCode);
         log.info("Creating order for user={}, addressId={}, couponCode={}, idempotencyKey={}",
@@ -85,6 +86,12 @@ public class OrderServiceImpl implements OrderService {
         }
 
         return createNewOrder(userId, addressId, normalizedCouponCode, null);
+    }
+
+    private void validateCreateOrderRequest(UUID addressId) {
+        if (addressId == null) {
+            throw new InvalidRequestException("Order addressId is required");
+        }
     }
 
     private Order createNewOrder(String userId, UUID addressId, String couponCode, String idempotencyKey) {

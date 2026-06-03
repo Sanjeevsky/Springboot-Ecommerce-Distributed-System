@@ -507,6 +507,24 @@ if (!orderServiceTestText.includes("createOrder_withSameIdempotencyKeyDifferentA
     || !orderServiceTestText.includes("createOrder_withSameIdempotencyKeyDifferentCoupon_throwsInvalidRequestException")) {
   fail("order-service: unit tests must cover conflicting idempotency-key order creation");
 }
+const orderControllerText = fs.readFileSync(
+  path.join(root, "order-service", "src", "main", "java", "com", "sanjeevsky", "orderservice", "controller", "OrderController.java"),
+  "utf8"
+);
+const orderControllerTestText = fs.readFileSync(
+  path.join(root, "order-service", "src", "test", "java", "com", "sanjeevsky", "orderservice", "controller", "OrderControllerTest.java"),
+  "utf8"
+);
+if (!orderServiceImplText.includes("validateCreateOrderRequest(addressId)")
+    || !orderServiceImplText.includes("Order addressId is required")
+    || !orderControllerText.includes("@RequestBody @Valid CreateOrderRequest request")
+    || !orderControllerText.includes("@NotNull(message = \"addressId is required\")")) {
+  fail("order-service: order creation must validate required addressId at controller and service boundaries");
+}
+if (!orderServiceTestText.includes("createOrder_missingAddressId_throwsInvalidRequestException")
+    || !orderControllerTestText.includes("createOrder_missingAddressId_returns400")) {
+  fail("order-service: tests must cover missing addressId validation for order creation");
+}
 
 const paymentServiceImplText = fs.readFileSync(
   path.join(root, "payment-service", "src", "main", "java", "com", "sanjeevsky", "paymentservice", "service", "impl", "PaymentServiceImpl.java"),
