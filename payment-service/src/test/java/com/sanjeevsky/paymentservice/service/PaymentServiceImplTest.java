@@ -132,6 +132,39 @@ class PaymentServiceImplTest {
         verifyNoInteractions(eventPublisher);
     }
 
+    @Test
+    void initiatePayment_missingOrderId_throwsInvalidPaymentRequestException() {
+        PaymentRequest req = new PaymentRequest(null, USER_ID, 250.0);
+
+        assertThatThrownBy(() -> paymentService.initiatePayment(req))
+                .isInstanceOf(InvalidPaymentRequestException.class)
+                .hasMessageContaining("Payment orderId is required");
+
+        verifyNoInteractions(paymentRepository, eventPublisher);
+    }
+
+    @Test
+    void initiatePayment_blankUserId_throwsInvalidPaymentRequestException() {
+        PaymentRequest req = new PaymentRequest(ORDER_ID, "  ", 250.0);
+
+        assertThatThrownBy(() -> paymentService.initiatePayment(req))
+                .isInstanceOf(InvalidPaymentRequestException.class)
+                .hasMessageContaining("Payment userId is required");
+
+        verifyNoInteractions(paymentRepository, eventPublisher);
+    }
+
+    @Test
+    void initiatePayment_nonPositiveAmount_throwsInvalidPaymentRequestException() {
+        PaymentRequest req = new PaymentRequest(ORDER_ID, USER_ID, 0.0);
+
+        assertThatThrownBy(() -> paymentService.initiatePayment(req))
+                .isInstanceOf(InvalidPaymentRequestException.class)
+                .hasMessageContaining("Payment amount must be greater than zero");
+
+        verifyNoInteractions(paymentRepository, eventPublisher);
+    }
+
     // ─── confirmPayment ────────────────────────────────────────────────────────
 
     @Test

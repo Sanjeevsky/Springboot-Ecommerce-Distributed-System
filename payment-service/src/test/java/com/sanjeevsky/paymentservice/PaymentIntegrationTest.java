@@ -112,6 +112,36 @@ class PaymentIntegrationTest {
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("different payment request")));
     }
 
+    @Test
+    void initiatePayment_missingOrderId_returns400() throws Exception {
+        mockMvc.perform(post("/payment-service/initiate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\":\"" + USER + "\",\"amount\":500.0}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("orderId is required")));
+    }
+
+    @Test
+    void initiatePayment_blankUserId_returns400() throws Exception {
+        mockMvc.perform(post("/payment-service/initiate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"  \",\"amount\":500.0}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("userId is required")));
+    }
+
+    @Test
+    void initiatePayment_nonPositiveAmount_returns400() throws Exception {
+        mockMvc.perform(post("/payment-service/initiate")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"orderId\":\"" + ORDER_ID + "\",\"userId\":\"" + USER + "\",\"amount\":0.0}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("amount must be greater than zero")));
+    }
+
     // ─── Confirm ──────────────────────────────────────────────────────────────
 
     @Test

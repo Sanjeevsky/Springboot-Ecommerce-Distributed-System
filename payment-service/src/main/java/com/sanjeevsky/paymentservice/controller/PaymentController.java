@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.UUID;
 
 @Slf4j
@@ -26,7 +27,7 @@ public class PaymentController {
     @PostMapping("/initiate")
     public ResponseEntity<ApiResponse<Payment>> initiatePayment(
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
-            @RequestBody PaymentRequest request) {
+            @RequestBody @Valid PaymentRequest request) {
         if (idempotencyKey != null && !idempotencyKey.isBlank()) {
             request.setIdempotencyKey(idempotencyKey.trim());
         }

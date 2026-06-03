@@ -32,6 +32,7 @@ public class PaymentServiceImpl implements PaymentService {
 
     @Override
     public Payment initiatePayment(PaymentRequest request) {
+        validateInitiationRequest(request);
         String idempotencyKey = normalizeIdempotencyKey(request.getIdempotencyKey());
         log.info("Initiating payment for orderId: {}, userId: {}, idempotencyKey: {}",
                 request.getOrderId(), request.getUserId(), idempotencyKey);
@@ -158,6 +159,23 @@ public class PaymentServiceImpl implements PaymentService {
         }
         String trimmed = idempotencyKey.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void validateInitiationRequest(PaymentRequest request) {
+        if (request == null) {
+            throw new InvalidPaymentRequestException("Payment request is required");
+        }
+        if (request.getOrderId() == null) {
+            throw new InvalidPaymentRequestException("Payment orderId is required");
+        }
+        String userId = request.getUserId() == null ? null : request.getUserId().trim();
+        if (userId == null || userId.isEmpty()) {
+            throw new InvalidPaymentRequestException("Payment userId is required");
+        }
+        if (!Double.isFinite(request.getAmount()) || Double.compare(request.getAmount(), 0.0) <= 0) {
+            throw new InvalidPaymentRequestException("Payment amount must be greater than zero");
+        }
+        request.setUserId(userId);
     }
 
     private void validateIdempotentReplay(Payment existing, PaymentRequest request, String idempotencyKey) {

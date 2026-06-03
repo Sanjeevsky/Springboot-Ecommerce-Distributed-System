@@ -516,6 +516,10 @@ const paymentIntegrationTestText = fs.readFileSync(
   path.join(root, "payment-service", "src", "test", "java", "com", "sanjeevsky", "paymentservice", "PaymentIntegrationTest.java"),
   "utf8"
 );
+const paymentServiceImplTestText = fs.readFileSync(
+  path.join(root, "payment-service", "src", "test", "java", "com", "sanjeevsky", "paymentservice", "service", "PaymentServiceImplTest.java"),
+  "utf8"
+);
 if (!paymentServiceImplText.includes("validateIdempotentReplay")
     || !paymentServiceImplText.includes("InvalidPaymentRequestException")
     || !paymentServiceImplText.includes("Double.compare")) {
@@ -523,6 +527,30 @@ if (!paymentServiceImplText.includes("validateIdempotentReplay")
 }
 if (!paymentIntegrationTestText.includes("initiatePayment_withSameIdempotencyKeyDifferentPayload_returns400")) {
   fail("payment-service: integration tests must cover conflicting idempotency-key payment initiation");
+}
+if (!paymentServiceImplText.includes("validateInitiationRequest(request)")
+    || !paymentServiceImplText.includes("Payment orderId is required")
+    || !paymentServiceImplText.includes("Payment userId is required")
+    || !paymentServiceImplText.includes("Payment amount must be greater than zero")) {
+  fail("payment-service: payment initiation must validate orderId, userId, and positive amount at the service boundary");
+}
+for (const testName of [
+  "initiatePayment_missingOrderId_throwsInvalidPaymentRequestException",
+  "initiatePayment_blankUserId_throwsInvalidPaymentRequestException",
+  "initiatePayment_nonPositiveAmount_throwsInvalidPaymentRequestException",
+]) {
+  if (!paymentServiceImplTestText.includes(testName)) {
+    fail(`payment-service: missing service test ${testName}`);
+  }
+}
+for (const testName of [
+  "initiatePayment_missingOrderId_returns400",
+  "initiatePayment_blankUserId_returns400",
+  "initiatePayment_nonPositiveAmount_returns400",
+]) {
+  if (!paymentIntegrationTestText.includes(testName)) {
+    fail(`payment-service: missing integration test ${testName}`);
+  }
 }
 
 const inventoryServiceImplText = fs.readFileSync(
