@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.UUID;
 
 @RestController
@@ -26,7 +27,7 @@ public class VariantController {
     @PostMapping("/add/{productId}")
     public ResponseEntity<ApiResponse<Variant>> addVariant(
             @PathVariable("productId") UUID productId,
-            @RequestBody VariantDTO variantDTO) {
+            @Valid @RequestBody VariantDTO variantDTO) {
         Variant variant = mapper.map(variantDTO, Variant.class);
         return new ResponseEntity<>(ApiResponse.ok("Variant added", service.addVariant(productId, variant)), HttpStatus.CREATED);
     }

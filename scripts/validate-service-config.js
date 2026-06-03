@@ -567,6 +567,56 @@ for (const testName of [
   }
 }
 
+const variantControllerText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "main", "java", "com", "sanjeevsky", "catalogservice", "controller", "VariantController.java"),
+  "utf8"
+);
+const variantDtoText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "main", "java", "com", "sanjeevsky", "catalogservice", "model", "dto", "VariantDTO.java"),
+  "utf8"
+);
+const catalogGlobalExceptionHandlerText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "main", "java", "com", "sanjeevsky", "catalogservice", "exceptions", "GlobalExceptionHandler.java"),
+  "utf8"
+);
+const variantServiceImplText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "main", "java", "com", "sanjeevsky", "catalogservice", "service", "impl", "VariantServiceImpl.java"),
+  "utf8"
+);
+const variantServiceTestText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "service", "VariantServiceImplTest.java"),
+  "utf8"
+);
+const variantControllerTestText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "controller", "VariantControllerTest.java"),
+  "utf8"
+);
+if (!variantControllerText.includes("@Valid @RequestBody VariantDTO variantDTO")
+    || !variantDtoText.includes("@NotBlank(message = \"Primary condition name is required\")")
+    || !variantDtoText.includes("@Positive(message = \"Sale price must be positive\")")
+    || !variantServiceImplText.includes("validateVariantRequest(variant)")
+    || !variantServiceImplText.includes("Sale price cannot exceed MRP price")
+    || !catalogGlobalExceptionHandlerText.includes("@ExceptionHandler(InvalidVariantRequestException.class)")) {
+  fail("catalog-service: variant creation must validate required conditions and prices");
+}
+for (const testName of [
+  "addVariant_blankPrimaryConditionName_throwsInvalidVariantRequestException",
+  "addVariant_nonPositiveSalePrice_throwsInvalidVariantRequestException",
+  "addVariant_salePriceAboveMrp_throwsInvalidVariantRequestException",
+]) {
+  if (!variantServiceTestText.includes(testName)) {
+    fail(`catalog-service: missing service test ${testName}`);
+  }
+}
+for (const testName of [
+  "addVariant_missingPrimaryCondition_returns400",
+  "addVariant_serviceInvalidRequest_returns400",
+]) {
+  if (!variantControllerTestText.includes(testName)) {
+    fail(`catalog-service: missing controller test ${testName}`);
+  }
+}
+
 const reviewControllerText = fs.readFileSync(
   path.join(root, "review-service", "src", "main", "java", "com", "sanjeevsky", "reviewservice", "controller", "ReviewController.java"),
   "utf8"

@@ -1,6 +1,7 @@
 package com.sanjeevsky.catalogservice.service;
 
 import com.sanjeevsky.catalogservice.exceptions.ProductNotExistsException;
+import com.sanjeevsky.catalogservice.exceptions.InvalidVariantRequestException;
 import com.sanjeevsky.catalogservice.exceptions.VariantNotExistsException;
 import com.sanjeevsky.catalogservice.model.Product;
 import com.sanjeevsky.catalogservice.model.Variant;
@@ -42,6 +43,8 @@ class VariantServiceImplTest {
     private Variant variant() {
         Variant v = new Variant();
         v.setId(VARIANT_ID);
+        v.setCondition1Name("Storage");
+        v.setCondition1Value("256GB");
         v.setMrpPrice(100.0);
         v.setSalePrice(90.0);
         return v;
@@ -71,6 +74,42 @@ class VariantServiceImplTest {
                 .isInstanceOf(ProductNotExistsException.class);
 
         verify(variantRepository, never()).save(any());
+    }
+
+    @Test
+    void addVariant_blankPrimaryConditionName_throwsInvalidVariantRequestException() {
+        Variant v = variant();
+        v.setCondition1Name(" ");
+
+        assertThatThrownBy(() -> variantService.addVariant(PRODUCT_ID, v))
+                .isInstanceOf(InvalidVariantRequestException.class)
+                .hasMessageContaining("Primary condition name is required");
+
+        verifyNoInteractions(productRepository, variantRepository);
+    }
+
+    @Test
+    void addVariant_nonPositiveSalePrice_throwsInvalidVariantRequestException() {
+        Variant v = variant();
+        v.setSalePrice(0.0);
+
+        assertThatThrownBy(() -> variantService.addVariant(PRODUCT_ID, v))
+                .isInstanceOf(InvalidVariantRequestException.class)
+                .hasMessageContaining("Sale price must be positive");
+
+        verifyNoInteractions(productRepository, variantRepository);
+    }
+
+    @Test
+    void addVariant_salePriceAboveMrp_throwsInvalidVariantRequestException() {
+        Variant v = variant();
+        v.setSalePrice(110.0);
+
+        assertThatThrownBy(() -> variantService.addVariant(PRODUCT_ID, v))
+                .isInstanceOf(InvalidVariantRequestException.class)
+                .hasMessageContaining("Sale price cannot exceed MRP price");
+
+        verifyNoInteractions(productRepository, variantRepository);
     }
 
     // ─── getVariant ────────────────────────────────────────────────────────────

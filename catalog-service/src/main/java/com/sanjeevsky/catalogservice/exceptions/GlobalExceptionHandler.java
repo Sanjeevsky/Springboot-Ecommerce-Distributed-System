@@ -20,6 +20,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ApiResponse.error(message), HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(InvalidVariantRequestException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidVariantRequest(InvalidVariantRequestException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler({CategoryListEmptyException.class, BrandListEmptyException.class, SubCategoryListEmptyException.class})
     public ResponseEntity<ApiResponse<Void>> handleListEmpty(RuntimeException ex) {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.NOT_FOUND);
