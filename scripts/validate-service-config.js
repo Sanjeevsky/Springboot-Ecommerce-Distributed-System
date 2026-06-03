@@ -619,6 +619,35 @@ if (!shoppingCartComposeBlock.includes("CLIENTS_CATALOG_URL=http://catalog-servi
   fail("docker-compose.yml: shopping-cart-service must define CLIENTS_CATALOG_URL=http://catalog-service:8084");
 }
 
+const shoppingCartServiceImplText = fs.readFileSync(
+  path.join(root, "shopping-cart-service", "src", "main", "java", "com", "sanjeevsky", "shoppingcartservice", "services", "impl", "CartServiceImpl.java"),
+  "utf8"
+);
+const shoppingCartServiceTestText = fs.readFileSync(
+  path.join(root, "shopping-cart-service", "src", "test", "java", "com", "sanjeevsky", "shoppingcartservice", "service", "CartServiceImplTest.java"),
+  "utf8"
+);
+const shoppingCartIntegrationTestText = fs.readFileSync(
+  path.join(root, "shopping-cart-service", "src", "test", "java", "com", "sanjeevsky", "shoppingcartservice", "CartIntegrationTest.java"),
+  "utf8"
+);
+if (!shoppingCartServiceImplText.includes("validateAddQuantity(qty)")
+    || !shoppingCartServiceImplText.includes("validateUpdateQuantity(qty)")
+    || !shoppingCartServiceImplText.includes("InvalidCartRequestException")) {
+  fail("shopping-cart-service: cart mutations must reject non-positive adds and negative updates at the service boundary");
+}
+for (const testName of [
+  "addItem_nonPositiveQty_throwsInvalidCartRequestException",
+  "updateItem_negativeQty_throwsInvalidCartRequestException",
+]) {
+  if (!shoppingCartServiceTestText.includes(testName)) {
+    fail(`shopping-cart-service: missing service test ${testName}`);
+  }
+}
+if (!shoppingCartIntegrationTestText.includes("updateItem_negativeQty_returnsBadRequest")) {
+  fail("shopping-cart-service: integration tests must reject negative cart update quantities");
+}
+
 const wishlistProperties = propertiesFiles("wishlist-service");
 if (!wishlistProperties.some((file) => hasProperty(file, "clients.cart.url"))) {
   fail("wishlist-service: expected clients.cart.url property for Docker cart dependency override");

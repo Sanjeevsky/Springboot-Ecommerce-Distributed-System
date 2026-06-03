@@ -30,6 +30,11 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.SERVICE_UNAVAILABLE);
     }
 
+    @ExceptionHandler(InvalidCartRequestException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidCartRequest(InvalidCartRequestException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<ApiResponse<Void>> handleRuntime(RuntimeException ex) {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);

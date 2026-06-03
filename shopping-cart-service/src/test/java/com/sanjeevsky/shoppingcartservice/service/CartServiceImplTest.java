@@ -3,6 +3,7 @@ package com.sanjeevsky.shoppingcartservice.service;
 import com.sanjeevsky.platform.model.product.ProductResponse;
 import com.sanjeevsky.shoppingcartservice.clients.CatalogFeignClient;
 import com.sanjeevsky.shoppingcartservice.exceptions.CartNotFoundException;
+import com.sanjeevsky.shoppingcartservice.exceptions.InvalidCartRequestException;
 import com.sanjeevsky.shoppingcartservice.model.Cart;
 import com.sanjeevsky.shoppingcartservice.model.CartItem;
 import com.sanjeevsky.shoppingcartservice.repository.CartRepository;
@@ -124,6 +125,17 @@ class CartServiceImplTest {
         assertThat(result.getTotalAmount()).isEqualTo(50.0);
     }
 
+    @Test
+    void addItem_nonPositiveQty_throwsInvalidCartRequestException() {
+        assertThatThrownBy(() -> cartService.addItem(USER_ID, PRODUCT_ID, null, 0))
+                .isInstanceOf(InvalidCartRequestException.class)
+                .hasMessageContaining("Cart item quantity must be greater than zero");
+
+        verifyNoInteractions(catalogFeignClient);
+        verify(cartRepository, never()).findByUserId(any());
+        verify(cartRepository, never()).save(any());
+    }
+
     // ─── updateItem ────────────────────────────────────────────────────────────
 
     @Test
@@ -158,6 +170,16 @@ class CartServiceImplTest {
 
         assertThatThrownBy(() -> cartService.updateItem(USER_ID, PRODUCT_ID, 3))
                 .isInstanceOf(CartNotFoundException.class);
+    }
+
+    @Test
+    void updateItem_negativeQty_throwsInvalidCartRequestException() {
+        assertThatThrownBy(() -> cartService.updateItem(USER_ID, PRODUCT_ID, -1))
+                .isInstanceOf(InvalidCartRequestException.class)
+                .hasMessageContaining("Cart item quantity must not be negative");
+
+        verify(cartRepository, never()).findByUserId(any());
+        verify(cartRepository, never()).save(any());
     }
 
     // ─── removeItem ────────────────────────────────────────────────────────────

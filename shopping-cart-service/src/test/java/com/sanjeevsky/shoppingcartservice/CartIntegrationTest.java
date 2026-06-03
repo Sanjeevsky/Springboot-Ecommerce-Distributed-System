@@ -171,6 +171,24 @@ class CartIntegrationTest {
                 .andExpect(jsonPath("$.data.totalAmount").value(0.0));
     }
 
+    @Test
+    void updateItem_negativeQty_returnsBadRequest() throws Exception {
+        stubProduct(PRODUCT_A, "Widget", 25.0);
+        String user = "negative-update@example.com";
+
+        mockMvc.perform(post("/cart-service/cart/add")
+                        .header("X-User", user)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(String.format("{\"productId\":\"%s\",\"qty\":1}", PRODUCT_A)))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(put("/cart-service/cart/item/" + PRODUCT_A + "?qty=-1")
+                        .header("X-User", user))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("must not be negative")));
+    }
+
     // ─── Validation: qty < 1 is rejected ──────────────────────────────────────
 
     @Test

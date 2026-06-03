@@ -3,6 +3,7 @@ package com.sanjeevsky.shoppingcartservice.services.impl;
 import com.sanjeevsky.shoppingcartservice.clients.CatalogFeignClient;
 import com.sanjeevsky.platform.model.product.ProductResponse;
 import com.sanjeevsky.shoppingcartservice.exceptions.CartNotFoundException;
+import com.sanjeevsky.shoppingcartservice.exceptions.InvalidCartRequestException;
 import com.sanjeevsky.shoppingcartservice.model.Cart;
 import com.sanjeevsky.shoppingcartservice.model.CartItem;
 import com.sanjeevsky.shoppingcartservice.repository.CartRepository;
@@ -42,6 +43,7 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public Cart addItem(String userId, UUID productId, UUID variantId, int qty) {
         log.info("addItem called for userId={}, productId={}, qty={}", userId, productId, qty);
+        validateAddQuantity(qty);
         Cart cart = getOrCreateCart(userId);
 
         ProductResponse product = catalogFeignClient.getProduct(productId);
@@ -73,6 +75,7 @@ public class CartServiceImpl implements CartService {
     @Transactional
     public Cart updateItem(String userId, UUID productId, int qty) {
         log.info("updateItem called for userId={}, productId={}, qty={}", userId, productId, qty);
+        validateUpdateQuantity(qty);
         if (qty == 0) {
             return removeItem(userId, productId);
         }
@@ -125,5 +128,17 @@ public class CartServiceImpl implements CartService {
                 .mapToDouble(i -> i.getUnitPrice() * i.getQty())
                 .sum();
         cart.setTotalAmount(total);
+    }
+
+    private void validateAddQuantity(int qty) {
+        if (qty <= 0) {
+            throw new InvalidCartRequestException("Cart item quantity must be greater than zero");
+        }
+    }
+
+    private void validateUpdateQuantity(int qty) {
+        if (qty < 0) {
+            throw new InvalidCartRequestException("Cart item quantity must not be negative");
+        }
     }
 }
