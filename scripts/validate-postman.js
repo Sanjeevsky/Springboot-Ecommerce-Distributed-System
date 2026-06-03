@@ -390,6 +390,30 @@ function hasAuthorization(item, collection) {
     || (!requestAuthType(item) && collection && collection.auth && collection.auth.type === "bearer");
 }
 
+function isPublicGatewayRoute(url) {
+  const path = normalizeRoutePath(url);
+  return path === "/auth-service/signup"
+    || path === "/auth-service/login"
+    || path === "/catalog-service/product/list"
+    || path === "/catalog-service/product/search"
+    || path === "/catalog-service/product/getProduct/{var}";
+}
+
+function validateGatewayRequestAuth(relativePath, collection) {
+  for (const { path: requestPath, item } of walkItems(collection.item)) {
+    const url = requestUrl(item);
+    if (!url || isPublicGatewayRoute(url)) {
+      continue;
+    }
+    if (requestAuthType(item) === "noauth") {
+      fail(`${relativePath}: ${requestPath}: protected gateway request must not override auth with noauth`);
+    }
+    if (!hasAuthorization(item, collection)) {
+      fail(`${relativePath}: ${requestPath}: protected gateway request must include Authorization or inherit bearer auth`);
+    }
+  }
+}
+
 function validateProtectedRequestAuth(relativePath, collection, requestName) {
   const item = requestByName(collection, requestName);
   if (!item) {
@@ -732,6 +756,7 @@ for (const relativePath of collectionFiles) {
   validateIdempotencyConflictCoverage(relativePath, collection);
   validateAsyncRunnerRetries(relativePath, collection);
   validateGatewayRoutedRequests(relativePath, collection);
+  validateGatewayRequestAuth(relativePath, collection);
   validateRunnerStateRepairs(relativePath, collection);
 
   const declaredVariables = new Set(environmentVariables);
