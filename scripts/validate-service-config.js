@@ -99,6 +99,29 @@ function javaMainFiles(service) {
   return files;
 }
 
+function privateRequestMappingLines(text) {
+  const lines = text.split(/\r?\n/);
+  const offenders = [];
+  for (let i = 0; i < lines.length; i += 1) {
+    if (!/@(Get|Post|Put|Delete|Patch)Mapping\b/.test(lines[i])) {
+      continue;
+    }
+    for (let j = i + 1; j < lines.length; j += 1) {
+      const line = lines[j].trim();
+      if (!line || line.startsWith("@")) {
+        continue;
+      }
+      if (line.includes("(")) {
+        if (/^private\b/.test(line)) {
+          offenders.push(j + 1);
+        }
+        break;
+      }
+    }
+  }
+  return offenders;
+}
+
 function applicationNameValues(file) {
   return fs.readFileSync(file, "utf8")
     .split(/\r?\n/)
@@ -152,6 +175,11 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
     const relativeFile = path.relative(root, file);
     if (text.includes("@Autowired")) {
       fail(`${relativeFile}: production dependencies must use constructor injection without @Autowired`);
+    }
+    if (text.includes("@RestController")) {
+      for (const line of privateRequestMappingLines(text)) {
+        fail(`${relativeFile}:${line}: request mapping methods must not be private`);
+      }
     }
     if (path.basename(file) === "OpenApiConfig.java") {
       if (text.includes('description = "Direct"')

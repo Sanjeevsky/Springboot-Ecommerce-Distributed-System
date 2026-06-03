@@ -32,12 +32,12 @@ public class ProductCatalogController {
     }
 
     @GetMapping("/status")
-    private ResponseEntity<ApiResponse<?>> getStatus() {
+    public ResponseEntity<ApiResponse<?>> getStatus() {
         return new ResponseEntity<>(ApiResponse.ok("Catalog service is up and healthy", null), HttpStatus.OK);
     }
 
     @PostMapping("/addProduct")
-    private ResponseEntity<ApiResponse<Product>> addProduct(@RequestParam("categoryId") UUID categoryId, @RequestParam("subCategoryId") UUID subCategoryId, @RequestParam("brandId") UUID brandId, @Valid @RequestBody ProductDTO productDTO){
+    public ResponseEntity<ApiResponse<Product>> addProduct(@RequestParam("categoryId") UUID categoryId, @RequestParam("subCategoryId") UUID subCategoryId, @RequestParam("brandId") UUID brandId, @Valid @RequestBody ProductDTO productDTO){
         log.info(ADD_PRODUCT_REQUEST_WITH_PRODUCT_ID, productDTO.getName());
         Product product = mapper.map(productDTO, Product.class);
         Product saved = productService.addProduct(brandId, categoryId, subCategoryId, product);
