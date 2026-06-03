@@ -272,12 +272,18 @@ inventory-service  →  inventory-events topic
 | Tool | URL | Credentials |
 |------|-----|-------------|
 | Eureka Dashboard | http://localhost:8761 | — |
-| Spring Boot Admin | http://localhost:9000 | admin/admin |
+| Spring Boot Admin | http://localhost:9000 | admin/admin; optional `platform-tools` profile |
 | Zipkin (traces) | http://localhost:9411 | — |
 | Prometheus | http://localhost:9090 | — |
 | Grafana | http://localhost:3000 | admin/admin |
 | Kafka UI | http://localhost:8080 | — |
 | API Gateway | http://localhost:8081 | JWT token |
+
+Start Spring Boot Admin with service client registration when needed:
+
+```bash
+SPRING_BOOT_ADMIN_CLIENT_ENABLED=true docker compose --profile platform-tools up -d
+```
 
 ---
 

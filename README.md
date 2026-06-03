@@ -114,12 +114,18 @@ docker-compose up -d
 | UI | URL |
 |----|-----|
 | Eureka Dashboard | http://localhost:8761 |
-| Spring Boot Admin | http://localhost:9000 |
+| Spring Boot Admin | http://localhost:9000 (optional `platform-tools` profile) |
 | Kafka UI | http://localhost:8080 |
 | Zipkin Traces | http://localhost:9411 |
 | Prometheus | http://localhost:9090 |
 | Grafana | http://localhost:3000 (admin / admin) |
 | API Gateway | http://localhost:8081 |
+
+The default `docker-compose up -d` stack starts the application services plus Kafka UI, Zipkin, Prometheus, and Grafana. Spring Boot Admin is optional; start it with admin client registration enabled when you need the UI:
+
+```bash
+SPRING_BOOT_ADMIN_CLIENT_ENABLED=true docker compose --profile platform-tools up -d
+```
 
 Zipkin runs in the Docker stack, but service tracing is disabled by default to keep full-stack local verification within typical Docker Desktop memory limits. Set `SPRING_ZIPKIN_ENABLED=true` before `docker compose up` to emit spans.
 

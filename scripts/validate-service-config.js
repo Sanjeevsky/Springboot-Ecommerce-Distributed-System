@@ -464,6 +464,15 @@ for (const service of Object.keys(expectedApplicationNames)) {
 }
 
 const composeText = fs.readFileSync(path.join(root, "docker-compose.yml"), "utf8");
+if (!composeServiceBlock("spring-server").includes('profiles: ["platform-tools"]')) {
+  fail("docker-compose.yml: spring-server must stay in the optional platform-tools profile");
+}
+if (!readmeText.includes("optional `platform-tools` profile")
+    || !readmeText.includes("SPRING_BOOT_ADMIN_CLIENT_ENABLED=true docker compose --profile platform-tools up -d")
+    || !implementationText.includes("optional `platform-tools` profile")
+    || !implementationText.includes("SPRING_BOOT_ADMIN_CLIENT_ENABLED=true docker compose --profile platform-tools up -d")) {
+  fail("README.md and implementation.md must document the optional Spring Boot Admin platform-tools profile");
+}
 if (/SPRING_ZIPKIN_ENABLED=true/.test(composeText)) {
   fail("docker-compose.yml: tracing must default to opt-in with SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}");
 }
