@@ -24,6 +24,7 @@ public class CouponServiceImpl implements CouponService {
 
     @Override
     public Coupon createCoupon(Coupon coupon) {
+        validateCouponForCreate(coupon);
         log.info("Creating coupon with code: {}", coupon.getCode());
         couponRepository.findByCode(coupon.getCode()).ifPresent(existing -> {
             throw new InvalidCouponException("Coupon code already exists: " + coupon.getCode());
@@ -35,17 +36,19 @@ public class CouponServiceImpl implements CouponService {
 
     @Override
     public CouponValidationResult validateCoupon(String code, double orderAmount) {
-        log.info("Validating coupon code: {} for orderAmount: {}", code, orderAmount);
+        String normalizedCode = normalizeCouponCode(code);
+        validateOrderAmount(orderAmount);
+        log.info("Validating coupon code: {} for orderAmount: {}", normalizedCode, orderAmount);
 
-        Coupon coupon = couponRepository.findByCode(code)
+        Coupon coupon = couponRepository.findByCode(normalizedCode)
                 .orElse(null);
 
         if (coupon == null) {
             return CouponValidationResult.builder()
                     .valid(false)
-                    .message("Coupon not found: " + code)
+                    .message("Coupon not found: " + normalizedCode)
                     .discountAmount(0)
-                    .couponCode(code)
+                    .couponCode(normalizedCode)
                     .build();
         }
 
@@ -103,12 +106,13 @@ public class CouponServiceImpl implements CouponService {
 
     @Override
     public Coupon applyCoupon(String code) {
-        log.info("Applying coupon code: {}", code);
-        Coupon coupon = couponRepository.findByCode(code)
-                .orElseThrow(() -> new CouponNotFoundException("Coupon not found: " + code));
+        String normalizedCode = normalizeCouponCode(code);
+        log.info("Applying coupon code: {}", normalizedCode);
+        Coupon coupon = couponRepository.findByCode(normalizedCode)
+                .orElseThrow(() -> new CouponNotFoundException("Coupon not found: " + normalizedCode));
         coupon.setUsedCount(coupon.getUsedCount() + 1);
         Coupon updated = couponRepository.save(coupon);
-        log.info("Coupon {} applied, usedCount now: {}", code, updated.getUsedCount());
+        log.info("Coupon {} applied, usedCount now: {}", normalizedCode, updated.getUsedCount());
         return updated;
     }
 
@@ -116,5 +120,49 @@ public class CouponServiceImpl implements CouponService {
     public List<Coupon> getActiveCoupons() {
         log.info("Fetching all active coupons");
         return couponRepository.findByActiveTrue();
+    }
+
+    private void validateCouponForCreate(Coupon coupon) {
+        if (coupon == null) {
+            throw new InvalidCouponException("Coupon request is required");
+        }
+        coupon.setCode(normalizeCouponCode(coupon.getCode()));
+        String normalizedType = coupon.getType() == null ? null : coupon.getType().trim().toUpperCase();
+        if (normalizedType == null || normalizedType.isEmpty()) {
+            throw new InvalidCouponException("Coupon type is required");
+        }
+        if (!"PERCENTAGE".equals(normalizedType) && !"FIXED".equals(normalizedType)) {
+            throw new InvalidCouponException("Coupon type must be PERCENTAGE or FIXED");
+        }
+        coupon.setType(normalizedType);
+        if (!Double.isFinite(coupon.getValue()) || Double.compare(coupon.getValue(), 0.0) <= 0) {
+            throw new InvalidCouponException("Coupon value must be greater than zero");
+        }
+        if ("PERCENTAGE".equals(normalizedType) && Double.compare(coupon.getValue(), 100.0) > 0) {
+            throw new InvalidCouponException("Percentage coupon value must not exceed 100");
+        }
+        if (!Double.isFinite(coupon.getMinOrderAmount()) || Double.compare(coupon.getMinOrderAmount(), 0.0) < 0) {
+            throw new InvalidCouponException("Coupon minimum order amount must not be negative");
+        }
+        if (coupon.getMaxUsageCount() < -1) {
+            throw new InvalidCouponException("Coupon max usage count must be -1 or greater");
+        }
+        if (coupon.getUsedCount() < 0) {
+            throw new InvalidCouponException("Coupon used count must not be negative");
+        }
+    }
+
+    private String normalizeCouponCode(String code) {
+        String normalized = code == null ? null : code.trim();
+        if (normalized == null || normalized.isEmpty()) {
+            throw new InvalidCouponException("Coupon code is required");
+        }
+        return normalized;
+    }
+
+    private void validateOrderAmount(double orderAmount) {
+        if (!Double.isFinite(orderAmount) || Double.compare(orderAmount, 0.0) < 0) {
+            throw new InvalidCouponException("Order amount must not be negative");
+        }
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @Slf4j
@@ -23,7 +24,7 @@ public class CouponController {
     }
 
     @PostMapping("/coupon")
-    public ResponseEntity<ApiResponse<Coupon>> createCoupon(@RequestBody Coupon coupon) {
+    public ResponseEntity<ApiResponse<Coupon>> createCoupon(@RequestBody @Valid Coupon coupon) {
         log.info("Received request to create coupon with code: {}", coupon.getCode());
         return new ResponseEntity<>(ApiResponse.ok("Coupon created successfully", couponService.createCoupon(coupon)), HttpStatus.CREATED);
     }

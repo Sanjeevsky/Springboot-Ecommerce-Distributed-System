@@ -73,6 +73,30 @@ class CouponServiceImplTest {
         verify(couponRepository, never()).save(any());
     }
 
+    @Test
+    void createCoupon_percentageAbove100_throwsInvalidCouponException() {
+        Coupon coupon = activeCoupon();
+        coupon.setValue(150.0);
+
+        assertThatThrownBy(() -> couponService.createCoupon(coupon))
+                .isInstanceOf(InvalidCouponException.class)
+                .hasMessageContaining("must not exceed 100");
+
+        verifyNoInteractions(couponRepository);
+    }
+
+    @Test
+    void createCoupon_negativeValue_throwsInvalidCouponException() {
+        Coupon coupon = activeCoupon();
+        coupon.setValue(-1.0);
+
+        assertThatThrownBy(() -> couponService.createCoupon(coupon))
+                .isInstanceOf(InvalidCouponException.class)
+                .hasMessageContaining("value must be greater than zero");
+
+        verifyNoInteractions(couponRepository);
+    }
+
     // ─── validateCoupon ───────────────────────────────────────────────────────
 
     @Test
@@ -168,6 +192,15 @@ class CouponServiceImplTest {
         assertThat(result.isValid()).isTrue();
     }
 
+    @Test
+    void validateCoupon_negativeOrderAmount_throwsInvalidCouponException() {
+        assertThatThrownBy(() -> couponService.validateCoupon(CODE, -1.0))
+                .isInstanceOf(InvalidCouponException.class)
+                .hasMessageContaining("Order amount must not be negative");
+
+        verifyNoInteractions(couponRepository);
+    }
+
     // ─── applyCoupon ──────────────────────────────────────────────────────────
 
     @Test
@@ -191,6 +224,15 @@ class CouponServiceImplTest {
         assertThatThrownBy(() -> couponService.applyCoupon(CODE))
                 .isInstanceOf(CouponNotFoundException.class)
                 .hasMessageContaining(CODE);
+    }
+
+    @Test
+    void applyCoupon_blankCode_throwsInvalidCouponException() {
+        assertThatThrownBy(() -> couponService.applyCoupon("  "))
+                .isInstanceOf(InvalidCouponException.class)
+                .hasMessageContaining("Coupon code is required");
+
+        verifyNoInteractions(couponRepository);
     }
 
     // ─── getActiveCoupons ─────────────────────────────────────────────────────

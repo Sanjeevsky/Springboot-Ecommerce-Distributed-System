@@ -70,6 +70,17 @@ class CouponIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void createCoupon_percentageAbove100_returns400() throws Exception {
+        mockMvc.perform(post("/coupon-service/coupon")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"TOOBIG\",\"type\":\"PERCENTAGE\",\"value\":150.0,"
+                                + "\"minOrderAmount\":0.0,\"maxUsageCount\":10,\"expiryDate\":\"2099-12-31\",\"active\":true}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("must not exceed 100")));
+    }
+
     // ─── Validate ─────────────────────────────────────────────────────────────
 
     @Test
@@ -128,6 +139,16 @@ class CouponIntegrationTest {
                         .param("amount", "100.0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.valid").value(false));
+    }
+
+    @Test
+    void validateCoupon_negativeAmount_returns400() throws Exception {
+        mockMvc.perform(get("/coupon-service/coupon/validate")
+                        .param("code", "NOSUCHCODE")
+                        .param("amount", "-1.0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("must not be negative")));
     }
 
     // ─── Apply ────────────────────────────────────────────────────────────────

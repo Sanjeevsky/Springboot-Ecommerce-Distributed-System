@@ -526,6 +526,47 @@ if (!orderServiceTestText.includes("createOrder_missingAddressId_throwsInvalidRe
   fail("order-service: tests must cover missing addressId validation for order creation");
 }
 
+const couponControllerText = fs.readFileSync(
+  path.join(root, "coupon-service", "src", "main", "java", "com", "sanjeevsky", "couponservice", "controller", "CouponController.java"),
+  "utf8"
+);
+const couponServiceImplText = fs.readFileSync(
+  path.join(root, "coupon-service", "src", "main", "java", "com", "sanjeevsky", "couponservice", "service", "impl", "CouponServiceImpl.java"),
+  "utf8"
+);
+const couponServiceTestText = fs.readFileSync(
+  path.join(root, "coupon-service", "src", "test", "java", "com", "sanjeevsky", "couponservice", "service", "CouponServiceImplTest.java"),
+  "utf8"
+);
+const couponIntegrationTestText = fs.readFileSync(
+  path.join(root, "coupon-service", "src", "test", "java", "com", "sanjeevsky", "couponservice", "CouponIntegrationTest.java"),
+  "utf8"
+);
+if (!couponControllerText.includes("@RequestBody @Valid Coupon coupon")
+    || !couponServiceImplText.includes("validateCouponForCreate(coupon)")
+    || !couponServiceImplText.includes("Percentage coupon value must not exceed 100")
+    || !couponServiceImplText.includes("Order amount must not be negative")) {
+  fail("coupon-service: coupon creation and validation must reject invalid coupon economics");
+}
+for (const testName of [
+  "createCoupon_percentageAbove100_throwsInvalidCouponException",
+  "createCoupon_negativeValue_throwsInvalidCouponException",
+  "validateCoupon_negativeOrderAmount_throwsInvalidCouponException",
+  "applyCoupon_blankCode_throwsInvalidCouponException",
+]) {
+  if (!couponServiceTestText.includes(testName)) {
+    fail(`coupon-service: missing service test ${testName}`);
+  }
+}
+for (const testName of [
+  "createCoupon_percentageAbove100_returns400",
+  "validateCoupon_negativeAmount_returns400",
+]) {
+  if (!couponIntegrationTestText.includes(testName)) {
+    fail(`coupon-service: missing integration test ${testName}`);
+  }
+}
+
 const paymentServiceImplText = fs.readFileSync(
   path.join(root, "payment-service", "src", "main", "java", "com", "sanjeevsky", "paymentservice", "service", "impl", "PaymentServiceImpl.java"),
   "utf8"
