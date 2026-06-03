@@ -297,6 +297,22 @@ if (!totalCoverageMatch) {
   fail(`README.md: Test Coverage total must be ${totalReadmeUnitTests} unit and ${totalReadmeIntegrationTests} integration tests`);
 }
 
+for (const service of Object.keys(expectedApplicationNames)) {
+  const applicationTests = javaTestFiles(service)
+    .filter((file) => /ApplicationTests\.java$/.test(path.basename(file)));
+  for (const file of applicationTests) {
+    const text = fs.readFileSync(file, "utf8");
+    const isolatedContextTest = text.includes("spring.cloud.config.enabled=false")
+      && text.includes("spring.config.import=")
+      && text.includes("eureka.client.enabled=false");
+    if (text.includes("@SpringBootTest")
+        && !text.includes('@Disabled("Requires running infrastructure")')
+        && !isolatedContextTest) {
+      fail(`${path.relative(root, file)}: infrastructure-dependent ApplicationTests must be disabled or explicitly isolated`);
+    }
+  }
+}
+
 const gatewayFetchIntervals = propertiesFiles("api-gateway")
   .flatMap((file) => propertyValues(file, "eureka.client.registryFetchIntervalSeconds"))
   .map((value) => Number(value))
