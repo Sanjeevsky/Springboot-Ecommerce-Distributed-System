@@ -37,7 +37,11 @@ public class ProductCatalogController {
     }
 
     @PostMapping("/addProduct")
-    public ResponseEntity<ApiResponse<Product>> addProduct(@RequestParam("categoryId") UUID categoryId, @RequestParam("subCategoryId") UUID subCategoryId, @RequestParam("brandId") UUID brandId, @Valid @RequestBody ProductDTO productDTO){
+    public ResponseEntity<ApiResponse<Product>> addProduct(
+            @RequestParam("categoryId") UUID categoryId,
+            @RequestParam("subCategoryId") UUID subCategoryId,
+            @RequestParam("brandId") UUID brandId,
+            @Valid @RequestBody ProductDTO productDTO) {
         log.info(ADD_PRODUCT_REQUEST_WITH_PRODUCT_ID, productDTO.getName());
         Product product = mapper.map(productDTO, Product.class);
         Product saved = productService.addProduct(brandId, categoryId, subCategoryId, product);
@@ -45,14 +49,14 @@ public class ProductCatalogController {
     }
 
     @GetMapping("/getProduct/{id}")
-    ResponseEntity<ApiResponse<Product>> getProduct(@PathVariable("id") UUID uuid){
+    public ResponseEntity<ApiResponse<Product>> getProduct(@PathVariable("id") UUID uuid) {
         log.info(GET_PRODUCT_REQUEST_WITH_PRODUCT_ID, uuid);
         Product product = productService.getProduct(uuid);
         return new ResponseEntity<>(ApiResponse.ok(product), HttpStatus.OK);
     }
 
     @GetMapping("/list")
-    ResponseEntity<ApiResponse<Page<Product>>> listProducts(
+    public ResponseEntity<ApiResponse<Page<Product>>> listProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(defaultValue = "name") String sort) {
@@ -62,7 +66,7 @@ public class ProductCatalogController {
     }
 
     @GetMapping("/search")
-    ResponseEntity<ApiResponse<Page<Product>>> searchProducts(
+    public ResponseEntity<ApiResponse<Page<Product>>> searchProducts(
             @RequestParam(required = false, defaultValue = "") String q,
             @RequestParam(required = false) UUID categoryId,
             @RequestParam(required = false) UUID brandId,

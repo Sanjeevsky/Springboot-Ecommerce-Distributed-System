@@ -99,27 +99,41 @@ function javaMainFiles(service) {
   return files;
 }
 
-function privateRequestMappingLines(text) {
+function requestMappingVisibilityIssues(text) {
   const lines = text.split(/\r?\n/);
-  const offenders = [];
+  const issues = [];
   for (let i = 0; i < lines.length; i += 1) {
     if (!/@(Get|Post|Put|Delete|Patch)Mapping\b/.test(lines[i])) {
       continue;
     }
+    let signature = "";
+    let signatureLine = 0;
+    let parenDepth = 0;
     for (let j = i + 1; j < lines.length; j += 1) {
       const line = lines[j].trim();
       if (!line || line.startsWith("@")) {
         continue;
       }
-      if (line.includes("(")) {
-        if (/^private\b/.test(line)) {
-          offenders.push(j + 1);
+      if (!signatureLine) {
+        signatureLine = j + 1;
+      }
+      signature += `${signature ? " " : ""}${line}`;
+      for (const char of line) {
+        if (char === "(") {
+          parenDepth += 1;
+        } else if (char === ")") {
+          parenDepth -= 1;
+        }
+      }
+      if (line.includes("{") && parenDepth <= 0) {
+        if (!/^public\b/.test(signature.trim())) {
+          issues.push(signatureLine);
         }
         break;
       }
     }
   }
-  return offenders;
+  return issues;
 }
 
 function applicationNameValues(file) {
@@ -177,8 +191,8 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
       fail(`${relativeFile}: production dependencies must use constructor injection without @Autowired`);
     }
     if (text.includes("@RestController")) {
-      for (const line of privateRequestMappingLines(text)) {
-        fail(`${relativeFile}:${line}: request mapping methods must not be private`);
+      for (const line of requestMappingVisibilityIssues(text)) {
+        fail(`${relativeFile}:${line}: request mapping methods must be public`);
       }
     }
     if (path.basename(file) === "OpenApiConfig.java") {
