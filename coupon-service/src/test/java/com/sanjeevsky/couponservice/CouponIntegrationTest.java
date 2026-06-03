@@ -151,6 +151,16 @@ class CouponIntegrationTest {
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("must not be negative")));
     }
 
+    @Test
+    void validateCoupon_blankCode_returns400() throws Exception {
+        mockMvc.perform(get("/coupon-service/coupon/validate")
+                        .param("code", "  ")
+                        .param("amount", "100.0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("Coupon code is required")));
+    }
+
     // ─── Apply ────────────────────────────────────────────────────────────────
 
     @Test

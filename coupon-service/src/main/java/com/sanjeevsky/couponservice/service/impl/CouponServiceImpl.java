@@ -57,7 +57,7 @@ public class CouponServiceImpl implements CouponService {
                     .valid(false)
                     .message("Coupon is not active")
                     .discountAmount(0)
-                    .couponCode(code)
+                    .couponCode(normalizedCode)
                     .build();
         }
 
@@ -66,7 +66,7 @@ public class CouponServiceImpl implements CouponService {
                     .valid(false)
                     .message("Coupon has expired")
                     .discountAmount(0)
-                    .couponCode(code)
+                    .couponCode(normalizedCode)
                     .build();
         }
 
@@ -75,7 +75,7 @@ public class CouponServiceImpl implements CouponService {
                     .valid(false)
                     .message("Coupon usage limit exceeded")
                     .discountAmount(0)
-                    .couponCode(code)
+                    .couponCode(normalizedCode)
                     .build();
         }
 
@@ -84,7 +84,7 @@ public class CouponServiceImpl implements CouponService {
                     .valid(false)
                     .message("Order amount is less than minimum required: " + coupon.getMinOrderAmount())
                     .discountAmount(0)
-                    .couponCode(code)
+                    .couponCode(normalizedCode)
                     .build();
         }
 
@@ -95,12 +95,12 @@ public class CouponServiceImpl implements CouponService {
             discountAmount = coupon.getValue();
         }
 
-        log.info("Coupon {} is valid, discount: {}", code, discountAmount);
+        log.info("Coupon {} is valid, discount: {}", normalizedCode, discountAmount);
         return CouponValidationResult.builder()
                 .valid(true)
                 .message("Coupon is valid")
                 .discountAmount(discountAmount)
-                .couponCode(code)
+                .couponCode(normalizedCode)
                 .build();
     }
 

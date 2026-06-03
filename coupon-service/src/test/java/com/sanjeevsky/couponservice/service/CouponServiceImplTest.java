@@ -201,6 +201,27 @@ class CouponServiceImplTest {
         verifyNoInteractions(couponRepository);
     }
 
+    @Test
+    void validateCoupon_blankCode_throwsInvalidCouponException() {
+        assertThatThrownBy(() -> couponService.validateCoupon("  ", 100.0))
+                .isInstanceOf(InvalidCouponException.class)
+                .hasMessageContaining("Coupon code is required");
+
+        verifyNoInteractions(couponRepository);
+    }
+
+    @Test
+    void validateCoupon_trimsCode_returnsNormalizedCouponCode() {
+        Coupon coupon = activeCoupon();
+        when(couponRepository.findByCode(CODE)).thenReturn(Optional.of(coupon));
+
+        CouponValidationResult result = couponService.validateCoupon("  " + CODE + "  ", 200.0);
+
+        assertThat(result.isValid()).isTrue();
+        assertThat(result.getCouponCode()).isEqualTo(CODE);
+        verify(couponRepository).findByCode(CODE);
+    }
+
     // ─── applyCoupon ──────────────────────────────────────────────────────────
 
     @Test
