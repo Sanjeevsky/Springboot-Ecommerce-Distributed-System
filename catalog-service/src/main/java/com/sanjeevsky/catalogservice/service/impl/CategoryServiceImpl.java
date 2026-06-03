@@ -26,6 +26,9 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public Category getCategory(UUID categoryId){
+        if (categoryId == null) {
+            throw new InvalidCatalogRequestException("Category id is required");
+        }
         Optional<Category> category = categoryRepository.findById(categoryId);
         if (category.isEmpty()) {
             throw new CategoryNotExistsException(CATEGORY_DOES_NOT_EXISTS);

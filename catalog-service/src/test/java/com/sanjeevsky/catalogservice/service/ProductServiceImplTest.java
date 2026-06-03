@@ -132,6 +132,33 @@ class ProductServiceImplTest {
         verifyNoInteractions(productRepository, brandService, categoryService, subCategoryService);
     }
 
+    @Test
+    void addProduct_nullBrandId_throwsInvalidProductRequestException() {
+        assertThatThrownBy(() -> productService.addProduct(null, CATEGORY_ID, SUB_ID, product("Widget")))
+                .isInstanceOf(InvalidProductRequestException.class)
+                .hasMessage("Brand id is required");
+
+        verifyNoInteractions(productRepository, brandService, categoryService, subCategoryService);
+    }
+
+    @Test
+    void addProduct_nullCategoryId_throwsInvalidProductRequestException() {
+        assertThatThrownBy(() -> productService.addProduct(BRAND_ID, null, SUB_ID, product("Widget")))
+                .isInstanceOf(InvalidProductRequestException.class)
+                .hasMessage("Category id is required");
+
+        verifyNoInteractions(productRepository, brandService, categoryService, subCategoryService);
+    }
+
+    @Test
+    void addProduct_nullSubCategoryId_throwsInvalidProductRequestException() {
+        assertThatThrownBy(() -> productService.addProduct(BRAND_ID, CATEGORY_ID, null, product("Widget")))
+                .isInstanceOf(InvalidProductRequestException.class)
+                .hasMessage("Subcategory id is required");
+
+        verifyNoInteractions(productRepository, brandService, categoryService, subCategoryService);
+    }
+
     // ─── getProduct ───────────────────────────────────────────────────────────
 
     @Test
@@ -148,6 +175,15 @@ class ProductServiceImplTest {
 
         assertThatThrownBy(() -> productService.getProduct(PRODUCT_ID))
                 .isInstanceOf(NoSuchProductExistsException.class);
+    }
+
+    @Test
+    void getProduct_nullId_throwsInvalidProductRequestException() {
+        assertThatThrownBy(() -> productService.getProduct(null))
+                .isInstanceOf(InvalidProductRequestException.class)
+                .hasMessage("Product id is required");
+
+        verifyNoInteractions(productRepository);
     }
 
     // ─── listProducts ─────────────────────────────────────────────────────────

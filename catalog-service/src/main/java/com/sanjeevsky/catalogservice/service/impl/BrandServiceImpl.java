@@ -26,6 +26,9 @@ public class BrandServiceImpl implements BrandService {
 
     @Override
     public Brand getBrand(UUID brandId){
+        if (brandId == null) {
+            throw new InvalidCatalogRequestException("Brand id is required");
+        }
         Optional<Brand> brand = brandRepository.findById(brandId);
         if (brand.isEmpty()) {
             throw new BrandNotExistsException(BRAND_DOES_NOT_EXISTS);

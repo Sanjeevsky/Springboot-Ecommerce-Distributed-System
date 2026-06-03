@@ -77,6 +77,15 @@ class VariantServiceImplTest {
     }
 
     @Test
+    void addVariant_nullProductId_throwsInvalidVariantRequestException() {
+        assertThatThrownBy(() -> variantService.addVariant(null, variant()))
+                .isInstanceOf(InvalidVariantRequestException.class)
+                .hasMessage("Product id is required");
+
+        verifyNoInteractions(productRepository, variantRepository);
+    }
+
+    @Test
     void addVariant_blankPrimaryConditionName_throwsInvalidVariantRequestException() {
         Variant v = variant();
         v.setCondition1Name(" ");
@@ -130,5 +139,14 @@ class VariantServiceImplTest {
 
         assertThatThrownBy(() -> variantService.getVariant(VARIANT_ID))
                 .isInstanceOf(VariantNotExistsException.class);
+    }
+
+    @Test
+    void getVariant_nullId_throwsInvalidVariantRequestException() {
+        assertThatThrownBy(() -> variantService.getVariant(null))
+                .isInstanceOf(InvalidVariantRequestException.class)
+                .hasMessage("Variant id is required");
+
+        verifyNoInteractions(variantRepository);
     }
 }

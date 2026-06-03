@@ -67,6 +67,15 @@ class SubCategoryServiceImplTest {
     }
 
     @Test
+    void getSubCategory_nullId_throwsInvalidCatalogRequestException() {
+        assertThatThrownBy(() -> subCategoryService.getSubCategory(null))
+                .isInstanceOf(InvalidCatalogRequestException.class)
+                .hasMessage("Subcategory id is required");
+
+        verifyNoInteractions(categoryRepository, subCategoryRepository);
+    }
+
+    @Test
     void getAllSubCategory_empty_throwsSubCategoryListEmptyException() {
         when(subCategoryRepository.findAll()).thenReturn(Collections.emptyList());
 

@@ -58,6 +58,15 @@ class BrandServiceImplTest {
                 .isInstanceOf(BrandNotExistsException.class);
     }
 
+    @Test
+    void getBrand_nullId_throwsInvalidCatalogRequestException() {
+        assertThatThrownBy(() -> brandService.getBrand(null))
+                .isInstanceOf(InvalidCatalogRequestException.class)
+                .hasMessage("Brand id is required");
+
+        verifyNoInteractions(brandRepository);
+    }
+
     // ─── getBrandByName ───────────────────────────────────────────────────────
 
     @Test

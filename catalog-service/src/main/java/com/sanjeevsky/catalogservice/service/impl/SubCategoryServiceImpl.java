@@ -30,6 +30,9 @@ public class SubCategoryServiceImpl implements SubCategoryService {
 
     @Override
     public SubCategory getSubCategory(UUID subCategoryId){
+        if (subCategoryId == null) {
+            throw new InvalidCatalogRequestException("Subcategory id is required");
+        }
         Optional<SubCategory> category = subCategoryRepository.findById(subCategoryId);
         if (category.isEmpty()) {
             throw new SubCategoryListEmptyException(SUB_CATEGORY_DOES_NOT_EXISTS);

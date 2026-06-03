@@ -48,6 +48,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @CacheEvict(value = "products", allEntries = true)
     public Product addProduct(UUID brandId, UUID categoryId, UUID subCategoryId, Product product){
+        validateCatalogIds(brandId, categoryId, subCategoryId);
         validateProductRequest(product);
         if (productRepository.findByModelAndBrandId(product.getModel(), brandId).isPresent()) {
             throw new ProductAlreadyExistsException(PRODUCT_WITH_THIS_MODEL_AND_BRAND_ALREADY_EXISTS_IN_CATALOG);
@@ -63,6 +64,9 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Cacheable(value = "products", key = "#uuid")
     public Product getProduct(UUID uuid){
+        if (uuid == null) {
+            throw new InvalidProductRequestException("Product id is required");
+        }
         Optional<Product> product = productRepository.findById(uuid);
         if (product.isEmpty()) {
             throw new NoSuchProductExistsException(NO_PRODUCT_FOUND_WITH_GIVEN_UUID);
@@ -117,6 +121,18 @@ public class ProductServiceImpl implements ProductService {
 
         product.setName(product.getName().trim());
         product.setModel(product.getModel().trim());
+    }
+
+    private void validateCatalogIds(UUID brandId, UUID categoryId, UUID subCategoryId) {
+        if (brandId == null) {
+            throw new InvalidProductRequestException("Brand id is required");
+        }
+        if (categoryId == null) {
+            throw new InvalidProductRequestException("Category id is required");
+        }
+        if (subCategoryId == null) {
+            throw new InvalidProductRequestException("Subcategory id is required");
+        }
     }
 
     private boolean isBlank(String value) {

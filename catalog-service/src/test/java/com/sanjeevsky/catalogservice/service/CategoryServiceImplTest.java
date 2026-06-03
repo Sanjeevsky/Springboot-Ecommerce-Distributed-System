@@ -56,6 +56,15 @@ class CategoryServiceImplTest {
                 .isInstanceOf(CategoryNotExistsException.class);
     }
 
+    @Test
+    void getCategory_nullId_throwsInvalidCatalogRequestException() {
+        assertThatThrownBy(() -> categoryService.getCategory(null))
+                .isInstanceOf(InvalidCatalogRequestException.class)
+                .hasMessage("Category id is required");
+
+        verifyNoInteractions(categoryRepository);
+    }
+
     // ─── getCategoryName ──────────────────────────────────────────────────────
 
     @Test
