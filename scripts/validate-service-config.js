@@ -1267,6 +1267,10 @@ const paymentServiceImplTestText = fs.readFileSync(
   path.join(root, "payment-service", "src", "test", "java", "com", "sanjeevsky", "paymentservice", "service", "PaymentServiceImplTest.java"),
   "utf8"
 );
+const paymentControllerTestText = fs.readFileSync(
+  path.join(root, "payment-service", "src", "test", "java", "com", "sanjeevsky", "paymentservice", "controller", "PaymentControllerTest.java"),
+  "utf8"
+);
 if (!paymentServiceImplText.includes("validateIdempotentReplay")
     || !paymentServiceImplText.includes("InvalidPaymentRequestException")
     || !paymentServiceImplText.includes("Double.compare")) {
@@ -1298,6 +1302,11 @@ for (const testName of [
   if (!paymentIntegrationTestText.includes(testName)) {
     fail(`payment-service: missing integration test ${testName}`);
   }
+}
+if (!paymentControllerTestText.includes("initiatePayment_withIdempotencyKey_trimsHeaderAndReturns201")
+    || !paymentControllerTestText.includes('header("Idempotency-Key", " payment-1 ")')
+    || !paymentControllerTestText.includes('assertThat(captor.getValue().getIdempotencyKey()).isEqualTo("payment-1")')) {
+  fail("payment-service: controller tests must cover Idempotency-Key trimming before payment initiation");
 }
 
 const inventoryServiceImplText = fs.readFileSync(
