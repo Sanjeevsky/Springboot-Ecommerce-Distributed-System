@@ -171,7 +171,7 @@
                   "pm.test('Token present', () => pm.expect(token).to.be.a('string').and.not.empty);",
                   "pm.collectionVariables.set('token', token);",
                   "try { pm.environment.set('token', token); } catch (e) {}",
-                  "console.log('Token saved:', token.substring(0, 30) + '...');"
+                  "console.log('Token saved');"
                 ]
               }
             }
@@ -3123,7 +3123,8 @@
           "  }",
           "  pm.collectionVariables.set(key, value);",
           "  try { pm.environment.set(key, value); } catch (e) {}",
-          "  console.log('saved ' + key + ':', value);",
+          "  var loggedValue = /token|password/i.test(key) ? '<redacted>' : value;",
+          "  console.log('saved ' + key + ':', loggedValue);",
           "}",
           "",
           "var json = responseJson();",

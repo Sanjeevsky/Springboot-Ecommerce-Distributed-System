@@ -71,6 +71,17 @@ function validateScript(relativePath, ownerPath, event) {
   } catch (error) {
     fail(`${relativePath}: ${ownerPath}: ${event.listen} script does not compile: ${error.message}`);
   }
+  if (/console\.log\([^;]*token\.substring/i.test(code)
+      || /console\.log\([^;]*Token saved[^;]*token/i.test(code)) {
+    fail(`${relativePath}: ${ownerPath}: ${event.listen} script must not log JWT token prefixes`);
+  }
+  if (/console\.log\('saved '\s*\+\s*key\s*\+\s*':'\s*,\s*value\)/.test(code)) {
+    fail(`${relativePath}: ${ownerPath}: ${event.listen} script must redact sensitive saved runner variables`);
+  }
+  if (/function saveRunnerVar\(key, value\)/.test(code)
+      && !/\/token\|password\/i\.test\(key\)/.test(code)) {
+    fail(`${relativePath}: ${ownerPath}: ${event.listen} saveRunnerVar must redact token/password values in logs`);
+  }
 }
 
 function validateRawJsonBody(relativePath, requestPath, body) {
