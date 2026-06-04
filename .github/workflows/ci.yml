@@ -68,13 +68,13 @@ jobs:
           cache: maven
 
       - name: Install shared platform commons
-        run: mvn -B -f platform-commons/pom.xml install -DskipTests
+        run: mvn -B -f platform-commons/pom.xml clean install -DskipTests
 
       - name: Run module tests
         env:
           MODULE: ${{ matrix.module }}
         run: |
-          mvn -B -f "$MODULE/pom.xml" test \
+          mvn -B -f "$MODULE/pom.xml" clean test \
             -DfailIfNoTests=false \
             -Dspring.config.name=application-test \
             -Dspring.cloud.config.enabled=false \

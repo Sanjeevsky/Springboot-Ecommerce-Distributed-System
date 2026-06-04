@@ -282,6 +282,9 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
     if (text.includes("@Autowired")) {
       fail(`${relativeFile}: production dependencies must use constructor injection without @Autowired`);
     }
+    if (text.includes("springfox.") || text.includes("@EnableSwagger2")) {
+      fail(`${relativeFile}: Springfox Swagger 2 config must not be used; use springdoc OpenAPI config`);
+    }
     if (text.includes("@RestController")) {
       for (const line of requestMappingVisibilityIssues(text)) {
         fail(`${relativeFile}:${line}: request mapping methods must be public`);
@@ -303,6 +306,12 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
         fail(`${relativeFile}: OpenAPI config must include the API Gateway server`);
       }
     }
+  }
+
+  const servicePom = fs.readFileSync(path.join(root, service, "pom.xml"), "utf8");
+  if (servicePom.includes("<groupId>io.springfox</groupId>")
+      || servicePom.includes("springfox-swagger")) {
+    fail(`${service}/pom.xml: Springfox dependencies must not be used; use springdoc-openapi-ui`);
   }
 
   const names = files.flatMap(applicationNameValues);
@@ -1463,9 +1472,24 @@ if (!ciWorkflowText.includes("bash -n scripts/verify-local.sh scripts/build-dock
 if (!ciWorkflowText.includes("docker compose config --quiet")) {
   fail(".github/workflows/ci.yml: CI must validate Docker Compose config");
 }
+if (!ciWorkflowText.includes("mvn -B -f platform-commons/pom.xml clean install -DskipTests")
+    || !ciWorkflowText.includes('mvn -B -f "$MODULE/pom.xml" clean test')) {
+  fail(".github/workflows/ci.yml: CI Maven commands must run clean to avoid stale deleted classes");
+}
 if (!readmeText.includes("bash -n scripts/verify-local.sh scripts/build-docker-jars.sh e2e-smoke-test.sh")
     || !readmeText.includes("docker compose config --quiet")) {
   fail("README.md: static verification docs must include shell syntax and Docker Compose config checks");
+}
+if (!readmeText.includes("mvn -B -f auth-server/pom.xml clean test")) {
+  fail("README.md: targeted Java test example must run clean test to avoid stale deleted classes");
+}
+if (!verifyLocalText.includes("mvn -B -f platform-commons/pom.xml clean install -DskipTests")
+    || !verifyLocalText.includes('mvn -B -f "$module/pom.xml" clean test')) {
+  fail("scripts/verify-local.sh: Maven verification must run clean to avoid stale deleted classes");
+}
+if (!buildDockerJarsText.includes("mvn -B -f platform-commons/pom.xml clean install -DskipTests")
+    || !buildDockerJarsText.includes('mvn -B -f "$module/pom.xml" clean package -DskipTests')) {
+  fail("scripts/build-docker-jars.sh: Docker jar builds must run clean package to avoid stale deleted classes");
 }
 requireSameOrderedValues(
   "Maven test module",

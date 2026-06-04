@@ -353,11 +353,11 @@ fi
 
 if [[ "$RUN_MAVEN_TESTS" == "1" ]]; then
   log "Installing platform commons"
-  mvn -B -f platform-commons/pom.xml install -DskipTests
+  mvn -B -f platform-commons/pom.xml clean install -DskipTests
 
   for module in "${MAVEN_TEST_MODULES[@]}"; do
     log "Running Maven tests for $module"
-    mvn -B -f "$module/pom.xml" test \
+    mvn -B -f "$module/pom.xml" clean test \
       -DfailIfNoTests=false \
       "${MAVEN_TEST_SYSTEM_PROPS[@]}" \
       "-Dtest=!*ApplicationTests"

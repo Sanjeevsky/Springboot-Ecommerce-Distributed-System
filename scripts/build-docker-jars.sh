@@ -54,7 +54,7 @@ if [[ ${#modules[@]} -eq 0 ]]; then
 fi
 
 printf '\n==> Installing platform commons\n'
-mvn -B -f platform-commons/pom.xml install -DskipTests
+mvn -B -f platform-commons/pom.xml clean install -DskipTests
 
 for module in "${modules[@]}"; do
   if [[ ! -f "$module/pom.xml" ]]; then
@@ -63,7 +63,7 @@ for module in "${modules[@]}"; do
   fi
 
   printf '\n==> Packaging %s\n' "$module"
-  mvn -B -f "$module/pom.xml" package -DskipTests
+  mvn -B -f "$module/pom.xml" clean package -DskipTests
 
   jar_matches=("$module"/target/*.jar)
   if [[ ! -e "${jar_matches[0]}" ]]; then

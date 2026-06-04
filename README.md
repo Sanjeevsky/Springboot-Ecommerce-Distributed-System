@@ -254,7 +254,7 @@ Targeted Java test example:
 
 ```bash
 JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home \
-  mvn -B -f auth-server/pom.xml test -DfailIfNoTests=false "-Dtest=!*ApplicationTests"
+  mvn -B -f auth-server/pom.xml clean test -DfailIfNoTests=false "-Dtest=!*ApplicationTests"
 ```
 
 GitHub Actions runs static validation and Java 11 module tests on pushes and pull requests.
