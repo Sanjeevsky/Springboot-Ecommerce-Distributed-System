@@ -515,6 +515,9 @@ for (const service of Object.keys(expectedApplicationNames)) {
     continue;
   }
   const text = fs.readFileSync(file, "utf8");
+  if (!text.includes("COPY target/*.jar app.jar") || text.includes("ADD target/*.jar")) {
+    fail(`${service}: Dockerfile must COPY the packaged jar instead of using ADD`);
+  }
   if (!text.includes("-Xmx96m") || !text.includes("-XX:MaxMetaspaceSize=128m") || !text.includes("-XX:MaxDirectMemorySize=32m")) {
     fail(`${service}: Dockerfile must use the low-memory JVM profile for full-stack local verification`);
   }
