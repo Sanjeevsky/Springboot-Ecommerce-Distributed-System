@@ -220,9 +220,10 @@ expect_http_status() {
   local expected="$3"
   local actual
 
-  actual="$(curl -sS -o /dev/null -w "%{http_code}" "$url")"
+  actual="$(curl -sS -o /dev/null -w "%{http_code}" "$url" || true)"
   if [[ "$actual" != "$expected" ]]; then
     echo "$name returned HTTP $actual at $url; expected $expected" >&2
+    print_url_diagnostics "$name" "$url"
     return 1
   fi
 }

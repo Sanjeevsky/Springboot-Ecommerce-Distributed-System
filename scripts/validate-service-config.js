@@ -1530,6 +1530,10 @@ if (!verifyLocalText.includes("print_url_diagnostics")
     || !verifyLocalText.includes("Eureka registry snapshot")) {
   fail("scripts/verify-local.sh: local smoke verifier must print HTTP and Eureka diagnostics when readiness checks fail");
 }
+if (!verifyLocalText.includes('actual="$(curl -sS -o /dev/null -w "%{http_code}" "$url" || true)"')
+    || !verifyLocalText.includes('print_url_diagnostics "$name" "$url"')) {
+  fail("scripts/verify-local.sh: HTTP status assertions must print diagnostics instead of exiting on curl failure");
+}
 
 const smokeScriptText = fs.readFileSync(path.join(root, "e2e-smoke-test.sh"), "utf8");
 if (!smokeScriptText.includes("exec scripts/verify-local.sh") || !smokeScriptText.includes("RUN_MAVEN_TESTS")) {
