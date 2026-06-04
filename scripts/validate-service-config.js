@@ -737,6 +737,10 @@ if (!cloudConfigBlock.includes("SPRING_PROFILES_ACTIVE=native")
     || !implementationText.includes("avoiding remote Git clone dependency during local startup")) {
   fail("docker-compose.yml and docs must run cloud-config in native local mode for Docker startup stability");
 }
+if (!readmeText.includes("wait for `service-discovery` and `cloud-config` health")
+    || !implementationText.includes("wait for `service-discovery` and `cloud-config` health")) {
+  fail("README.md and implementation.md must document service-discovery/cloud-config health-gated startup");
+}
 
 for (const service of Object.keys(expectedApplicationNames)) {
   const block = composeServiceBlock(service);
@@ -745,6 +749,11 @@ for (const service of Object.keys(expectedApplicationNames)) {
   } else if (!block.includes("restart: unless-stopped")) {
     fail(`docker-compose.yml: ${service} must use restart: unless-stopped for local smoke stability`);
   } else {
+    if (service !== "cloud-config"
+        && block.includes("cloud-config:")
+        && !/cloud-config:\n\s+condition:\s+service_healthy/.test(block)) {
+      fail(`docker-compose.yml: ${service} must wait for cloud-config service_healthy`);
+    }
     const importsConfigServer = propertiesFiles(service)
       .some((file) => propertyValues(file, "spring.config.import")
         .some((value) => value.includes("configserver:")));

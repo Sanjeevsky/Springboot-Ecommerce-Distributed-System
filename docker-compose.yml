@@ -195,7 +195,7 @@ services:
       service-discovery:
         condition: service_healthy
       cloud-config:
-        condition: service_started
+        condition: service_healthy
       mysql:
         condition: service_healthy
     environment:
@@ -226,7 +226,7 @@ services:
       service-discovery:
         condition: service_healthy
       cloud-config:
-        condition: service_started
+        condition: service_healthy
       mysql:
         condition: service_healthy
       redis:
@@ -262,7 +262,7 @@ services:
       service-discovery:
         condition: service_healthy
       cloud-config:
-        condition: service_started
+        condition: service_healthy
       mysql:
         condition: service_healthy
     environment:
@@ -293,7 +293,7 @@ services:
       service-discovery:
         condition: service_healthy
       cloud-config:
-        condition: service_started
+        condition: service_healthy
       mysql:
         condition: service_healthy
       redis:
@@ -328,7 +328,7 @@ services:
       service-discovery:
         condition: service_healthy
       cloud-config:
-        condition: service_started
+        condition: service_healthy
       kafka:
         condition: service_healthy
       mysql:
@@ -361,7 +361,7 @@ services:
       service-discovery:
         condition: service_healthy
       cloud-config:
-        condition: service_started
+        condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://service-discovery:8761/eureka/
@@ -389,7 +389,7 @@ services:
       service-discovery:
         condition: service_healthy
       cloud-config:
-        condition: service_started
+        condition: service_healthy
       kafka:
         condition: service_healthy
       mysql:
@@ -423,7 +423,7 @@ services:
       service-discovery:
         condition: service_healthy
       cloud-config:
-        condition: service_started
+        condition: service_healthy
       kafka:
         condition: service_healthy
       mysql:
@@ -456,7 +456,7 @@ services:
       service-discovery:
         condition: service_healthy
       cloud-config:
-        condition: service_started
+        condition: service_healthy
       mysql:
         condition: service_healthy
     environment:
@@ -486,7 +486,7 @@ services:
       service-discovery:
         condition: service_healthy
       cloud-config:
-        condition: service_started
+        condition: service_healthy
       kafka:
         condition: service_healthy
       mysql:
@@ -519,7 +519,7 @@ services:
       service-discovery:
         condition: service_healthy
       cloud-config:
-        condition: service_started
+        condition: service_healthy
       mysql:
         condition: service_healthy
     environment:
@@ -550,7 +550,7 @@ services:
       service-discovery:
         condition: service_healthy
       cloud-config:
-        condition: service_started
+        condition: service_healthy
       kafka:
         condition: service_healthy
       mysql:
