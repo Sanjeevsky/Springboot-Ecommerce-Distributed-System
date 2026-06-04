@@ -35,6 +35,9 @@ jobs:
       - name: Validate Docker Compose config
         run: docker compose config --quiet
 
+      - name: Validate platform tools Compose profile
+        run: docker compose --profile platform-tools config --quiet
+
   java-tests:
     name: Java tests - ${{ matrix.module }}
     runs-on: ubuntu-latest

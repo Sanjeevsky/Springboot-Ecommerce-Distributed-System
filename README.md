@@ -205,6 +205,7 @@ node scripts/validate-service-config.js
 python3 generate-arch.py --check
 bash -n scripts/verify-local.sh scripts/build-docker-jars.sh e2e-smoke-test.sh
 docker compose config --quiet
+docker compose --profile platform-tools config --quiet
 ```
 
 Full local verification:

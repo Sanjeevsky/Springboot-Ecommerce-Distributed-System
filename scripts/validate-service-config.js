@@ -1599,14 +1599,18 @@ if (!ciWorkflowText.includes("bash -n scripts/verify-local.sh scripts/build-dock
 if (!ciWorkflowText.includes("docker compose config --quiet")) {
   fail(".github/workflows/ci.yml: CI must validate Docker Compose config");
 }
+if (!ciWorkflowText.includes("docker compose --profile platform-tools config --quiet")) {
+  fail(".github/workflows/ci.yml: CI must validate optional platform-tools Compose profile");
+}
 if (!ciWorkflowText.includes("mvn -B -f platform-commons/pom.xml clean install -DskipTests")
     || !ciWorkflowText.includes('mvn -B -f "$MODULE/pom.xml" clean test')) {
   fail(".github/workflows/ci.yml: CI Maven commands must run clean to avoid stale deleted classes");
 }
 if (!readmeText.includes("bash -n scripts/verify-local.sh scripts/build-docker-jars.sh e2e-smoke-test.sh")
     || !readmeText.includes("python3 generate-arch.py --check")
-    || !readmeText.includes("docker compose config --quiet")) {
-  fail("README.md: static verification docs must include generated architecture, shell syntax, and Docker Compose config checks");
+    || !readmeText.includes("docker compose config --quiet")
+    || !readmeText.includes("docker compose --profile platform-tools config --quiet")) {
+  fail("README.md: static verification docs must include generated architecture, shell syntax, and default/profile Docker Compose config checks");
 }
 if (!readmeText.includes("mvn -B -f auth-server/pom.xml clean test")) {
   fail("README.md: targeted Java test example must run clean test to avoid stale deleted classes");
