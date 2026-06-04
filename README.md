@@ -308,6 +308,6 @@ GitHub Actions runs static validation and Java 11 module tests on pushes and pul
 | coupon-service | 24 | 11 |
 | review-service | 36 | 10 |
 | wishlist-service | 17 | 10 |
-| inventory-service | 25 | 8 |
+| inventory-service | 30 | 8 |
 | notification-service | 16 | 8 |
-| **Total** | **356** | **78** |
+| **Total** | **361** | **78** |

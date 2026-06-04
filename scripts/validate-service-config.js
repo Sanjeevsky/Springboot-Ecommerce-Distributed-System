@@ -1401,6 +1401,10 @@ const inventoryServiceImplTestText = fs.readFileSync(
   path.join(root, "inventory-service", "src", "test", "java", "com", "sanjeevsky", "inventoryservice", "service", "InventoryServiceImplTest.java"),
   "utf8"
 );
+const inventoryControllerTestText = fs.readFileSync(
+  path.join(root, "inventory-service", "src", "test", "java", "com", "sanjeevsky", "inventoryservice", "controller", "InventoryControllerTest.java"),
+  "utf8"
+);
 if (!inventoryServiceImplText.includes("validatePositiveQuantity(quantity, \"Stock quantity\")")
     || !inventoryServiceImplText.includes("validatePositiveQuantity(qty, \"Reservation quantity\")")
     || !inventoryServiceImplText.includes("validatePositiveQuantity(qty, \"Release quantity\")")
@@ -1422,6 +1426,23 @@ for (const testName of [
   if (!inventoryServiceImplTestText.includes(testName)) {
     fail(`inventory-service: missing service test ${testName}`);
   }
+}
+for (const testName of [
+  "addStock_validRequest_returnsUpdatedStockAndForwardsValues",
+  "addStock_invalidQuantity_returns400BeforeServiceCall",
+  "getStockByProduct_forwardsProductId",
+  "getVariantStock_forwardsProductAndVariantIds",
+  "getAvailableQty_queriesProductStockWithoutVariant",
+]) {
+  if (!inventoryControllerTestText.includes(testName)) {
+    fail(`inventory-service: missing controller test ${testName}`);
+  }
+}
+if (!inventoryControllerTestText.includes('post("/inventory-service/stock")')
+    || !inventoryControllerTestText.includes('get("/inventory-service/stock/{productId}/variant/{variantId}", PRODUCT_ID, VARIANT_ID)')
+    || !inventoryControllerTestText.includes("verify(inventoryService).getStock(PRODUCT_ID, null)")
+    || !inventoryControllerTestText.includes("verifyNoInteractions(inventoryService)")) {
+  fail("inventory-service: controller tests must cover standard stock routes, service forwarding, and validation short-circuit");
 }
 
 const prometheusText = fs.readFileSync(path.join(root, "observability", "prometheus.yml"), "utf8");
