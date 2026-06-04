@@ -16,6 +16,8 @@ RUN_MAVEN_TESTS="${RUN_MAVEN_TESTS:-1}"
 RUN_DIRECT_HEALTH_CHECKS="${RUN_DIRECT_HEALTH_CHECKS:-1}"
 RUN_PLATFORM_ENDPOINT_CHECKS="${RUN_PLATFORM_ENDPOINT_CHECKS:-1}"
 RUN_API_COLLECTION="${RUN_API_COLLECTION:-1}"
+RUN_DATA_SEED_COLLECTION="${RUN_DATA_SEED_COLLECTION:-1}"
+RUN_E2E_COLLECTION="${RUN_E2E_COLLECTION:-1}"
 WAIT_RETRIES="${WAIT_RETRIES:-60}"
 WAIT_SLEEP_SECONDS="${WAIT_SLEEP_SECONDS:-5}"
 GATEWAY_DISCOVERY_STABILIZE_SECONDS="${GATEWAY_DISCOVERY_STABILIZE_SECONDS:-10}"
@@ -324,19 +326,23 @@ if [[ "$RUN_POSTMAN" == "1" ]]; then
       --delay-request 100
   fi
 
-  log "Running Postman data seed flow"
-  newman run postman/Ecommerce-DataSeed.postman_collection.json \
-    -e "$POSTMAN_ENV" \
-    --bail failure \
-    --timeout-request 30000 \
-    --delay-request 100
+  if [[ "$RUN_DATA_SEED_COLLECTION" == "1" ]]; then
+    log "Running Postman data seed flow"
+    newman run postman/Ecommerce-DataSeed.postman_collection.json \
+      -e "$POSTMAN_ENV" \
+      --bail failure \
+      --timeout-request 30000 \
+      --delay-request 100
+  fi
 
-  log "Running Postman application E2E flow"
-  newman run postman/Ecommerce-E2E-Complete.postman_collection.json \
-    -e "$POSTMAN_ENV" \
-    --bail failure \
-    --timeout-request 30000 \
-    --delay-request 100
+  if [[ "$RUN_E2E_COLLECTION" == "1" ]]; then
+    log "Running Postman application E2E flow"
+    newman run postman/Ecommerce-E2E-Complete.postman_collection.json \
+      -e "$POSTMAN_ENV" \
+      --bail failure \
+      --timeout-request 30000 \
+      --delay-request 100
+  fi
 fi
 
 if [[ "$RUN_MAVEN_TESTS" == "1" ]]; then

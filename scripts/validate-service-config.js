@@ -1526,6 +1526,18 @@ if (!verifyLocalText.includes("RUN_API_COLLECTION")
     || !verifyLocalText.includes("Ecommerce-API.postman_collection.json")) {
   fail("scripts/verify-local.sh: local smoke verifier must include the API Postman collection");
 }
+if (!verifyLocalText.includes("RUN_DATA_SEED_COLLECTION")
+    || !verifyLocalText.includes("Ecommerce-DataSeed.postman_collection.json")) {
+  fail("scripts/verify-local.sh: local smoke verifier must allow toggling the DataSeed Postman collection");
+}
+if (!verifyLocalText.includes("RUN_E2E_COLLECTION")
+    || !verifyLocalText.includes("Ecommerce-E2E-Complete.postman_collection.json")) {
+  fail("scripts/verify-local.sh: local smoke verifier must allow toggling the E2E Postman collection");
+}
+if (!readmeText.includes("RUN_DATA_SEED_COLLECTION=0 scripts/verify-local.sh")
+    || !readmeText.includes("RUN_E2E_COLLECTION=0 scripts/verify-local.sh")) {
+  fail("README.md: verification options must document DataSeed and E2E collection toggles");
+}
 
 if (!verifyLocalText.includes("verify_gateway_standard_routes")
     || !verifyLocalText.includes("GATEWAY_AUTH_GUARD_CHECKS")

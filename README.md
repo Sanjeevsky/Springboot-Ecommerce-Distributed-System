@@ -226,6 +226,8 @@ Useful switches:
 ```bash
 RUN_POSTMAN=0 scripts/verify-local.sh       # skip Docker-stack Postman runner checks
 RUN_API_COLLECTION=0 scripts/verify-local.sh # skip API reference collection, keep DataSeed + E2E
+RUN_DATA_SEED_COLLECTION=0 scripts/verify-local.sh # skip DataSeed collection
+RUN_E2E_COLLECTION=0 scripts/verify-local.sh # skip complete E2E collection
 RUN_PLATFORM_ENDPOINT_CHECKS=0 scripts/verify-local.sh # skip Kafka UI endpoint check
 RUN_MAVEN_TESTS=0 scripts/verify-local.sh   # skip Maven module tests
 MAVEN_JAVA_HOME=/path/to/jdk11 scripts/verify-local.sh # override Maven Java runtime
