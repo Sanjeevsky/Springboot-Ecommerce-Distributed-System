@@ -430,6 +430,7 @@ const readmeCoverageServices = [
 const readmeText = fs.readFileSync(path.join(root, "README.md"), "utf8");
 const implementationText = fs.readFileSync(path.join(root, "implementation.md"), "utf8");
 const loadTestsReadmeText = fs.readFileSync(path.join(root, "load-tests", "README.md"), "utf8");
+const generateArchText = fs.readFileSync(path.join(root, "generate-arch.py"), "utf8");
 const readmeCoverageStart = readmeText.indexOf("## Test Coverage");
 const readmeCoverageText = readmeCoverageStart === -1 ? "" : readmeText.slice(readmeCoverageStart);
 if (!readmeCoverageText) {
@@ -614,6 +615,14 @@ if (/SPRING_ZIPKIN_ENABLED=true/.test(composeText)) {
 if (implementationText.includes("overridden to true in docker")
     || !implementationText.includes("Docker also defaults tracing off; opt in with SPRING_ZIPKIN_ENABLED=true")) {
   fail("implementation.md: Zipkin snippet must document Docker tracing as opt-in");
+}
+if (generateArchText.includes("Receives B3 traces from all 12 business services")
+    || !generateArchText.includes("Services emit B3 traces when SPRING_ZIPKIN_ENABLED=true")) {
+  fail("generate-arch.py: Zipkin tooltip must document tracing as opt-in");
+}
+if (generateArchText.includes("<div class=\"lbl\">Unit Tests</div>")
+    || !generateArchText.includes("<div class=\"lbl\">Tests</div>")) {
+  fail("generate-arch.py: architecture stats must label the aggregate test count as Tests");
 }
 if (composeText.includes("MYSQL_ROOT_PASSWORD: 123456")
     || composeText.includes("SPRING_DATASOURCE_PASSWORD=123456")) {

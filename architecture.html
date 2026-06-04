@@ -178,7 +178,7 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     <div class="stat-chip"><div class="num">3</div><div class="lbl">Kafka Topics</div></div>
     <div class="stat-chip"><div class="num">11</div><div class="lbl">Databases</div></div>
     <div class="stat-chip"><div class="num">4</div><div class="lbl">Observability</div></div>
-    <div class="stat-chip"><div class="num">214</div><div class="lbl">Unit Tests</div></div>
+    <div class="stat-chip"><div class="num">392</div><div class="lbl">Tests</div></div>
     <div class="live-badge"><div class="live-dot"></div>LIVE MAP</div>
   </div>
 </header>
@@ -242,6 +242,7 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     <path class="path-feign active" d="M 737,394 C 737,335.0 660,335.0 660,276" marker-end="url(#af)"/>
     <path class="path-feign active" d="M 673,414 C 673,414.0 339,414.0 339,414" marker-end="url(#af)"/>
     <path class="path-feign active" d="M 737,394 C 737,335.0 840,335.0 840,276" marker-end="url(#af)"/>
+    <path class="path-feign active" d="M 673,414 C 673,414.0 493,414.0 493,414" marker-end="url(#af)"/>
     <path class="path-kafka-pub active" d="M 737,446 C 737,495.0 660,495.0 660,544" marker-end="url(#ak)"/>
     <path class="path-kafka-sub active" d="M 660,544 C 660,495.0 737,495.0 737,446" marker-end="url(#ak)"/>
     <path class="path-db" d="M 673,426 C 673,501.0 354,501.0 354,576"/>
@@ -382,7 +383,7 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
   </div>
   <div class="node node-ext"
        style="left:737px;top:420px;animation-delay:1.66s;width:130px"
-       data-tip="Feign → shopping-cart-service, customer-service, coupon-service, payment-service; Publishes: order-events; Consumes: inventory-events">
+       data-tip="Feign → shopping-cart-service, customer-service, coupon-service, payment-service, inventory-service; Publishes: order-events; Consumes: inventory-events">
     <div class="node-header">
       <div class="node-icon">◬</div>
       <div class="node-name">order-service</div>
@@ -482,7 +483,7 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
   </div>
   <div class="node node-obs"
        style="left:360px;top:700px;animation-delay:1.86s;width:130px"
-       data-tip="Receives B3 traces from all 12 business services via spring-cloud-sleuth-zipkin. 100% sampling.">
+       data-tip="Available for distributed traces. Services emit B3 traces when SPRING_ZIPKIN_ENABLED=true; Sleuth sampling is configured at 100% once tracing is enabled.">
     <div class="node-header">
       <div class="node-icon">◈</div>
       <div class="node-name">Zipkin</div>
@@ -710,6 +711,30 @@ const PATHS=[
             [
                 840,
                 276
+            ]
+        ],
+        "color": "#00c8f0",
+        "speed": 0.9,
+        "r": 3.0,
+        "count": 2
+    },
+    {
+        "pts": [
+            [
+                673,
+                414
+            ],
+            [
+                673,
+                414.0
+            ],
+            [
+                493,
+                414.0
+            ],
+            [
+                493,
+                414
             ]
         ],
         "color": "#00c8f0",

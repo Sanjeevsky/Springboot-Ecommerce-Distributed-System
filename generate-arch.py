@@ -165,7 +165,7 @@ def build_graph():
         # Observability stack — always-on
         {'id':'zipkin',     'name':'Zipkin',       'port':'9411',  'type':'obs',
          'tag':'Distributed Traces','icon':'◈',
-         'tip':'Receives B3 traces from all 12 business services via spring-cloud-sleuth-zipkin. 100% sampling.'},
+         'tip':'Available for distributed traces. Services emit B3 traces when SPRING_ZIPKIN_ENABLED=true; Sleuth sampling is configured at 100% once tracing is enabled.'},
         {'id':'prometheus', 'name':'Prometheus',   'port':'9090',  'type':'obs',
          'tag':'Metrics Scrape','icon':'◈',
          'tip':'Scrapes /actuator/prometheus from all 12 services every 15s. Feeds Grafana.'},
@@ -701,7 +701,7 @@ footer{{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(
     <div class="stat-chip"><div class="num">{topic_count}</div><div class="lbl">Kafka Topics</div></div>
     <div class="stat-chip"><div class="num">{db_count}</div><div class="lbl">Databases</div></div>
     <div class="stat-chip"><div class="num">{obs_count}</div><div class="lbl">Observability</div></div>
-    <div class="stat-chip"><div class="num">{test_count}</div><div class="lbl">Unit Tests</div></div>
+    <div class="stat-chip"><div class="num">{test_count}</div><div class="lbl">Tests</div></div>
     <div class="live-badge"><div class="live-dot"></div>LIVE MAP</div>
   </div>
 </header>
@@ -857,7 +857,7 @@ if __name__ == '__main__':
     print(f"  Found {sum(1 for s in services.values() if s['type'] not in ('db','mq'))} services")
     print(f"  Found {sum(1 for c in connections if c['type']=='feign')} Feign connections")
     print(f"  Found {sum(1 for c in connections if 'kafka' in c['type'])} Kafka connections")
-    print(f"  Unit tests: {count_tests()}")
+    print(f"  Tests: {count_tests()}")
 
     html = render(services, connections, positions)
     out = ROOT / 'architecture.html'
