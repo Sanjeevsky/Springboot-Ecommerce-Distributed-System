@@ -148,7 +148,7 @@ Order-service: unique constraint on `(userId, idempotencyKey)` to prevent duplic
 
 ### Phase 4 — E2E Verification
 
-Full smoke verification uses `scripts/verify-local.sh`; `e2e-smoke-test.sh` is a compatibility wrapper for the same Postman-backed runner flow. Before Postman runs, it verifies local service health, Eureka registrations including `CONFIGSERVER`, and gateway route readiness. By default it runs the API reference collection, the DataSeed collection, and the complete E2E collection. It covers:
+Full smoke verification uses `scripts/verify-local.sh`; `e2e-smoke-test.sh` is a compatibility wrapper for the same Postman-backed runner flow. Before Postman runs, it verifies local service health, Kafka UI availability at `http://localhost:8080`, Eureka registrations including `CONFIGSERVER`, and gateway route readiness. By default it runs the API reference collection, the DataSeed collection, and the complete E2E collection. It covers:
 1. Auth: register → login → get JWT
 2. Catalog: add brand → category → product
 3. Cart: add item → update qty → verify total

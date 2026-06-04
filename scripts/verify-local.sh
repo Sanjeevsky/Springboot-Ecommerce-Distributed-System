@@ -14,6 +14,7 @@ POSTMAN_ENV="${POSTMAN_ENV:-postman/Ecommerce-Local.postman_environment.json}"
 RUN_POSTMAN="${RUN_POSTMAN:-1}"
 RUN_MAVEN_TESTS="${RUN_MAVEN_TESTS:-1}"
 RUN_DIRECT_HEALTH_CHECKS="${RUN_DIRECT_HEALTH_CHECKS:-1}"
+RUN_PLATFORM_ENDPOINT_CHECKS="${RUN_PLATFORM_ENDPOINT_CHECKS:-1}"
 RUN_API_COLLECTION="${RUN_API_COLLECTION:-1}"
 WAIT_RETRIES="${WAIT_RETRIES:-60}"
 WAIT_SLEEP_SECONDS="${WAIT_SLEEP_SECONDS:-5}"
@@ -74,6 +75,10 @@ SERVICE_HEALTH_CHECKS=(
   "coupon-service|http://$LOCAL_SERVICE_HOST:${COUPON_SERVICE_PORT:-8089}/actuator/health"
   "wishlist-service|http://$LOCAL_SERVICE_HOST:${WISHLIST_SERVICE_PORT:-8091}/actuator/health"
   "review-service|http://$LOCAL_SERVICE_HOST:${REVIEW_SERVICE_PORT:-8090}/actuator/health"
+)
+
+PLATFORM_ENDPOINT_CHECKS=(
+  "Kafka UI|http://$LOCAL_SERVICE_HOST:${KAFKA_UI_PORT:-8080}"
 )
 
 GATEWAY_ROUTE_CHECKS=(
@@ -255,6 +260,13 @@ if [[ "$RUN_POSTMAN" == "1" ]]; then
   else
     log "Waiting for gateway health"
     wait_for_url "API gateway" "$BASE_URL/actuator/health"
+  fi
+
+  if [[ "$RUN_PLATFORM_ENDPOINT_CHECKS" == "1" ]]; then
+    log "Waiting for platform endpoints"
+    for check in "${PLATFORM_ENDPOINT_CHECKS[@]}"; do
+      wait_for_health_check "$check"
+    done
   fi
 
   log "Waiting for Eureka registrations"

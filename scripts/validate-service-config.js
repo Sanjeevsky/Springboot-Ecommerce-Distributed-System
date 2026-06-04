@@ -1363,6 +1363,12 @@ if (!verifyLocalText.includes("RUN_DIRECT_HEALTH_CHECKS")
     || !verifyLocalText.includes("INVENTORY_SERVICE_PORT")) {
   fail("scripts/verify-local.sh: local smoke verifier must wait for direct service actuator health before Postman runs");
 }
+if (!verifyLocalText.includes("RUN_PLATFORM_ENDPOINT_CHECKS")
+    || !verifyLocalText.includes("PLATFORM_ENDPOINT_CHECKS")
+    || !verifyLocalText.includes("${KAFKA_UI_PORT:-8080}")
+    || !verifyLocalText.includes("Waiting for platform endpoints")) {
+  fail("scripts/verify-local.sh: local smoke verifier must wait for Kafka UI before Postman runs");
+}
 for (const requiredHealthCheckMarker of [
   "$BASE_URL/actuator/health",
   "${CLOUD_CONFIG_PORT:-8071}",

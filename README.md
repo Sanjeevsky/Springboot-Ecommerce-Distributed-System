@@ -207,7 +207,7 @@ Full local verification:
 scripts/verify-local.sh
 ```
 
-By default this runs the API reference collection, the DataSeed collection, and the complete E2E collection after local health, Eureka, and gateway route readiness checks. Readiness includes `cloud-config` health and `CONFIGSERVER` Eureka registration.
+By default this runs the API reference collection, the DataSeed collection, and the complete E2E collection after local health, Kafka UI, Eureka, and gateway route readiness checks. Readiness includes `cloud-config` health, `CONFIGSERVER` Eureka registration, and the Kafka UI endpoint at `http://localhost:8080`.
 If a health or Eureka readiness check times out, the script prints the last HTTP response or a compact Eureka registry snapshot so missing registrations are visible without opening the dashboard manually.
 
 Legacy smoke entrypoint:
@@ -223,6 +223,7 @@ Useful switches:
 ```bash
 RUN_POSTMAN=0 scripts/verify-local.sh       # skip Docker-stack Postman runner checks
 RUN_API_COLLECTION=0 scripts/verify-local.sh # skip API reference collection, keep DataSeed + E2E
+RUN_PLATFORM_ENDPOINT_CHECKS=0 scripts/verify-local.sh # skip Kafka UI endpoint check
 RUN_MAVEN_TESTS=0 scripts/verify-local.sh   # skip Maven module tests
 MAVEN_JAVA_HOME=/path/to/jdk11 scripts/verify-local.sh # override Maven Java runtime
 GATEWAY_DISCOVERY_STABILIZE_SECONDS=0 scripts/verify-local.sh  # disable post-Eureka gateway cache wait
