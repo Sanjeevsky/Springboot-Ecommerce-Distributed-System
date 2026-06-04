@@ -370,6 +370,21 @@ function validateGatewayRoutedRequests(relativePath, collection) {
   }
 }
 
+function validateUniqueRequestNames(relativePath, collection) {
+  const seen = new Set();
+  for (const { path: requestPath, item } of walkItems(collection.item)) {
+    const name = item.name || "";
+    if (!name) {
+      fail(`${relativePath}: ${requestPath}: request must have a stable name for runner diagnostics`);
+      continue;
+    }
+    if (seen.has(name)) {
+      fail(`${relativePath}: duplicate request name "${name}" makes runner retries and order validation ambiguous`);
+    }
+    seen.add(name);
+  }
+}
+
 function validateBaseUrlDefault(relativePath, ownerPath, value) {
   if (!value) {
     fail(`${relativePath}: ${ownerPath}: baseUrl must default to ${localGatewayBaseUrl}`);
@@ -787,6 +802,7 @@ for (const relativePath of collectionFiles) {
   }
 
   validateBannedMarkers(relativePath);
+  validateUniqueRequestNames(relativePath, collection);
   if (relativePath === apiCollectionFile || relativePath === e2eCollectionFile) {
     validateRouteCoverage(relativePath, collection);
   }
