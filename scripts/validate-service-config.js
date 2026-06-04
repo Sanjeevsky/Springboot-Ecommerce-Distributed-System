@@ -1443,6 +1443,11 @@ const expectedRequiredEurekaApps = Object.entries(expectedApplicationNames)
   .map(([, applicationName]) => applicationName.toUpperCase());
 requireMavenTestFlags("scripts/verify-local.sh", verifyLocalText);
 requireMavenTestFlags(".github/workflows/ci.yml", ciWorkflowText);
+if (!ciWorkflowText.includes("static-validation:")
+    || !ciWorkflowText.includes("name: Static validation")
+    || ciWorkflowText.includes("Postman static validation")) {
+  fail(".github/workflows/ci.yml: CI validation job must be named Static validation");
+}
 if (!ciWorkflowText.includes("bash -n scripts/verify-local.sh scripts/build-docker-jars.sh e2e-smoke-test.sh")) {
   fail(".github/workflows/ci.yml: CI must validate shell script syntax");
 }

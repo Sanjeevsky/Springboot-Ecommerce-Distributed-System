@@ -7,8 +7,8 @@ on:
       - main
 
 jobs:
-  postman-static-validation:
-    name: Postman static validation
+  static-validation:
+    name: Static validation
     runs-on: ubuntu-latest
 
     steps:
