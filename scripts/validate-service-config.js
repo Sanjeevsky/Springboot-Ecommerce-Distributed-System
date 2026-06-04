@@ -729,6 +729,16 @@ function composeServiceBlock(service) {
   return match ? match[0] : "";
 }
 
+const zookeeperBlock = composeServiceBlock("zookeeper");
+if (!zookeeperBlock.includes('test: ["CMD", "nc", "-z", "localhost", "2181"]')) {
+  fail("docker-compose.yml: zookeeper must define a TCP healthcheck for Kafka startup sequencing");
+}
+
+const kafkaBlock = composeServiceBlock("kafka");
+if (!/zookeeper:\n\s+condition:\s+service_healthy/.test(kafkaBlock)) {
+  fail("docker-compose.yml: kafka must wait for zookeeper service_healthy");
+}
+
 const kafkaUiBlock = composeServiceBlock("kafka-ui");
 if (!kafkaUiBlock.includes('image: provectuslabs/kafka-ui')
     || !kafkaUiBlock.includes('"8080:8080"')
