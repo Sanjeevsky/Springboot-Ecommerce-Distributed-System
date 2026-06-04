@@ -26,6 +26,12 @@ jobs:
       - name: Validate service configuration
         run: node scripts/validate-service-config.js
 
+      - name: Validate shell scripts
+        run: bash -n scripts/verify-local.sh scripts/build-docker-jars.sh e2e-smoke-test.sh
+
+      - name: Validate Docker Compose config
+        run: docker compose config --quiet
+
   java-tests:
     name: Java tests - ${{ matrix.module }}
     runs-on: ubuntu-latest
