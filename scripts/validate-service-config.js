@@ -761,6 +761,28 @@ if ((composeText.match(/JWT_SECRET=\$\{JWT_SECRET:-local-dev-secret\}/g) || []).
   fail("docker-compose.yml: auth-server and api-gateway must share JWT_SECRET=${JWT_SECRET:-local-dev-secret}");
 }
 
+const userAuthControllerTestText = fs.readFileSync(
+  path.join(root, "auth-server", "src", "test", "java", "com", "sanjeevsky", "authserver", "controller", "UserAuthControllerTest.java"),
+  "utf8"
+);
+for (const testName of [
+  "signup_validRequest_returns201AndForwardsUser",
+  "login_validRequest_returnsToken",
+  "login_invalidEmail_returns400BeforeServiceCall",
+  "updatePassword_validRequest_forwardsRequest",
+  "updatePassword_shortNewPassword_returns400BeforeServiceCall",
+]) {
+  if (!userAuthControllerTestText.includes(testName)) {
+    fail(`auth-server: missing controller test ${testName}`);
+  }
+}
+if (!userAuthControllerTestText.includes('post("/auth-service/signup")')
+    || !userAuthControllerTestText.includes('post("/auth-service/login")')
+    || !userAuthControllerTestText.includes('put("/auth-service/updatePassword")')
+    || !userAuthControllerTestText.includes("verifyNoInteractions(userService)")) {
+  fail("auth-server: controller tests must cover standard auth routes, DTO validation, and service forwarding");
+}
+
 function composeServiceBlock(service) {
   const pattern = new RegExp(`^  ${service}:\\n([\\s\\S]*?)(?=^  [a-zA-Z0-9_-]+:|^volumes:|^networks:|(?![\\s\\S]))`, "m");
   const match = composeText.match(pattern);
