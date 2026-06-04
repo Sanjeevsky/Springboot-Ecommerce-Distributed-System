@@ -1534,6 +1534,11 @@ if (!verifyLocalText.includes("RUN_E2E_COLLECTION")
     || !verifyLocalText.includes("Ecommerce-E2E-Complete.postman_collection.json")) {
   fail("scripts/verify-local.sh: local smoke verifier must allow toggling the E2E Postman collection");
 }
+if (!verifyLocalText.includes("RUN_ANY_POSTMAN_COLLECTION")
+    || !verifyLocalText.includes('if [[ "$RUN_ANY_POSTMAN_COLLECTION" == "1" ]]')
+    || !verifyLocalText.includes("require_command newman")) {
+  fail("scripts/verify-local.sh: readiness-only smoke must not require newman when all collections are disabled");
+}
 if (!readmeText.includes("RUN_DATA_SEED_COLLECTION=0 scripts/verify-local.sh")
     || !readmeText.includes("RUN_E2E_COLLECTION=0 scripts/verify-local.sh")) {
   fail("README.md: verification options must document DataSeed and E2E collection toggles");

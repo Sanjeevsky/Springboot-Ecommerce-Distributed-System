@@ -22,6 +22,10 @@ WAIT_RETRIES="${WAIT_RETRIES:-60}"
 WAIT_SLEEP_SECONDS="${WAIT_SLEEP_SECONDS:-5}"
 GATEWAY_DISCOVERY_STABILIZE_SECONDS="${GATEWAY_DISCOVERY_STABILIZE_SECONDS:-10}"
 DEFAULT_MAVEN_JAVA_HOME="/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home"
+RUN_ANY_POSTMAN_COLLECTION=0
+if [[ "$RUN_API_COLLECTION" == "1" || "$RUN_DATA_SEED_COLLECTION" == "1" || "$RUN_E2E_COLLECTION" == "1" ]]; then
+  RUN_ANY_POSTMAN_COLLECTION=1
+fi
 MAVEN_TEST_SYSTEM_PROPS=(
   "-Dspring.config.name=application-test"
   "-Dspring.cloud.config.enabled=false"
@@ -273,7 +277,9 @@ require_command node
 if [[ "$RUN_POSTMAN" == "1" ]]; then
   require_command curl
   require_command grep
-  require_command newman
+  if [[ "$RUN_ANY_POSTMAN_COLLECTION" == "1" ]]; then
+    require_command newman
+  fi
 fi
 if [[ "$RUN_MAVEN_TESTS" == "1" ]]; then
   require_command mvn
