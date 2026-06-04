@@ -1228,6 +1228,10 @@ const wishlistIntegrationTestText = fs.readFileSync(
   path.join(root, "wishlist-service", "src", "test", "java", "com", "sanjeevsky", "wishlistservice", "WishlistIntegrationTest.java"),
   "utf8"
 );
+const wishlistControllerTestText = fs.readFileSync(
+  path.join(root, "wishlist-service", "src", "test", "java", "com", "sanjeevsky", "wishlistservice", "controller", "WishlistControllerTest.java"),
+  "utf8"
+);
 if (!wishlistDtoText.includes("@NotBlank(message = \"productName is required\")")
     || !wishlistDtoText.includes("@Positive(message = \"salePrice must be greater than zero\")")
     || !wishlistServiceImplText.includes("validateAddToWishlistRequest(userId, request)")
@@ -1253,6 +1257,22 @@ for (const testName of [
   if (!wishlistIntegrationTestText.includes(testName)) {
     fail(`wishlist-service: missing integration test ${testName}`);
   }
+}
+for (const testName of [
+  "addToWishlist_withXUser_returns201AndForwardsRequest",
+  "addToWishlist_invalidRequest_returns400BeforeServiceCall",
+  "getWishlist_forwardsXUserAndReturnsItems",
+  "removeFromWishlist_forwardsXUserAndProductId",
+  "moveToCart_forwardsXUserAndProductId",
+]) {
+  if (!wishlistControllerTestText.includes(testName)) {
+    fail(`wishlist-service: missing controller test ${testName}`);
+  }
+}
+if (!wishlistControllerTestText.includes('post("/wishlist-service/wishlist")')
+    || !wishlistControllerTestText.includes('post("/wishlist-service/wishlist/{productId}/move-to-cart", PRODUCT_ID)')
+    || !wishlistControllerTestText.includes('header("X-User", USER_ID)')) {
+  fail("wishlist-service: controller tests must cover standard wishlist routes and X-User forwarding");
 }
 
 const paymentServiceImplText = fs.readFileSync(
