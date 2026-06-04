@@ -1746,6 +1746,19 @@ if (!couponFallbackTestText.includes("validateCoupon_returnsInvalidResultWithout
 }
 
 for (const service of Object.keys(expectedApplicationNames)) {
+  for (const controllerFile of javaMainFiles(service)
+    .filter((file) => file.includes(`${path.sep}controller${path.sep}`)
+      && /Controller\.java$/.test(path.basename(file)))) {
+    const expectedTestFile = controllerFile
+      .replace(`${path.sep}src${path.sep}main${path.sep}java${path.sep}`, `${path.sep}src${path.sep}test${path.sep}java${path.sep}`)
+      .replace(/\.java$/, "Test.java");
+    if (!fs.existsSync(expectedTestFile)) {
+      fail(`${path.relative(root, controllerFile)}: missing focused controller test ${path.relative(root, expectedTestFile)}`);
+    }
+  }
+}
+
+for (const service of Object.keys(expectedApplicationNames)) {
   for (const fallbackFile of javaMainFiles(service)
     .filter((file) => file.includes(`${path.sep}clients${path.sep}fallback${path.sep}`)
       && /Fallback\.java$/.test(path.basename(file)))) {
