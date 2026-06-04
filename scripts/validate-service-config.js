@@ -1475,6 +1475,10 @@ if (!verifyLocalText.includes("MAVEN_JAVA_HOME")
     || !buildDockerJarsText.includes('export JAVA_HOME="$preferred_java_home"')) {
   fail("local Maven scripts must prefer Java 11 through MAVEN_JAVA_HOME for Lombok-compatible builds");
 }
+if (!buildDockerJarsText.includes('jar_matches=("$module"/target/*.jar)')
+    || !buildDockerJarsText.includes("Expected exactly one packaged jar")) {
+  fail("scripts/build-docker-jars.sh: Docker jar build must verify each module produces exactly one target/*.jar");
+}
 
 if (!verifyLocalText.includes("RUN_DIRECT_HEALTH_CHECKS")
     || !verifyLocalText.includes("SERVICE_HEALTH_CHECKS")

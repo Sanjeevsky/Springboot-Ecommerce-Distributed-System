@@ -64,6 +64,17 @@ for module in "${modules[@]}"; do
 
   printf '\n==> Packaging %s\n' "$module"
   mvn -B -f "$module/pom.xml" package -DskipTests
+
+  jar_matches=("$module"/target/*.jar)
+  if [[ ! -e "${jar_matches[0]}" ]]; then
+    echo "No packaged jar found for $module in $module/target" >&2
+    exit 1
+  fi
+  if [[ ${#jar_matches[@]} -ne 1 ]]; then
+    echo "Expected exactly one packaged jar for $module, found ${#jar_matches[@]}" >&2
+    printf '  %s\n' "${jar_matches[@]}" >&2
+    exit 1
+  fi
 done
 
 printf '\nDocker jars built successfully\n'
