@@ -1487,6 +1487,15 @@ if (!inventoryFallbackTestText.includes("getStockByProduct_returnsNullToAllowKaf
   fail("order-service: InventoryFeignClient fallback must document non-blocking inventory pre-check behavior");
 }
 
+const couponFallbackTestText = fs.readFileSync(
+  path.join(root, "order-service", "src", "test", "java", "com", "sanjeevsky", "orderservice", "clients", "fallback", "CouponFeignClientFallbackTest.java"),
+  "utf8"
+);
+if (!couponFallbackTestText.includes("validateCoupon_returnsInvalidResultWithoutDiscount")
+    || !couponFallbackTestText.includes("applyCoupon_noopsWhenCouponServiceUnavailable")) {
+  fail("order-service: CouponFeignClient fallback must document non-fatal coupon validation/apply behavior");
+}
+
 const kafkaRetryConfigs = [
   {
     service: "inventory-service",
