@@ -431,6 +431,7 @@ const readmeText = fs.readFileSync(path.join(root, "README.md"), "utf8");
 const implementationText = fs.readFileSync(path.join(root, "implementation.md"), "utf8");
 const loadTestsReadmeText = fs.readFileSync(path.join(root, "load-tests", "README.md"), "utf8");
 const generateArchText = fs.readFileSync(path.join(root, "generate-arch.py"), "utf8");
+const architectureText = fs.readFileSync(path.join(root, "architecture.html"), "utf8");
 const readmeCoverageStart = readmeText.indexOf("## Test Coverage");
 const readmeCoverageText = readmeCoverageStart === -1 ? "" : readmeText.slice(readmeCoverageStart);
 if (!readmeCoverageText) {
@@ -623,6 +624,11 @@ if (generateArchText.includes("Receives B3 traces from all 12 business services"
 if (generateArchText.includes("<div class=\"lbl\">Unit Tests</div>")
     || !generateArchText.includes("<div class=\"lbl\">Tests</div>")) {
   fail("generate-arch.py: architecture stats must label the aggregate test count as Tests");
+}
+if (!architectureText.includes("Services emit B3 traces when SPRING_ZIPKIN_ENABLED=true")
+    || !architectureText.includes("<div class=\"lbl\">Tests</div>")
+    || !architectureText.includes("payment-service, inventory-service")) {
+  fail("architecture.html must be regenerated from current architecture metadata");
 }
 if (composeText.includes("MYSQL_ROOT_PASSWORD: 123456")
     || composeText.includes("SPRING_DATASOURCE_PASSWORD=123456")) {
