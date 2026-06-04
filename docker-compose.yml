@@ -154,6 +154,8 @@ services:
         condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
+      - SPRING_PROFILES_ACTIVE=native
+      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=classpath:/config-repo
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
       - SPRING_BOOT_ADMIN_CLIENT_USERNAME=${SPRING_BOOT_ADMIN_CLIENT_USERNAME:-client}

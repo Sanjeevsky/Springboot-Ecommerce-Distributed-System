@@ -99,6 +99,7 @@ management.endpoints.web.exposure.include=*
 - Business services run by default.
 - Docker keeps Zipkin available but leaves service tracing disabled by default; set `SPRING_ZIPKIN_ENABLED=true` to emit spans.
 - Docker disables Spring Cloud Config clients for app containers so local startup uses packaged service properties instead of resolving `localhost:8071` inside containers.
+- Docker runs `cloud-config` in native local mode for manual config-server checks, avoiding remote Git clone dependency during local startup.
 - Docker overrides point Kafka clients at `kafka:29092`.
 - Kafka UI is available at `http://localhost:8080`.
 - Grafana provisioning is mounted from `observability/grafana`.
