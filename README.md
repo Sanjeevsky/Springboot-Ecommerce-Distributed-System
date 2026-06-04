@@ -147,6 +147,123 @@ Kafka broker endpoints:
 
 ---
 
+## Testing Guide
+
+This is the full runbook to bring the platform up and exercise **every business flow** end to end. Follow it top to bottom.
+
+### Step 0 — Prerequisites (one time)
+
+- Docker Desktop running (needs ~6–8 GB free for the full stack)
+- Java 11 at `/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home` (auto-detected; set `MAVEN_JAVA_HOME` to override)
+- `node` (for the validators) and `newman` (`npm i -g newman`, for the Postman flows)
+
+### Step 1 — Build the service jars
+
+The Dockerfiles copy pre-built `target/*.jar`, so package them first. Re-run this whenever you change Java code.
+
+```bash
+scripts/build-docker-jars.sh
+```
+
+### Step 2 — Start the full stack
+
+```bash
+docker compose up -d
+```
+
+This starts 21 containers: all 13 business services, Eureka, Config Server, API Gateway, plus MySQL, Redis, Kafka, Kafka UI, Zipkin, Prometheus, and Grafana. Services take ~30–60s to register with Eureka before routes are live.
+
+### Step 3 — Run every flow (one command)
+
+```bash
+scripts/verify-local.sh
+```
+
+This is the authoritative end-to-end check. It waits for readiness (per-service health, Eureka registry, gateway route table, auth guards), then runs all three Postman collections through the gateway, and finally re-runs the Maven test suites. **A clean pass looks like this:**
+
+| Phase | Expected result |
+|-------|-----------------|
+| Health + Eureka + gateway checks | all pass, no timeouts |
+| API reference flow | 75 requests · 144 assertions · **0 failed** |
+| Data seed flow | 25 requests · 58 assertions · **0 failed** |
+| Complete E2E flow | 75 requests · 135 assertions · **0 failed** |
+| Maven module tests | ~479 tests · **0 failures** |
+| Exit code | `0` |
+
+To run the live flows **without** re-running the unit tests (much faster — the live Postman flows are what actually exercise the running stack):
+
+```bash
+RUN_MAVEN_TESTS=0 scripts/verify-local.sh
+```
+
+### What the E2E flow covers
+
+The complete E2E collection walks the real cross-service path through the gateway, asserting behavior at each step:
+
+| # | Flow | What it verifies |
+|---|------|------------------|
+| 00 | **Auth** | Signup → login (JWT issued) → password update |
+| 01 | **Catalog** | Create brand / category / subcategory / product / variant; list, search, get-by-id (Redis-cached) |
+| 02 | **Inventory** | Set stock, read stock per product + variant, availability check |
+| 03 | **Customer** | Address create / read / list / update / delete |
+| 04 | **Cart** | Add items, update qty, checkout snapshot, remove, clear |
+| 05 | **Wishlist** | Add, list, **move-to-cart** (cross-service Feign call), remove |
+| 06 | **Coupon** | Create, list, validate, apply discount |
+| 07 | **Order** | Create from cart, coupon discount applied, confirm, cancel, **insufficient-stock rejection (400)**, idempotency |
+| 08 | **Payment** | Initiate, confirm, status, refund, **fail lifecycle**, idempotency |
+| 09 | **Review** | Submit (purchase-gated), moderate → APPROVED, read approved reviews |
+
+Kafka event propagation (`order-events`, `payment-events`, `inventory-events`) is exercised implicitly — the inventory, notification, and review consumers react to the orders and payments created above.
+
+### Running a single flow / subset
+
+```bash
+# Skip the Maven suites, keep the live Postman flows
+RUN_MAVEN_TESTS=0 scripts/verify-local.sh
+
+# Run just the complete E2E flow (skip the others)
+RUN_MAVEN_TESTS=0 RUN_API_COLLECTION=0 RUN_DATA_SEED_COLLECTION=0 scripts/verify-local.sh
+
+# Run one collection directly against the running stack
+newman run postman/Ecommerce-E2E-Complete.postman_collection.json \
+  -e postman/Ecommerce-Local.postman_environment.json
+```
+
+For the full list of toggles (`RUN_POSTMAN`, `RUN_PLATFORM_ENDPOINT_CHECKS`, `GATEWAY_DISCOVERY_STABILIZE_SECONDS`, …) see [Verification](#verification) below.
+
+### Manual spot-check (curl)
+
+To sanity-check the gateway and auth by hand:
+
+```bash
+# Public route — product list (no token needed)
+curl -s http://localhost:8081/catalog-service/product/list
+
+# Register + login, capture the JWT
+curl -s -X POST http://localhost:8081/auth-service/signup \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Test","email":"test@example.com","password":"pass1234"}'
+
+TOKEN=$(curl -s -X POST http://localhost:8081/auth-service/login \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"test@example.com","password":"pass1234"}' \
+  | node -e 'process.stdin.on("data",d=>{const j=JSON.parse(d);console.log(j.data?.token||j.token)})')
+
+# Authenticated route
+curl -s http://localhost:8081/cart-service/cart -H "Authorization: Bearer $TOKEN"
+```
+
+A protected route called **without** a token must return `401`; the raw `/shopping-cart-service/**` service-id path must return `404` (only the standard `/cart-service/**` prefix is exposed).
+
+### Step 4 — Tear down
+
+```bash
+docker compose down                          # stops the default stack
+docker compose --profile platform-tools down # also removes the optional Boot Admin container + network
+```
+
+---
+
 ## API Reference
 
 Import the Postman collection from `postman/` for all endpoints.
