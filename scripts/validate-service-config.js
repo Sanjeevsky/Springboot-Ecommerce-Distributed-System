@@ -731,6 +731,7 @@ const cloudConfigNativeRepoPath = path.join(root, "cloud-config", "src", "main",
 if (!cloudConfigBlock.includes("SPRING_PROFILES_ACTIVE=native")
     || !cloudConfigBlock.includes("SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=classpath:/config-repo")
     || !fs.existsSync(cloudConfigNativeRepoPath)
+    || !fs.readFileSync(cloudConfigNativeRepoPath, "utf8").includes("configserver.local.mode=true")
     || !readmeText.includes("native local mode, without cloning the remote config repository")
     || !implementationText.includes("avoiding remote Git clone dependency during local startup")) {
   fail("docker-compose.yml and docs must run cloud-config in native local mode for Docker startup stability");
