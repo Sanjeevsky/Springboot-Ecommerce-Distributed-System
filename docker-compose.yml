@@ -143,6 +143,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 10
+      start_period: 180s
 
   cloud-config:
     build: ./cloud-config
@@ -167,6 +168,7 @@ services:
       interval: 15s
       timeout: 5s
       retries: 10
+      start_period: 180s
 
   spring-server:
     build: ./spring-server
@@ -216,6 +218,12 @@ services:
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 180s
 
   catalog-service:
     build: ./catalog-service
@@ -252,6 +260,12 @@ services:
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 180s
 
   customer-service:
     build: ./customer-service
@@ -283,6 +297,12 @@ services:
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 180s
 
   shopping-cart-service:
     build: ./shopping-cart-service
@@ -318,6 +338,12 @@ services:
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 180s
 
   payment-service:
     build: ./payment-service
@@ -351,6 +377,12 @@ services:
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 180s
 
   api-gateway:
     build: ./api-gateway
@@ -377,6 +409,12 @@ services:
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 180s
 
   # ─── New Services ─────────────────────────────────────────────────────────────
 
@@ -413,6 +451,12 @@ services:
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8087/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 180s
 
   inventory-service:
     build: ./inventory-service
@@ -446,6 +490,12 @@ services:
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 180s
 
   coupon-service:
     build: ./coupon-service
@@ -476,6 +526,12 @@ services:
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8089/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 180s
 
   review-service:
     build: ./review-service
@@ -509,6 +565,12 @@ services:
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 180s
 
   wishlist-service:
     build: ./wishlist-service
@@ -540,6 +602,12 @@ services:
       - CLIENTS_CART_URL=http://shopping-cart-service:8086
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8091/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 180s
 
   order-service:
     build: ./order-service
@@ -578,6 +646,12 @@ services:
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8092/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 180s
 
 volumes:
   mysql-data:

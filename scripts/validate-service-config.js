@@ -38,6 +38,21 @@ const expectedControllerPrefixes = {
   "wishlist-service": ["/wishlist-service"],
 };
 
+const expectedComposeHealthPorts = {
+  "api-gateway": 8081,
+  "auth-server": 8083,
+  "catalog-service": 8084,
+  "coupon-service": 8089,
+  "customer-service": 8082,
+  "inventory-service": 8088,
+  "notification-service": 8087,
+  "order-service": 8092,
+  "payment-service": 8085,
+  "review-service": 8090,
+  "shopping-cart-service": 8086,
+  "wishlist-service": 8091,
+};
+
 let failed = false;
 
 function fail(message) {
@@ -726,11 +741,18 @@ if (!readmeText.includes("| Kafka UI | http://localhost:8080 |")
   fail("README.md and implementation.md must document Kafka UI at http://localhost:8080");
 }
 
+const serviceDiscoveryBlock = composeServiceBlock("service-discovery");
+if (!serviceDiscoveryBlock.includes('test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]')
+    || !serviceDiscoveryBlock.includes("start_period: 180s")) {
+  fail("docker-compose.yml: service-discovery must define an actuator healthcheck with Spring startup grace");
+}
+
 const cloudConfigBlock = composeServiceBlock("cloud-config");
 const cloudConfigNativeRepoPath = path.join(root, "cloud-config", "src", "main", "resources", "config-repo", "application.properties");
 if (!cloudConfigBlock.includes("SPRING_PROFILES_ACTIVE=native")
     || !cloudConfigBlock.includes("SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=classpath:/config-repo")
     || !cloudConfigBlock.includes('test: ["CMD", "curl", "-f", "http://localhost:8071/actuator/health"]')
+    || !cloudConfigBlock.includes("start_period: 180s")
     || !fs.existsSync(cloudConfigNativeRepoPath)
     || !fs.readFileSync(cloudConfigNativeRepoPath, "utf8").includes("configserver.local.mode=true")
     || !readmeText.includes("native local mode, without cloning the remote config repository")
@@ -774,6 +796,12 @@ for (const service of Object.keys(expectedApplicationNames)) {
     if (block.includes("SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000")
         && !block.includes("SPRING_BOOT_ADMIN_CLIENT_USERNAME=${SPRING_BOOT_ADMIN_CLIENT_USERNAME:-client}")) {
       fail(`docker-compose.yml: ${service} must expose SPRING_BOOT_ADMIN_CLIENT_USERNAME for optional admin client registration`);
+    }
+    const expectedHealthPort = expectedComposeHealthPorts[service];
+    if (expectedHealthPort
+        && (!block.includes(`test: ["CMD", "curl", "-f", "http://localhost:${expectedHealthPort}/actuator/health"]`)
+          || !block.includes("start_period: 180s"))) {
+      fail(`docker-compose.yml: ${service} must define an actuator healthcheck on port ${expectedHealthPort} with Spring startup grace`);
     }
   }
 }
