@@ -1512,6 +1512,10 @@ if (!readmeText.includes("bash -n scripts/verify-local.sh scripts/build-docker-j
 if (!readmeText.includes("mvn -B -f auth-server/pom.xml clean test")) {
   fail("README.md: targeted Java test example must run clean test to avoid stale deleted classes");
 }
+if (!readmeText.includes("The Maven phase runs `clean test`")
+    || !implementationText.includes("runs Maven module checks with `clean test`")) {
+  fail("README.md and implementation.md must document that Maven verification uses clean test before Docker jar rebuilds");
+}
 if (!verifyLocalText.includes("mvn -B -f platform-commons/pom.xml clean install -DskipTests")
     || !verifyLocalText.includes('mvn -B -f "$module/pom.xml" clean test')) {
   fail("scripts/verify-local.sh: Maven verification must run clean to avoid stale deleted classes");

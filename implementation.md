@@ -358,3 +358,5 @@ curl -sf http://localhost:8761/eureka/apps | grep -o '<name>[^<]*</name>'
 # 4. Run local verification
 RUN_MAVEN_TESTS=0 scripts/verify-local.sh
 ```
+
+`scripts/verify-local.sh` runs Maven module checks with `clean test` when Maven tests are enabled, so rebuild Docker jars with `scripts/build-docker-jars.sh` before building images after a Maven verification pass.
