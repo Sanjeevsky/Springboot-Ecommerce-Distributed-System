@@ -10,6 +10,7 @@ import org.springframework.mock.web.server.MockServerWebExchange;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -103,6 +104,27 @@ class AuthenticationFilterTest {
 
         assertTrue(chainCalled.get());
         assertEquals("buyer@example.com", capturedExchange.get().getRequest().getHeaders().getFirst("X-User"));
+        assertNull(exchange.getResponse().getStatusCode());
+    }
+
+    @Test
+    void filter_securedRouteValidBearerAuth_replacesClientUserHeader() throws Exception {
+        Claims claims = Jwts.claims().setSubject("buyer@example.com");
+        when(jwtUtil.getAllClaimsFromToken("good-token")).thenReturn(claims);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/order-service/orders")
+                        .header("Authorization", "Bearer good-token")
+                        .header("X-User", "spoofed@example.com")
+                        .build());
+        AtomicBoolean chainCalled = new AtomicBoolean(false);
+        AtomicReference<ServerWebExchange> capturedExchange = new AtomicReference<>();
+
+        filter.filter(exchange, capturedChain(chainCalled, capturedExchange)).block();
+
+        assertTrue(chainCalled.get());
+        assertEquals(
+                List.of("buyer@example.com"),
+                capturedExchange.get().getRequest().getHeaders().get("X-User"));
         assertNull(exchange.getResponse().getStatusCode());
     }
 

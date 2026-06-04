@@ -36,7 +36,7 @@ public class AuthenticationFilter implements GatewayFilter {
             try {
                 Claims claims = jwtUtil.getAllClaimsFromToken(token);
                 ServerHttpRequest mutated = request.mutate()
-                        .header("X-User", claims.getSubject())
+                        .headers(headers -> headers.set("X-User", claims.getSubject()))
                         .build();
                 return chain.filter(exchange.mutate().request(mutated).build());
             } catch (Exception e) {

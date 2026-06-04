@@ -706,6 +706,18 @@ if (!gatewayAuthFilterText.includes('regionMatches(true, 0, "Bearer ", 0, 7)')
     || !gatewayAuthFilterText.includes("token.isEmpty() ? null : token")) {
   fail("api-gateway AuthenticationFilter: protected requests must require Authorization: Bearer <token>");
 }
+if (!gatewayAuthFilterText.includes('headers.set("X-User", claims.getSubject())')) {
+  fail("api-gateway AuthenticationFilter: JWT subject must replace any client-supplied X-User header");
+}
+const gatewayAuthFilterTestText = fs.readFileSync(
+  path.join(root, "api-gateway", "src", "test", "java", "com", "sanjeevsky", "apigateway", "filter", "AuthenticationFilterTest.java"),
+  "utf8"
+);
+if (!gatewayAuthFilterTestText.includes("filter_securedRouteValidBearerAuth_replacesClientUserHeader")
+    || !gatewayAuthFilterTestText.includes('"spoofed@example.com"')
+    || !gatewayAuthFilterTestText.includes('List.of("buyer@example.com")')) {
+  fail("api-gateway AuthenticationFilterTest: must cover replacement of client-supplied X-User headers");
+}
 
 for (const service of ["api-gateway", "auth-server"]) {
   const jwtProperties = propertiesFiles(service);
