@@ -320,6 +320,8 @@ All UIs include JWT Bearer auth — click **Authorize**, paste Bearer token from
 
 ## Load Tests (k6)
 
+Load tests default to the API Gateway at `http://localhost:8081` and exercise standard gateway prefixes, including `/cart-service/**`. `BASE_URL` should point to a gateway endpoint only; direct service ports remain for local Swagger and actuator diagnostics.
+
 ```bash
 cd load-tests
 

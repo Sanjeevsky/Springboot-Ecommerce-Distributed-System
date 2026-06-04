@@ -1383,6 +1383,33 @@ if (!shoppingCartIntegrationTestText.includes("updateItem_negativeQty_returnsBad
 }
 
 const catalogBrowseLoadTestText = fs.readFileSync(path.join(root, "load-tests", "catalog-browse.js"), "utf8");
+const loadTestTexts = [
+  ["load-tests/catalog-browse.js", catalogBrowseLoadTestText],
+  ["load-tests/checkout-flow.js", fs.readFileSync(path.join(root, "load-tests", "checkout-flow.js"), "utf8")],
+];
+for (const [fileName, text] of loadTestTexts) {
+  if (!text.includes('const BASE_URL   = __ENV.BASE_URL || "http://localhost:8081"')) {
+    fail(`${fileName}: k6 scripts must default to the API Gateway at http://localhost:8081`);
+  }
+  for (const forbiddenEndpoint of [
+    "http://localhost:8082",
+    "http://localhost:8083",
+    "http://localhost:8084",
+    "http://localhost:8085",
+    "http://localhost:8086",
+    "http://localhost:8087",
+    "http://localhost:8088",
+    "http://localhost:8089",
+    "http://localhost:8090",
+    "http://localhost:8091",
+    "http://localhost:8092",
+    "/shopping-cart-service/",
+  ]) {
+    if (text.includes(forbiddenEndpoint)) {
+      fail(`${fileName}: load tests must use standard gateway routes, not ${forbiddenEndpoint}`);
+    }
+  }
+}
 if (catalogBrowseLoadTestText.includes("https://")
     || catalogBrowseLoadTestText.includes("jslib.k6.io")) {
   fail("load-tests/catalog-browse.js: k6 scripts must not require remote runtime imports");
@@ -1400,7 +1427,7 @@ if (catalogBrowseLoadTestText.includes('PRODUCT_ID || "00000000-0000-0000-0000-0
   fail("load-tests/catalog-browse.js: catalog browse load test must self-seed product data when PRODUCT_ID is absent");
 }
 
-const checkoutFlowLoadTestText = fs.readFileSync(path.join(root, "load-tests", "checkout-flow.js"), "utf8");
+const checkoutFlowLoadTestText = loadTestTexts[1][1];
 if (checkoutFlowLoadTestText.includes("https://")
     || checkoutFlowLoadTestText.includes("jslib.k6.io")) {
   fail("load-tests/checkout-flow.js: k6 scripts must not require remote runtime imports");
@@ -1419,9 +1446,13 @@ if (checkoutFlowLoadTestText.includes('PRODUCT_ID || "00000000-0000-0000-0000-00
 }
 if (!loadTestsReadmeText.includes("Optional: use existing catalog data")
     || !loadTestsReadmeText.includes("does not depend on downloading remote JavaScript modules")
+    || !loadTestsReadmeText.includes("Load tests default to the API Gateway at `http://localhost:8081`")
+    || !loadTestsReadmeText.includes("standard gateway prefixes such as `/catalog-service/**` and `/cart-service/**`")
     || !loadTestsReadmeText.includes("k6 run --env SCENARIO=smoke checkout-flow.js")
     || !loadTestsReadmeText.includes("k6 run --env SCENARIO=load checkout-flow.js")
     || !loadTestsReadmeText.includes("k6 run --env SCENARIO=stress checkout-flow.js")
+    || !implementationText.includes("Load tests default to the API Gateway at `http://localhost:8081`")
+    || !implementationText.includes("standard gateway prefixes, including `/cart-service/**`")
     || !implementationText.includes("k6 run --env SCENARIO=smoke checkout-flow.js")
     || !implementationText.includes("k6 run --env SCENARIO=load checkout-flow.js")
     || !implementationText.includes("k6 run --env SCENARIO=stress checkout-flow.js")) {

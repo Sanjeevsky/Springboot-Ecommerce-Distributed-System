@@ -3,6 +3,7 @@
 k6 load tests for the Ecommerce Distributed System.
 
 The scripts use only k6 built-ins and local helper functions, so test startup does not depend on downloading remote JavaScript modules.
+Load tests default to the API Gateway at `http://localhost:8081` and use standard gateway prefixes such as `/catalog-service/**` and `/cart-service/**`. Override `BASE_URL` only when pointing at another gateway, not at direct service ports.
 
 ## Prerequisites
 
