@@ -166,6 +166,8 @@ Full smoke verification uses `scripts/verify-local.sh`; `e2e-smoke-test.sh` is a
 
 The DataSeed collection leaves an approved review available for the seeded product. The API Postman collection is runner-safe for targeted application checks and is included in the default verifier. It asserts that all non-retry requests return 2xx and verifies business outcomes for coupon orders, cancelled-order refunds, and review moderation before approved-review reads.
 
+Postman runtime values are owned by collection-level scripts. `Ecommerce-Local.postman_environment.json` only declares the gateway `baseUrl`; tokens, entity IDs, generated names, coupon codes, and idempotency keys are created or refreshed by the collections during each runner execution.
+
 ---
 
 ## File Change Map

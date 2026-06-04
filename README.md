@@ -158,9 +158,9 @@ Postman collections:
 | `Ecommerce-API.postman_collection.json` | Runner-safe endpoint reference/application collection with global non-2xx checks |
 | `Ecommerce-DataSeed.postman_collection.json` | Runner-safe seed flow for local catalog, order, payment, approved review, wishlist, notification, and inventory data |
 | `Ecommerce-E2E-Complete.postman_collection.json` | Runner-safe application E2E flow |
-| `Ecommerce-Local.postman_environment.json` | Local gateway environment |
+| `Ecommerce-Local.postman_environment.json` | Local gateway environment with only `baseUrl` |
 
-The collections use collection-level scripts to generate and save run values such as token, IDs, coupon code, and idempotency keys. The environment file is only the local value store. Kafka-backed review eligibility and notification requests include runner retries so asynchronous consumers can catch up before later requests use `reviewId` or `notificationId`. The DataSeed collection moderates and verifies an approved review, and the application collections fail unexpected non-2xx responses while asserting key semantics such as coupon discounts, cancelled-order refunds, insufficient-inventory checkout rejection, and review moderation before approved-review reads.
+The collections use collection-level scripts to generate and save run values such as token, IDs, coupon code, and idempotency keys into collection variables and the active runner environment. The local environment file intentionally provides only the gateway `baseUrl`; runtime state belongs to the collection scripts so Collection Runner and Newman can execute from a clean environment. Kafka-backed review eligibility and notification requests include runner retries so asynchronous consumers can catch up before later requests use `reviewId` or `notificationId`. The DataSeed collection moderates and verifies an approved review, and the application collections fail unexpected non-2xx responses while asserting key semantics such as coupon discounts, cancelled-order refunds, insufficient-inventory checkout rejection, and review moderation before approved-review reads.
 
 ### Authentication
 

@@ -15,6 +15,7 @@ const e2eCollectionFile = "postman/Ecommerce-E2E-Complete.postman_collection.jso
 const environmentFiles = ["postman/Ecommerce-Local.postman_environment.json"];
 const localGatewayBaseUrl = "http://localhost:8081";
 const directLocalServiceUrlPattern = /^https?:\/\/(?:localhost|127\.0\.0\.1):(?:8071|8761|808[2-9]|809[0-2])(?:\/|$)/;
+const localEnvironmentSettings = new Set(["baseUrl"]);
 
 const bannedMarkers = [
   { pattern: /\/raw\b/i, reason: "raw endpoints should not be used" },
@@ -241,6 +242,13 @@ function validateRouteCoverage(relativePath, collection) {
 }
 
 function validateCollectionRunnerSeeding(relativePath, collection) {
+  const description = collection && collection.info && collection.info.description || "";
+  if (!description.includes("Ecommerce-Local supplies only baseUrl")
+      || !description.includes("collection variables")
+      || !description.includes("active environment")) {
+    fail(`${relativePath}: collection description must document baseUrl-only environment plus runner-owned collection/active environment state`);
+  }
+
   const collectionPreRequestCode = (collection.event || [])
     .filter((event) => event.listen === "prerequest")
     .map((event) => scriptLines(event.script))
@@ -750,13 +758,25 @@ function validateBannedMarkers(relativePath) {
 const environmentVariables = new Set();
 for (const environmentFile of environmentFiles) {
   const environment = readJson(environmentFile);
+  const fileEnvironmentVariables = new Set();
   for (const entry of (environment && environment.values) || []) {
     if (entry && entry.key) {
+      fileEnvironmentVariables.add(entry.key);
       environmentVariables.add(entry.key);
       if (entry.key === "baseUrl") {
         validateBaseUrlDefault(environmentFile, "environment baseUrl", entry.value);
       }
     }
+  }
+
+  const unexpectedEnvironmentVariables = [...fileEnvironmentVariables]
+    .filter((name) => !localEnvironmentSettings.has(name))
+    .sort();
+  for (const name of unexpectedEnvironmentVariables) {
+    fail(`${environmentFile}: local environment must stay configuration-only; ${name} is runner state and belongs in collection scripts/variables`);
+  }
+  if (!fileEnvironmentVariables.has("baseUrl")) {
+    fail(`${environmentFile}: local environment must declare baseUrl`);
   }
 }
 
@@ -818,12 +838,8 @@ for (const relativePath of collectionFiles) {
     fail(`${relativePath}: references {{${name}}} but no collection/environment/script setter defines it`);
   }
 
-  const environmentMissingVariables = [...new Set([...collectionVariables, ...scriptSetVariables])]
-    .filter((name) => !isInternalRunnerVariable(name))
-    .filter((name) => !environmentVariables.has(name))
-    .sort();
-  for (const name of environmentMissingVariables) {
-    fail(`${relativePath}: defines or sets ${name} but Ecommerce-Local environment does not declare it`);
+  if (!collectionVariables.has("baseUrl")) {
+    fail(`${relativePath}: collection must declare baseUrl so runner state does not depend on the environment file`);
   }
 }
 

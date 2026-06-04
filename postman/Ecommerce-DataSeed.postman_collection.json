@@ -2,7 +2,7 @@
   "info": {
     "name": "Ecommerce \u2014 Data Seed & E2E Flow",
     "_postman_id": "ecommerce-dataseed-collection",
-    "description": "Run these requests IN ORDER with Collection Runner. Select the Ecommerce Local environment if you want values visible in the Environment tab; the collection scripts seed and save token/IDs into both collection variables and environment variables for the next request. Covers register -> catalog setup -> inventory -> cart -> coupon -> order -> payment -> approved review -> wishlist -> notifications.",
+    "description": "Run these requests IN ORDER with Collection Runner. Ecommerce-Local supplies only baseUrl; collection scripts seed token, IDs, names, coupon codes, and idempotency keys into collection variables and mirror them into the active environment for the next request. Covers register -> catalog setup -> inventory -> cart -> coupon -> order -> payment -> approved review -> wishlist -> notifications.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
