@@ -1623,9 +1623,22 @@ if (!verifyLocalText.includes("RUN_DIRECT_HEALTH_CHECKS")
 }
 if (!verifyLocalText.includes("RUN_PLATFORM_ENDPOINT_CHECKS")
     || !verifyLocalText.includes("PLATFORM_ENDPOINT_CHECKS")
-    || !verifyLocalText.includes("${KAFKA_UI_PORT:-8080}")
     || !verifyLocalText.includes("Waiting for platform endpoints")) {
-  fail("scripts/verify-local.sh: local smoke verifier must wait for Kafka UI before Postman runs");
+  fail("scripts/verify-local.sh: local smoke verifier must wait for platform endpoints before Postman runs");
+}
+for (const requiredPlatformEndpointMarker of [
+  "${KAFKA_UI_PORT:-8080}",
+  "${ZIPKIN_PORT:-9411}/health",
+  "${PROMETHEUS_PORT:-9090}/-/healthy",
+  "${GRAFANA_PORT:-3000}/api/health",
+]) {
+  if (!verifyLocalText.includes(requiredPlatformEndpointMarker)) {
+    fail(`scripts/verify-local.sh: missing platform endpoint check marker ${requiredPlatformEndpointMarker}`);
+  }
+}
+if (!readmeText.includes("Kafka UI, Zipkin, Prometheus, and Grafana endpoints")
+    || !implementationText.includes("Smoke verification waits for Kafka UI, Zipkin, Prometheus, and Grafana endpoints")) {
+  fail("README.md and implementation.md must document smoke platform endpoint checks");
 }
 for (const requiredHealthCheckMarker of [
   "$BASE_URL/actuator/health",
