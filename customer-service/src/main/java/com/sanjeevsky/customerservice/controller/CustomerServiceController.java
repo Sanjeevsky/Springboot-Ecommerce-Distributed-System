@@ -54,7 +54,7 @@ public class CustomerServiceController {
     @PutMapping("/address/{id}")
     public ResponseEntity<ApiResponse<Address>> updateAddress(
             @PathVariable UUID id,
-            @Valid @RequestBody Address address,
+            @RequestBody Address address,
             @RequestHeader(name = "X-User") String user) {
         return ResponseEntity.ok(ApiResponse.ok(addressService.updateAddress(id, address, user)));
     }

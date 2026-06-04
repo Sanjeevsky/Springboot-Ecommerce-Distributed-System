@@ -896,6 +896,18 @@ if (customerServicePomText.includes("<artifactId>spring-kafka</artifactId>")
     || /kafka:\s*\n\s+condition:\s+service_healthy/.test(customerComposeBlock)) {
   fail("customer-service: Kafka wiring must stay removed because the service has no Kafka publisher or listener");
 }
+const customerControllerText = fs.readFileSync(
+  path.join(root, "customer-service", "src", "main", "java", "com", "sanjeevsky", "customerservice", "controller", "CustomerServiceController.java"),
+  "utf8"
+);
+const customerControllerTestText = fs.readFileSync(
+  path.join(root, "customer-service", "src", "test", "java", "com", "sanjeevsky", "customerservice", "controller", "CustomerServiceControllerTest.java"),
+  "utf8"
+);
+if (customerControllerText.includes("@Valid @RequestBody Address address")
+    || !customerControllerTestText.includes("updateAddress_validPatch_returnsUpdatedAddressAndPassesUserHeader")) {
+  fail("customer-service: address update endpoint must allow partial patch bodies and cover X-User propagation");
+}
 
 if (readmeText.includes("customer-service ──► order-events")
     || !readmeText.includes("order-service    ──► order-events")
