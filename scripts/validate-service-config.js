@@ -869,6 +869,9 @@ for (const service of Object.keys(expectedApplicationNames)) {
           || !block.includes("start_period: 180s"))) {
       fail(`docker-compose.yml: ${service} must define an actuator healthcheck on port ${expectedHealthPort} with Spring startup grace`);
     }
+    if (expectedHealthPort && !block.includes("SPRING_PROFILES_ACTIVE=dev")) {
+      fail(`docker-compose.yml: ${service} must explicitly run with SPRING_PROFILES_ACTIVE=dev`);
+    }
   }
 }
 
