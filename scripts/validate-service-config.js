@@ -1203,6 +1203,10 @@ const reviewIntegrationTestText = fs.readFileSync(
   path.join(root, "review-service", "src", "test", "java", "com", "sanjeevsky", "reviewservice", "ReviewIntegrationTest.java"),
   "utf8"
 );
+const reviewControllerTestText = fs.readFileSync(
+  path.join(root, "review-service", "src", "test", "java", "com", "sanjeevsky", "reviewservice", "controller", "ReviewControllerTest.java"),
+  "utf8"
+);
 if (!reviewControllerText.includes("@RequestBody @Valid Review review")
     || !reviewModelText.includes("@NotNull(message = \"productId is required\")")
     || !reviewServiceImplText.includes("validateReviewRequest(review)")
@@ -1227,6 +1231,24 @@ for (const testName of [
   if (!reviewIntegrationTestText.includes(testName)) {
     fail(`review-service: missing integration test ${testName}`);
   }
+}
+for (const testName of [
+  "addReview_withXUser_returns201AndForwardsReview",
+  "addReview_invalidReview_returns400BeforeServiceCall",
+  "getApprovedReviews_forwardsProductId",
+  "getProductSummary_forwardsProductId",
+  "moderateReview_forwardsIdAndStatus",
+  "getUserReviews_forwardsXUser",
+]) {
+  if (!reviewControllerTestText.includes(testName)) {
+    fail(`review-service: missing controller test ${testName}`);
+  }
+}
+if (!reviewControllerTestText.includes('post("/review-service/review")')
+    || !reviewControllerTestText.includes('get("/review-service/review/my")')
+    || !reviewControllerTestText.includes('verify(reviewService).moderateReview(REVIEW_ID, "APPROVED")')
+    || !reviewControllerTestText.includes("verifyNoInteractions(reviewService)")) {
+  fail("review-service: controller tests must cover standard routes, X-User forwarding, moderation params, and validation short-circuit");
 }
 
 const notificationControllerTestText = fs.readFileSync(
