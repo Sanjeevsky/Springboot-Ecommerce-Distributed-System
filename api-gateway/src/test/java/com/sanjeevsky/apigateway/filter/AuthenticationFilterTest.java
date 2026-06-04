@@ -63,12 +63,56 @@ class AuthenticationFilterTest {
     }
 
     @Test
-    void filter_securedRouteValidAuth_addsUserHeader() throws Exception {
+    void filter_securedRouteRawTokenAuth_returnsUnauthorized() {
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/order-service/orders")
+                        .header("Authorization", "good-token")
+                        .build());
+
+        filter.filter(exchange, capturedChain(new AtomicBoolean(false), new AtomicReference<>())).block();
+
+        assertEquals(HttpStatus.UNAUTHORIZED, exchange.getResponse().getStatusCode());
+        verifyNoInteractions(jwtUtil);
+    }
+
+    @Test
+    void filter_securedRouteEmptyBearerAuth_returnsUnauthorized() {
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/order-service/orders")
+                        .header("Authorization", "Bearer ")
+                        .build());
+
+        filter.filter(exchange, capturedChain(new AtomicBoolean(false), new AtomicReference<>())).block();
+
+        assertEquals(HttpStatus.UNAUTHORIZED, exchange.getResponse().getStatusCode());
+        verifyNoInteractions(jwtUtil);
+    }
+
+    @Test
+    void filter_securedRouteValidBearerAuth_addsUserHeader() throws Exception {
         Claims claims = Jwts.claims().setSubject("buyer@example.com");
         when(jwtUtil.getAllClaimsFromToken("good-token")).thenReturn(claims);
         MockServerWebExchange exchange = MockServerWebExchange.from(
                 MockServerHttpRequest.get("/order-service/orders")
                         .header("Authorization", "Bearer good-token")
+                        .build());
+        AtomicBoolean chainCalled = new AtomicBoolean(false);
+        AtomicReference<ServerWebExchange> capturedExchange = new AtomicReference<>();
+
+        filter.filter(exchange, capturedChain(chainCalled, capturedExchange)).block();
+
+        assertTrue(chainCalled.get());
+        assertEquals("buyer@example.com", capturedExchange.get().getRequest().getHeaders().getFirst("X-User"));
+        assertNull(exchange.getResponse().getStatusCode());
+    }
+
+    @Test
+    void filter_securedRouteLowercaseBearerAuth_addsUserHeader() throws Exception {
+        Claims claims = Jwts.claims().setSubject("buyer@example.com");
+        when(jwtUtil.getAllClaimsFromToken("good-token")).thenReturn(claims);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/order-service/orders")
+                        .header("Authorization", "bearer good-token")
                         .build());
         AtomicBoolean chainCalled = new AtomicBoolean(false);
         AtomicReference<ServerWebExchange> capturedExchange = new AtomicReference<>();

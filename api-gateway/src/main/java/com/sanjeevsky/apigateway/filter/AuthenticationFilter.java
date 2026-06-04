@@ -57,9 +57,11 @@ public class AuthenticationFilter implements GatewayFilter {
         if (header == null || header.trim().isEmpty()) {
             return null;
         }
-        if (header.startsWith("Bearer ")) {
-            return header.substring(7).trim();
+        String trimmed = header.trim();
+        if (!trimmed.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            return null;
         }
-        return header.trim();
+        String token = trimmed.substring(7).trim();
+        return token.isEmpty() ? null : token;
     }
 }

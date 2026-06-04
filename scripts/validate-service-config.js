@@ -601,6 +601,10 @@ if (gatewayAuthFilterText.includes("jwtUtil.isInvalid(")
     || !gatewayAuthFilterText.includes('getFirst("Authorization")')) {
   fail("api-gateway AuthenticationFilter: JWT validation must parse once and read Authorization safely");
 }
+if (!gatewayAuthFilterText.includes('regionMatches(true, 0, "Bearer ", 0, 7)')
+    || !gatewayAuthFilterText.includes("token.isEmpty() ? null : token")) {
+  fail("api-gateway AuthenticationFilter: protected requests must require Authorization: Bearer <token>");
+}
 
 for (const service of ["api-gateway", "auth-server"]) {
   const jwtProperties = propertiesFiles(service);
