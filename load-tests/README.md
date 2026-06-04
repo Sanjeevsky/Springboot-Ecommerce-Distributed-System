@@ -2,6 +2,8 @@
 
 k6 load tests for the Ecommerce Distributed System.
 
+The scripts use only k6 built-ins and local helper functions, so test startup does not depend on downloading remote JavaScript modules.
+
 ## Prerequisites
 
 ```bash

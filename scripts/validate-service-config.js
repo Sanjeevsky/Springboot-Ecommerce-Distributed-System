@@ -1252,6 +1252,10 @@ if (!shoppingCartIntegrationTestText.includes("updateItem_negativeQty_returnsBad
 }
 
 const catalogBrowseLoadTestText = fs.readFileSync(path.join(root, "load-tests", "catalog-browse.js"), "utf8");
+if (catalogBrowseLoadTestText.includes("https://")
+    || catalogBrowseLoadTestText.includes("jslib.k6.io")) {
+  fail("load-tests/catalog-browse.js: k6 scripts must not require remote runtime imports");
+}
 if (catalogBrowseLoadTestText.includes("keyword=phone")
     || catalogBrowseLoadTestText.includes("/catalog-service/brands")
     || !catalogBrowseLoadTestText.includes("/catalog-service/product/search?q=phone&page=0&size=10")
@@ -1266,6 +1270,10 @@ if (catalogBrowseLoadTestText.includes('PRODUCT_ID || "00000000-0000-0000-0000-0
 }
 
 const checkoutFlowLoadTestText = fs.readFileSync(path.join(root, "load-tests", "checkout-flow.js"), "utf8");
+if (checkoutFlowLoadTestText.includes("https://")
+    || checkoutFlowLoadTestText.includes("jslib.k6.io")) {
+  fail("load-tests/checkout-flow.js: k6 scripts must not require remote runtime imports");
+}
 if (checkoutFlowLoadTestText.includes('PRODUCT_ID || "00000000-0000-0000-0000-000000000001"')
     || checkoutFlowLoadTestText.includes("let addressId = data.addressId")
     || !checkoutFlowLoadTestText.includes('import { check, fail, group, sleep } from "k6"')
@@ -1278,6 +1286,7 @@ if (checkoutFlowLoadTestText.includes('PRODUCT_ID || "00000000-0000-0000-0000-00
   fail("load-tests/checkout-flow.js: checkout load test must self-seed product inventory and create per-user addresses");
 }
 if (!loadTestsReadmeText.includes("Optional: use existing catalog data")
+    || !loadTestsReadmeText.includes("does not depend on downloading remote JavaScript modules")
     || !loadTestsReadmeText.includes("k6 run --env SCENARIO=smoke checkout-flow.js")
     || !loadTestsReadmeText.includes("k6 run --env SCENARIO=load checkout-flow.js")
     || !loadTestsReadmeText.includes("k6 run --env SCENARIO=stress checkout-flow.js")

@@ -17,7 +17,6 @@
 import http from "k6/http";
 import { check, fail, group, sleep } from "k6";
 import { Rate, Trend, Counter } from "k6/metrics";
-import { randomString } from "https://jslib.k6.io/k6-utils/1.4.0/index.js";
 
 // ── Custom metrics ────────────────────────────────────────────────────────────
 
@@ -95,6 +94,15 @@ function authHeaders(token) {
 
 function jsonBody(obj) {
   return JSON.stringify(obj);
+}
+
+function randomString(length) {
+  const alphabet = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let value = "";
+  for (let i = 0; i < length; i += 1) {
+    value += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return value;
 }
 
 function extractData(resp) {
