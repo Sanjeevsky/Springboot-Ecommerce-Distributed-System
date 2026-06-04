@@ -1374,6 +1374,7 @@ if (checkoutFlowLoadTestText.includes('PRODUCT_ID || "00000000-0000-0000-0000-00
     || !checkoutFlowLoadTestText.includes("function createCatalogSeed(headers)")
     || !checkoutFlowLoadTestText.includes("Unable to seed checkout inventory for load test")
     || !checkoutFlowLoadTestText.includes("Checkout load test requires PRODUCT_ID and VARIANT_ID")
+    || !checkoutFlowLoadTestText.includes('Unknown SCENARIO "${SCENARIO}"')
     || !checkoutFlowLoadTestText.includes("/inventory-service/stock")
     || !checkoutFlowLoadTestText.includes("quantity: 100000")) {
   fail("load-tests/checkout-flow.js: checkout load test must self-seed product inventory and create per-user addresses");

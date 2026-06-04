@@ -72,6 +72,10 @@ const SCENARIOS = {
   },
 };
 
+if (!SCENARIOS[SCENARIO]) {
+  throw new Error(`Unknown SCENARIO "${SCENARIO}". Expected one of: ${Object.keys(SCENARIOS).join(", ")}`);
+}
+
 export const options = {
   scenarios: { [SCENARIO]: SCENARIOS[SCENARIO] },
   thresholds: {
