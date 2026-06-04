@@ -867,6 +867,14 @@ for (const relativePath of collectionFiles) {
   if (!collectionVariables.has("baseUrl")) {
     fail(`${relativePath}: collection must declare baseUrl so runner state does not depend on the environment file`);
   }
+
+  const undeclaredScriptSetVariables = [...scriptSetVariables]
+    .filter((name) => !isInternalRunnerVariable(name))
+    .filter((name) => !collectionVariables.has(name))
+    .sort();
+  for (const name of undeclaredScriptSetVariables) {
+    fail(`${relativePath}: script sets ${name} but it is not declared as a collection variable`);
+  }
 }
 
 if (failed) {
