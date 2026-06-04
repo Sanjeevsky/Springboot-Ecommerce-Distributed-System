@@ -976,6 +976,10 @@ const couponIntegrationTestText = fs.readFileSync(
   path.join(root, "coupon-service", "src", "test", "java", "com", "sanjeevsky", "couponservice", "CouponIntegrationTest.java"),
   "utf8"
 );
+const couponControllerTestText = fs.readFileSync(
+  path.join(root, "coupon-service", "src", "test", "java", "com", "sanjeevsky", "couponservice", "controller", "CouponControllerTest.java"),
+  "utf8"
+);
 if (!couponControllerText.includes("@RequestBody @Valid Coupon coupon")
     || !couponServiceImplText.includes("validateCouponForCreate(coupon)")
     || !couponServiceImplText.includes("Percentage coupon value must not exceed 100")
@@ -999,6 +1003,23 @@ for (const testName of [
   if (!couponIntegrationTestText.includes(testName)) {
     fail(`coupon-service: missing integration test ${testName}`);
   }
+}
+for (const testName of [
+  "createCoupon_validRequest_returns201AndForwardsCoupon",
+  "createCoupon_invalidRequest_returns400BeforeServiceCall",
+  "validateCoupon_forwardsCodeAndAmount",
+  "applyCoupon_forwardsCodeAndReturnsUpdatedCoupon",
+  "getActiveCoupons_returnsServiceList",
+]) {
+  if (!couponControllerTestText.includes(testName)) {
+    fail(`coupon-service: missing controller test ${testName}`);
+  }
+}
+if (!couponControllerTestText.includes('post("/coupon-service/coupon")')
+    || !couponControllerTestText.includes('get("/coupon-service/coupon/validate")')
+    || !couponControllerTestText.includes('verify(couponService).validateCoupon("SAVE10", 200.0)')
+    || !couponControllerTestText.includes("verifyNoInteractions(couponService)")) {
+  fail("coupon-service: controller tests must cover standard routes, service forwarding, and validation short-circuit");
 }
 
 const variantControllerText = fs.readFileSync(
