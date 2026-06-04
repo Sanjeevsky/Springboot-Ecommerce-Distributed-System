@@ -1208,6 +1208,27 @@ for (const testName of [
   }
 }
 
+const notificationControllerTestText = fs.readFileSync(
+  path.join(root, "notification-service", "src", "test", "java", "com", "sanjeevsky", "notificationservice", "controller", "NotificationControllerTest.java"),
+  "utf8"
+);
+for (const testName of [
+  "getAllForUser_trimsXUserAndReturnsNotifications",
+  "getUnreadForUser_trimsXUserAndQueriesUnreadOnly",
+  "getAllForUser_blankXUser_returns400BeforeRepositoryCall",
+  "markAsRead_marksNotificationAndReturnsSavedEntity",
+  "markAsRead_missingNotification_returns404BeforeSave",
+]) {
+  if (!notificationControllerTestText.includes(testName)) {
+    fail(`notification-service: missing controller test ${testName}`);
+  }
+}
+if (!notificationControllerTestText.includes('header("X-User", " " + USER_ID + " ")')
+    || !notificationControllerTestText.includes("findByUserIdAndRead(USER_ID, false)")
+    || !notificationControllerTestText.includes("verify(notificationRepository, never()).save(any())")) {
+  fail("notification-service: controller tests must cover X-User normalization, unread filtering, and mark-read not-found behavior");
+}
+
 const wishlistDtoText = fs.readFileSync(
   path.join(root, "wishlist-service", "src", "main", "java", "com", "sanjeevsky", "wishlistservice", "dto", "AddToWishlistRequest.java"),
   "utf8"
