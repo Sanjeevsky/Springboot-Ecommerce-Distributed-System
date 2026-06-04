@@ -1499,6 +1499,10 @@ const shoppingCartIntegrationTestText = fs.readFileSync(
   path.join(root, "shopping-cart-service", "src", "test", "java", "com", "sanjeevsky", "shoppingcartservice", "CartIntegrationTest.java"),
   "utf8"
 );
+const shoppingCartControllerTestText = fs.readFileSync(
+  path.join(root, "shopping-cart-service", "src", "test", "java", "com", "sanjeevsky", "shoppingcartservice", "controller", "CartControllerTest.java"),
+  "utf8"
+);
 if (!shoppingCartServiceImplText.includes("validateAddQuantity(qty)")
     || !shoppingCartServiceImplText.includes("validateUpdateQuantity(qty)")
     || !shoppingCartServiceImplText.includes("InvalidCartRequestException")) {
@@ -1514,6 +1518,25 @@ for (const testName of [
 }
 if (!shoppingCartIntegrationTestText.includes("updateItem_negativeQty_returnsBadRequest")) {
   fail("shopping-cart-service: integration tests must reject negative cart update quantities");
+}
+for (const testName of [
+  "getCart_forwardsXUser",
+  "addItem_forwardsXUserAndRequestValues",
+  "addItem_invalidRequest_returns400BeforeServiceCall",
+  "updateItem_forwardsXUserProductAndQuantity",
+  "removeItem_forwardsXUserAndProduct",
+  "clearCart_forwardsXUser",
+  "getCheckoutSnapshot_returnsSnapshotResponse",
+]) {
+  if (!shoppingCartControllerTestText.includes(testName)) {
+    fail(`shopping-cart-service: missing controller test ${testName}`);
+  }
+}
+if (!shoppingCartControllerTestText.includes('post("/cart-service/cart/add")')
+    || !shoppingCartControllerTestText.includes('get("/cart-service/cart/checkout")')
+    || !shoppingCartControllerTestText.includes("verify(cartService).addItem(USER_ID, PRODUCT_ID, VARIANT_ID, 2)")
+    || !shoppingCartControllerTestText.includes("verifyNoInteractions(cartService)")) {
+  fail("shopping-cart-service: controller tests must cover standard cart routes, X-User forwarding, checkout snapshots, and validation short-circuit");
 }
 
 const catalogBrowseLoadTestText = fs.readFileSync(path.join(root, "load-tests", "catalog-browse.js"), "utf8");
