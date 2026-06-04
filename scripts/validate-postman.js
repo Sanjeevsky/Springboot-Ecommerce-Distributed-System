@@ -372,6 +372,7 @@ function validateGatewayRoutedRequests(relativePath, collection) {
 
 function validateUniqueRequestNames(relativePath, collection) {
   const seen = new Set();
+  const seenStepLabels = new Set();
   for (const { path: requestPath, item } of walkItems(collection.item)) {
     const name = item.name || "";
     if (!name) {
@@ -382,6 +383,15 @@ function validateUniqueRequestNames(relativePath, collection) {
       fail(`${relativePath}: duplicate request name "${name}" makes runner retries and order validation ambiguous`);
     }
     seen.add(name);
+
+    const stepLabel = name.match(/^(\d+[a-z]?)\s+—/i);
+    if (stepLabel) {
+      const normalizedStepLabel = stepLabel[1].toLowerCase();
+      if (seenStepLabels.has(normalizedStepLabel)) {
+        fail(`${relativePath}: duplicate visible request step "${stepLabel[1]}" in "${name}"`);
+      }
+      seenStepLabels.add(normalizedStepLabel);
+    }
   }
 }
 
