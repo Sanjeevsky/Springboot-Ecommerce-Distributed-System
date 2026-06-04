@@ -518,6 +518,17 @@ for (const service of Object.keys(expectedApplicationNames)) {
   if (!text.includes("-Xmx96m") || !text.includes("-XX:MaxMetaspaceSize=128m") || !text.includes("-XX:MaxDirectMemorySize=32m")) {
     fail(`${service}: Dockerfile must use the low-memory JVM profile for full-stack local verification`);
   }
+  const dockerignoreFile = path.join(root, service, ".dockerignore");
+  if (!fs.existsSync(dockerignoreFile)) {
+    fail(`${service}: .dockerignore is missing`);
+  } else {
+    const dockerignoreText = fs.readFileSync(dockerignoreFile, "utf8");
+    for (const requiredDockerignoreLine of ["*", "!Dockerfile", "!target/", "!target/*.jar"]) {
+      if (!dockerignoreText.split(/\r?\n/).includes(requiredDockerignoreLine)) {
+        fail(`${service}: .dockerignore must keep Docker build context limited to Dockerfile and target/*.jar`);
+      }
+    }
+  }
 }
 
 const composeText = fs.readFileSync(path.join(root, "docker-compose.yml"), "utf8");
