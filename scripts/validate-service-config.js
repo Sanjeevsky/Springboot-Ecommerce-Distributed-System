@@ -335,6 +335,13 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
     fail(`${service}: expected spring.application.name=${expectedName}, found ${found}`);
   }
 
+  if (service !== "service-discovery") {
+    const preferIpAddressValues = files.flatMap((file) => propertyValues(file, "eureka.instance.preferIpAddress"));
+    if (!preferIpAddressValues.some((value) => value.toLowerCase() === "true")) {
+      fail(`${service}: Eureka clients must set eureka.instance.preferIpAddress=true for Docker-network registrations`);
+    }
+  }
+
   const mainPropertiesFile = path.join(root, service, "src", "main", "resources", "application.properties");
   if (service !== "cloud-config" && fs.existsSync(mainPropertiesFile)) {
     const defaultProfiles = propertyValues(mainPropertiesFile, "spring.profiles.active");
