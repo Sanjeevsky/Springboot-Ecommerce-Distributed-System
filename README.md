@@ -114,7 +114,7 @@ docker-compose up -d
 | UI | URL |
 |----|-----|
 | Eureka Dashboard | http://localhost:8761 |
-| Spring Boot Admin | http://localhost:9000 (optional `platform-tools` profile) |
+| Spring Boot Admin | http://localhost:9000 (client / client; optional `platform-tools` profile) |
 | Kafka UI | http://localhost:8080 |
 | Zipkin Traces | http://localhost:9411 |
 | Prometheus | http://localhost:9090 |

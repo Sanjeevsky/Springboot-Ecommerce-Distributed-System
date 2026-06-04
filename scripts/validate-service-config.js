@@ -500,10 +500,16 @@ if (!composeServiceBlock("spring-server").includes('profiles: ["platform-tools"]
   fail("docker-compose.yml: spring-server must stay in the optional platform-tools profile");
 }
 if (!readmeText.includes("optional `platform-tools` profile")
+    || !readmeText.includes("client / client; optional `platform-tools` profile")
     || !readmeText.includes("SPRING_BOOT_ADMIN_CLIENT_ENABLED=true docker compose --profile platform-tools up -d")
     || !implementationText.includes("optional `platform-tools` profile")
+    || !implementationText.includes("client/client; optional `platform-tools` profile")
     || !implementationText.includes("SPRING_BOOT_ADMIN_CLIENT_ENABLED=true docker compose --profile platform-tools up -d")) {
   fail("README.md and implementation.md must document the optional Spring Boot Admin platform-tools profile");
+}
+if (readmeText.includes("Spring Boot Admin | http://localhost:9000 (optional `platform-tools` profile)")
+    || implementationText.includes("Spring Boot Admin | http://localhost:9000 | admin/admin")) {
+  fail("README.md and implementation.md must document actual Spring Boot Admin default credentials");
 }
 if (implementationText.includes("grep -o '<app>.*</app>'")
     || implementationText.includes("cd platform-commons && mvn install -q && cd ..")

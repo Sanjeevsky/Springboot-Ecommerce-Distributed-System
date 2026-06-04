@@ -272,7 +272,7 @@ inventory-service  →  inventory-events topic
 | Tool | URL | Credentials |
 |------|-----|-------------|
 | Eureka Dashboard | http://localhost:8761 | — |
-| Spring Boot Admin | http://localhost:9000 | admin/admin; optional `platform-tools` profile |
+| Spring Boot Admin | http://localhost:9000 | client/client; optional `platform-tools` profile |
 | Zipkin (traces) | http://localhost:9411 | — |
 | Prometheus | http://localhost:9090 | — |
 | Grafana | http://localhost:3000 | admin/admin |
