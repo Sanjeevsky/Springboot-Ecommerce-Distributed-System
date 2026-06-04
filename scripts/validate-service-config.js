@@ -1268,7 +1268,11 @@ if (catalogBrowseLoadTestText.includes('PRODUCT_ID || "00000000-0000-0000-0000-0
 const checkoutFlowLoadTestText = fs.readFileSync(path.join(root, "load-tests", "checkout-flow.js"), "utf8");
 if (checkoutFlowLoadTestText.includes('PRODUCT_ID || "00000000-0000-0000-0000-000000000001"')
     || checkoutFlowLoadTestText.includes("let addressId = data.addressId")
+    || !checkoutFlowLoadTestText.includes('import { check, fail, group, sleep } from "k6"')
+    || !checkoutFlowLoadTestText.includes("function requireSeedData(resp, label)")
     || !checkoutFlowLoadTestText.includes("function createCatalogSeed(headers)")
+    || !checkoutFlowLoadTestText.includes("Unable to seed checkout inventory for load test")
+    || !checkoutFlowLoadTestText.includes("Checkout load test requires PRODUCT_ID and VARIANT_ID")
     || !checkoutFlowLoadTestText.includes("/inventory-service/stock")
     || !checkoutFlowLoadTestText.includes("quantity: 100000")) {
   fail("load-tests/checkout-flow.js: checkout load test must self-seed product inventory and create per-user addresses");

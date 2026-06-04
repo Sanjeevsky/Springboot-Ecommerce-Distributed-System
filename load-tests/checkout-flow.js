@@ -15,7 +15,7 @@
  */
 
 import http from "k6/http";
-import { check, group, sleep } from "k6";
+import { check, fail, group, sleep } from "k6";
 import { Rate, Trend, Counter } from "k6/metrics";
 import { randomString } from "https://jslib.k6.io/k6-utils/1.4.0/index.js";
 
@@ -105,6 +105,14 @@ function extractData(resp) {
   }
 }
 
+function requireSeedData(resp, label) {
+  const data = extractData(resp);
+  if (!data || !data.id) {
+    fail(`Unable to seed checkout ${label} for load test`);
+  }
+  return data;
+}
+
 function createCatalogSeed(headers) {
   const suffix = randomString(8);
   const brandResp = http.post(
@@ -112,21 +120,21 @@ function createCatalogSeed(headers) {
     null,
     { headers }
   );
-  const brand = extractData(brandResp);
+  const brand = requireSeedData(brandResp, "brand");
 
   const categoryResp = http.post(
     `${BASE_URL}/catalog-service/addCategory?categoryName=${encodeURIComponent(`LoadCategory_${suffix}`)}`,
     null,
     { headers }
   );
-  const category = extractData(categoryResp);
+  const category = requireSeedData(categoryResp, "category");
 
   const subCategoryResp = http.post(
     `${BASE_URL}/catalog-service/add-subcategory/${category.id}?subcategoryName=${encodeURIComponent(`LoadPhones_${suffix}`)}`,
     null,
     { headers }
   );
-  const subCategory = extractData(subCategoryResp);
+  const subCategory = requireSeedData(subCategoryResp, "subcategory");
 
   const productResp = http.post(
     `${BASE_URL}/catalog-service/product/addProduct?brandId=${brand.id}&categoryId=${category.id}&subCategoryId=${subCategory.id}`,
@@ -144,7 +152,7 @@ function createCatalogSeed(headers) {
     }),
     { headers }
   );
-  const product = extractData(productResp);
+  const product = requireSeedData(productResp, "product");
 
   const variantResp = http.post(
     `${BASE_URL}/catalog-service/variant/add/${product.id}`,
@@ -158,14 +166,17 @@ function createCatalogSeed(headers) {
     }),
     { headers }
   );
-  const variant = extractData(variantResp);
+  const variant = requireSeedData(variantResp, "variant");
 
   const stockResp = http.post(
     `${BASE_URL}/inventory-service/stock`,
     jsonBody({ productId: product.id, variantId: variant.id, quantity: 100000 }),
     { headers }
   );
-  check(stockResp, { "seed inventory 200": (r) => r.status === 200 || r.status === 201 });
+  const stockSeeded = check(stockResp, { "seed inventory 200": (r) => r.status === 200 || r.status === 201 });
+  if (!stockSeeded) {
+    fail("Unable to seed checkout inventory for load test");
+  }
 
   return { productId: product.id, variantId: variant.id };
 }
@@ -192,11 +203,17 @@ export function setup() {
   let productId = PRODUCT_ID;
   let variantId = VARIANT_ID;
 
+  if (!token && !productId) {
+    fail("Unable to authenticate checkout load-test seed user");
+  }
   if (token && !productId) {
     const headers = authHeaders(token);
     const seed = createCatalogSeed(headers);
     productId = seed.productId;
     variantId = seed.variantId;
+  }
+  if (!productId || !variantId) {
+    fail("Checkout load test requires PRODUCT_ID and VARIANT_ID or successful setup-time seed data");
   }
 
   return { seedToken: token, productId, variantId };
