@@ -1478,6 +1478,15 @@ for (const [client, feignClientFile, composeEnv] of orderClientOverrides) {
   }
 }
 
+const inventoryFallbackTestText = fs.readFileSync(
+  path.join(root, "order-service", "src", "test", "java", "com", "sanjeevsky", "orderservice", "clients", "fallback", "InventoryFeignClientFallbackTest.java"),
+  "utf8"
+);
+if (!inventoryFallbackTestText.includes("getStockByProduct_returnsNullToAllowKafkaReservationFallback")
+    || !inventoryFallbackTestText.includes("isNull()")) {
+  fail("order-service: InventoryFeignClient fallback must document non-blocking inventory pre-check behavior");
+}
+
 const kafkaRetryConfigs = [
   {
     service: "inventory-service",
