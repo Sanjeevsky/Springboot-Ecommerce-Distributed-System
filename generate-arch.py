@@ -11,7 +11,7 @@ Run any time you add a service, change a port, or add a Feign/Kafka connection:
     python3 generate-arch.py
 """
 
-import os, re, json
+import argparse, os, re, json, sys
 from pathlib import Path
 
 ROOT = Path(__file__).parent
@@ -850,6 +850,10 @@ draw();
 # ── MAIN ─────────────────────────────────────────────────────────────────────
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Generate architecture.html from the current project structure.')
+    parser.add_argument('--check', action='store_true', help='fail if architecture.html is not up to date')
+    args = parser.parse_args()
+
     print("Scanning project...")
     services, connections = build_graph()
     positions = compute_layout(services)
@@ -861,6 +865,14 @@ if __name__ == '__main__':
 
     html = render(services, connections, positions)
     out = ROOT / 'architecture.html'
+    if args.check:
+        current = out.read_text() if out.exists() else ''
+        if current != html:
+            print(f"\narchitecture.html is out of date; run {Path(__file__).name}", file=sys.stderr)
+            sys.exit(1)
+        print("\narchitecture.html is up to date")
+        sys.exit(0)
+
     out.write_text(html)
     print(f"\n✓ Written to {out}")
     print("  Open with: open architecture.html")

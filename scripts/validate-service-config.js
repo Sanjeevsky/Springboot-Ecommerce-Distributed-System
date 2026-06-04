@@ -1586,6 +1586,9 @@ if (!ciWorkflowText.includes("static-validation:")
     || ciWorkflowText.includes("Postman static validation")) {
   fail(".github/workflows/ci.yml: CI validation job must be named Static validation");
 }
+if (!ciWorkflowText.includes("python3 generate-arch.py --check")) {
+  fail(".github/workflows/ci.yml: CI must validate generated architecture.html");
+}
 if (!ciWorkflowText.includes("bash -n scripts/verify-local.sh scripts/build-docker-jars.sh e2e-smoke-test.sh")) {
   fail(".github/workflows/ci.yml: CI must validate shell script syntax");
 }
@@ -1597,8 +1600,9 @@ if (!ciWorkflowText.includes("mvn -B -f platform-commons/pom.xml clean install -
   fail(".github/workflows/ci.yml: CI Maven commands must run clean to avoid stale deleted classes");
 }
 if (!readmeText.includes("bash -n scripts/verify-local.sh scripts/build-docker-jars.sh e2e-smoke-test.sh")
+    || !readmeText.includes("python3 generate-arch.py --check")
     || !readmeText.includes("docker compose config --quiet")) {
-  fail("README.md: static verification docs must include shell syntax and Docker Compose config checks");
+  fail("README.md: static verification docs must include generated architecture, shell syntax, and Docker Compose config checks");
 }
 if (!readmeText.includes("mvn -B -f auth-server/pom.xml clean test")) {
   fail("README.md: targeted Java test example must run clean test to avoid stale deleted classes");

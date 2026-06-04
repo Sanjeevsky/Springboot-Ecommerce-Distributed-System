@@ -26,6 +26,9 @@ jobs:
       - name: Validate service configuration
         run: node scripts/validate-service-config.js
 
+      - name: Validate generated architecture
+        run: python3 generate-arch.py --check
+
       - name: Validate shell scripts
         run: bash -n scripts/verify-local.sh scripts/build-docker-jars.sh e2e-smoke-test.sh
 
