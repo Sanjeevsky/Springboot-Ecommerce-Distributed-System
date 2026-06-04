@@ -792,6 +792,10 @@ if (!readmeText.includes("| Kafka UI | http://localhost:8080 |")
     || !implementationText.includes("| Kafka UI | http://localhost:8080 |")) {
   fail("README.md and implementation.md must document Kafka UI at http://localhost:8080");
 }
+if (!readmeText.includes("**15 Spring services** plus platform infrastructure across 3 tiers:")
+    || readmeText.includes("**15 services** across 3 tiers:")) {
+  fail("README.md: architecture summary must distinguish Spring services from platform infrastructure");
+}
 
 const prometheusBlock = composeServiceBlock("prometheus");
 if (!prometheusBlock.includes('test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]')) {

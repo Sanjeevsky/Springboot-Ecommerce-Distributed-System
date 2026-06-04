@@ -10,7 +10,7 @@ A production-grade ecommerce platform built as a microservices architecture usin
 
 [Live Architecture Diagram](https://sanjeevsky.github.io/Springboot-Ecommerce-Distributed-System/architecture.html)
 
-**15 services** across 3 tiers:
+**15 Spring services** plus platform infrastructure across 3 tiers:
 
 | Tier | Services |
 |------|----------|
