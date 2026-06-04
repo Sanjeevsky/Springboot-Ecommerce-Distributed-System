@@ -86,6 +86,7 @@ All business services include:
 
 Business services include:
 ```properties
+spring.profiles.active=dev
 spring.zipkin.baseUrl=http://localhost:9411/
 spring.zipkin.enabled=false            # overridden to true in docker
 spring.sleuth.sampler.probability=1.0

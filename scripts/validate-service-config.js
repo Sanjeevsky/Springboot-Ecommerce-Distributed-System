@@ -311,6 +311,15 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
     fail(`${service}: expected spring.application.name=${expectedName}, found ${found}`);
   }
 
+  const mainPropertiesFile = path.join(root, service, "src", "main", "resources", "application.properties");
+  if (service !== "cloud-config" && fs.existsSync(mainPropertiesFile)) {
+    const defaultProfiles = propertyValues(mainPropertiesFile, "spring.profiles.active");
+    if (!defaultProfiles.includes("dev")) {
+      const found = defaultProfiles.length ? defaultProfiles.join(", ") : "<none>";
+      fail(`${service}: application.properties must default to spring.profiles.active=dev for Eureka-backed local runs, found ${found}`);
+    }
+  }
+
   const showSqlValues = files.flatMap((file) => propertyValues(file, "spring.jpa.show-sql"));
   if (showSqlValues.some((value) => value.toLowerCase() === "true")) {
     fail(`${service}: spring.jpa.show-sql must stay disabled for full-stack Docker smoke stability`);
@@ -537,6 +546,10 @@ if (!readmeText.includes("optional `platform-tools` profile")
 if (readmeText.includes("Spring Boot Admin | http://localhost:9000 (optional `platform-tools` profile)")
     || implementationText.includes("Spring Boot Admin | http://localhost:9000 | admin/admin")) {
   fail("README.md and implementation.md must document actual Spring Boot Admin default credentials");
+}
+if (!readmeText.includes("Application services default to the `dev` profile")
+    || !implementationText.includes("spring.profiles.active=dev")) {
+  fail("README.md and implementation.md must document the default dev profile for Eureka-backed local runs");
 }
 if (implementationText.includes("grep -o '<app>.*</app>'")
     || implementationText.includes("cd platform-commons && mvn install -q && cd ..")
