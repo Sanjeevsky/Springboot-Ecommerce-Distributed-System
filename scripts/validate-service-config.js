@@ -580,6 +580,13 @@ if (!readmeText.includes("Application services default to the `dev` profile")
     || !implementationText.includes("spring.profiles.active=dev")) {
   fail("README.md and implementation.md must document the default dev profile for Eureka-backed local runs");
 }
+const customerLocalProfileText = fs.readFileSync(path.join(root, "customer-service", "src", "main", "resources", "application-local.properties"), "utf8");
+if (!customerLocalProfileText.includes("eureka.client.registerWithEureka = false")
+    || !customerLocalProfileText.includes("eureka.client.fetchRegistry = false")
+    || !readmeText.includes("application-local.properties` is an opt-in isolated profile")
+    || !implementationText.includes("opt-in `application-local.properties` profile")) {
+  fail("customer-service local profile must remain documented as an opt-in isolated profile with Eureka disabled");
+}
 if (implementationText.includes("grep -o '<app>.*</app>'")
     || implementationText.includes("cd platform-commons && mvn install -q && cd ..")
     || !implementationText.includes("scripts/build-docker-jars.sh")

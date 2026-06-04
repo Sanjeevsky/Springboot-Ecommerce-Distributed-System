@@ -102,6 +102,7 @@ management.endpoints.web.exposure.include=*
 - Docker overrides point Kafka clients at `kafka:29092`.
 - Kafka UI is available at `http://localhost:8080`.
 - Grafana provisioning is mounted from `observability/grafana`.
+- `customer-service` keeps an opt-in `application-local.properties` profile for isolated direct-service debugging; it disables Eureka and is not used by Docker Compose or smoke verification.
 
 **1.4 Grafana provisioning**
 - `observability/grafana/provisioning/datasources/prometheus.yaml`
