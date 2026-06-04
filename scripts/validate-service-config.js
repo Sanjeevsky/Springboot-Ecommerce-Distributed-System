@@ -954,6 +954,11 @@ if (!orderServiceTestText.includes("createOrder_missingAddressId_throwsInvalidRe
     || !orderControllerTestText.includes("createOrder_missingAddressId_returns400")) {
   fail("order-service: tests must cover missing addressId validation for order creation");
 }
+if (!orderControllerTestText.includes("createOrder_withCouponAndIdempotencyKey_passesHeadersAndReturns201")
+    || !orderControllerTestText.includes('header("Idempotency-Key", "order-1")')
+    || !orderControllerTestText.includes('verify(orderService).createOrder(USER, ADDRESS_ID, "SAVE10", "order-1")')) {
+  fail("order-service: controller tests must cover X-User and Idempotency-Key propagation");
+}
 
 const couponControllerText = fs.readFileSync(
   path.join(root, "coupon-service", "src", "main", "java", "com", "sanjeevsky", "couponservice", "controller", "CouponController.java"),
