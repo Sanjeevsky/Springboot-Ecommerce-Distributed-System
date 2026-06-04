@@ -85,6 +85,24 @@ GATEWAY_ROUTE_CHECKS=(
   "catalog-service route|$BASE_URL/catalog-service/product/list"
 )
 
+GATEWAY_AUTH_GUARD_CHECKS=(
+  "auth-service protected route|$BASE_URL/auth-service/updatePassword"
+  "catalog-service protected route|$BASE_URL/catalog-service/getBrands"
+  "cart-service protected route|$BASE_URL/cart-service/cart"
+  "customer-service protected route|$BASE_URL/customer-service/address"
+  "payment-service protected route|$BASE_URL/payment-service/initiate"
+  "inventory-service protected route|$BASE_URL/inventory-service/stock"
+  "notification-service protected route|$BASE_URL/notification-service/notifications"
+  "order-service protected route|$BASE_URL/order-service/order"
+  "coupon-service protected route|$BASE_URL/coupon-service/coupon"
+  "review-service protected route|$BASE_URL/review-service/review"
+  "wishlist-service protected route|$BASE_URL/wishlist-service/wishlist"
+)
+
+RAW_GATEWAY_ROUTE_CHECKS=(
+  "raw shopping-cart service route|$BASE_URL/shopping-cart-service/cart"
+)
+
 log() {
   printf '\n==> %s\n' "$1"
 }
@@ -209,10 +227,23 @@ expect_http_status() {
   fi
 }
 
+expect_http_status_check() {
+  local check="$1"
+  local expected="$2"
+  local name="${check%%|*}"
+  local url="${check#*|}"
+
+  expect_http_status "$name" "$url" "$expected"
+}
+
 verify_gateway_standard_routes() {
   log "Verifying gateway standard routes"
-  expect_http_status "Standard cart route auth guard" "$BASE_URL/cart-service/cart" "401"
-  expect_http_status "Raw shopping-cart service route" "$BASE_URL/shopping-cart-service/cart" "404"
+  for check in "${GATEWAY_AUTH_GUARD_CHECKS[@]}"; do
+    expect_http_status_check "$check" "401"
+  done
+  for check in "${RAW_GATEWAY_ROUTE_CHECKS[@]}"; do
+    expect_http_status_check "$check" "404"
+  done
 }
 
 configure_maven_java() {

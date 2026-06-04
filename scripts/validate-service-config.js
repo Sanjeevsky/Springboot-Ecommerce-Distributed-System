@@ -1490,6 +1490,10 @@ if (!verifyLocalText.includes("GATEWAY_ROUTE_CHECKS")
     || !verifyLocalText.includes("/catalog-service/product/list")) {
   fail("scripts/verify-local.sh: local smoke verifier must wait for gateway route readiness before Postman runs");
 }
+if (!readmeText.includes("gateway auth-guard checks across all standard service prefixes")
+    || !implementationText.includes("gateway auth-guard checks across all standard service prefixes")) {
+  fail("README.md and implementation.md must document smoke gateway auth-guard checks");
+}
 
 if (!verifyLocalText.includes("RUN_API_COLLECTION")
     || !verifyLocalText.includes("Ecommerce-API.postman_collection.json")) {
@@ -1497,9 +1501,28 @@ if (!verifyLocalText.includes("RUN_API_COLLECTION")
 }
 
 if (!verifyLocalText.includes("verify_gateway_standard_routes")
-    || !verifyLocalText.includes("/cart-service/cart")
+    || !verifyLocalText.includes("GATEWAY_AUTH_GUARD_CHECKS")
+    || !verifyLocalText.includes("RAW_GATEWAY_ROUTE_CHECKS")
+    || !verifyLocalText.includes("expect_http_status_check")
     || !verifyLocalText.includes("/shopping-cart-service/cart")) {
   fail("scripts/verify-local.sh: local smoke verifier must assert standard gateway routes and reject raw service-id routes");
+}
+for (const expectedGatewayAuthGuardMarker of [
+  "/auth-service/updatePassword",
+  "/catalog-service/getBrands",
+  "/cart-service/cart",
+  "/customer-service/address",
+  "/payment-service/initiate",
+  "/inventory-service/stock",
+  "/notification-service/notifications",
+  "/order-service/order",
+  "/coupon-service/coupon",
+  "/review-service/review",
+  "/wishlist-service/wishlist",
+]) {
+  if (!verifyLocalText.includes(expectedGatewayAuthGuardMarker)) {
+    fail(`scripts/verify-local.sh: missing gateway auth guard route check ${expectedGatewayAuthGuardMarker}`);
+  }
 }
 
 if (!verifyLocalText.includes("print_url_diagnostics")
