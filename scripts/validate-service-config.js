@@ -23,6 +23,21 @@ const expectedApplicationNames = {
   "wishlist-service": "wishlist-service",
 };
 
+const expectedControllerPrefixes = {
+  "api-gateway": [],
+  "auth-server": ["/auth-service"],
+  "catalog-service": ["/catalog-service"],
+  "coupon-service": ["/coupon-service"],
+  "customer-service": ["/customer-service"],
+  "inventory-service": ["/inventory-service"],
+  "notification-service": ["/notification-service"],
+  "order-service": ["/order-service"],
+  "payment-service": ["/payment-service"],
+  "review-service": ["/review-service"],
+  "shopping-cart-service": ["/cart-service"],
+  "wishlist-service": ["/wishlist-service"],
+};
+
 let failed = false;
 
 function fail(message) {
@@ -134,6 +149,17 @@ function requestMappingVisibilityIssues(text) {
     }
   }
   return issues;
+}
+
+function controllerBaseMappings(text) {
+  const classPrefix = text.split(/\bclass\b/)[0] || text;
+  const mappings = [];
+  const mappingRegex = /@RequestMapping\s*\(\s*(?:value\s*=\s*)?"([^"]*)"/g;
+  let match;
+  while ((match = mappingRegex.exec(classPrefix)) !== null) {
+    mappings.push(match[1].replace(/\/+$/, "") || "/");
+  }
+  return mappings;
 }
 
 function applicationNameValues(file) {
@@ -259,6 +285,12 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
     if (text.includes("@RestController")) {
       for (const line of requestMappingVisibilityIssues(text)) {
         fail(`${relativeFile}:${line}: request mapping methods must be public`);
+      }
+      const allowedPrefixes = expectedControllerPrefixes[service] || [];
+      for (const baseMapping of controllerBaseMappings(text)) {
+        if (!allowedPrefixes.some((prefix) => baseMapping === prefix || baseMapping.startsWith(`${prefix}/`))) {
+          fail(`${relativeFile}: controller base mapping ${baseMapping} must use standard gateway prefixes [${allowedPrefixes.join(", ")}]`);
+        }
       }
     }
     if (path.basename(file) === "OpenApiConfig.java") {
