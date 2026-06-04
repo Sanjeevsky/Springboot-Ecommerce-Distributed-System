@@ -496,8 +496,12 @@ for (const service of Object.keys(expectedApplicationNames)) {
 }
 
 const composeText = fs.readFileSync(path.join(root, "docker-compose.yml"), "utf8");
-if (!composeServiceBlock("spring-server").includes('profiles: ["platform-tools"]')) {
+const springServerComposeBlock = composeServiceBlock("spring-server");
+if (!springServerComposeBlock.includes('profiles: ["platform-tools"]')) {
   fail("docker-compose.yml: spring-server must stay in the optional platform-tools profile");
+}
+if (!springServerComposeBlock.includes("SPRING_SECURITY_USER_PASSWORD=${SPRING_SECURITY_USER_PASSWORD:-client}")) {
+  fail("docker-compose.yml: spring-server must expose SPRING_SECURITY_USER_PASSWORD for optional admin login overrides");
 }
 if (!readmeText.includes("optional `platform-tools` profile")
     || !readmeText.includes("client / client; optional `platform-tools` profile")
@@ -669,6 +673,10 @@ for (const service of Object.keys(expectedApplicationNames)) {
       .some((file) => hasProperty(file, "spring.kafka.bootstrap-servers"));
     if (usesKafkaBootstrap && !block.includes("SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092")) {
       fail(`docker-compose.yml: ${service} must define SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092`);
+    }
+    if (block.includes("SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000")
+        && !block.includes("SPRING_BOOT_ADMIN_CLIENT_PASSWORD=${SPRING_BOOT_ADMIN_CLIENT_PASSWORD:-client}")) {
+      fail(`docker-compose.yml: ${service} must expose SPRING_BOOT_ADMIN_CLIENT_PASSWORD for optional admin client registration`);
     }
   }
 }
