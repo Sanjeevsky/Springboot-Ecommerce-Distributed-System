@@ -285,7 +285,7 @@ Start Spring Boot Admin with service client registration when needed:
 SPRING_BOOT_ADMIN_CLIENT_ENABLED=true docker compose --profile platform-tools up -d
 ```
 
-When overriding the default admin password in Docker, set `SPRING_SECURITY_USER_PASSWORD` and `SPRING_BOOT_ADMIN_CLIENT_PASSWORD` to the same value.
+When overriding the default admin credentials in Docker, set `SPRING_SECURITY_USER_NAME` and `SPRING_BOOT_ADMIN_CLIENT_USERNAME` to the same value, and set `SPRING_SECURITY_USER_PASSWORD` and `SPRING_BOOT_ADMIN_CLIENT_PASSWORD` to the same value.
 
 ---
 

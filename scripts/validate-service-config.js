@@ -342,6 +342,9 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
     if (/^spring\.boot\.admin\.client\.password\s*=\s*client\s*$/m.test(text)) {
       fail(`${relativeFile}: Spring Boot Admin client password must read from SPRING_BOOT_ADMIN_CLIENT_PASSWORD`);
     }
+    if (/^spring\.boot\.admin\.client\.username\s*=\s*client\s*$/m.test(text)) {
+      fail(`${relativeFile}: Spring Boot Admin client username must read from SPRING_BOOT_ADMIN_CLIENT_USERNAME`);
+    }
   }
 
   const datasourcePasswordValues = files.flatMap((file) => propertyValues(file, "spring.datasource.password"));
@@ -355,6 +358,12 @@ for (const [service, expectedName] of Object.entries(expectedApplicationNames)) 
       && !adminClientPasswordValues.every((value) => value.startsWith("${SPRING_BOOT_ADMIN_CLIENT_PASSWORD:"))) {
     fail(`${service}: spring.boot.admin.client.password must use \${SPRING_BOOT_ADMIN_CLIENT_PASSWORD:...}`);
   }
+
+  const adminClientUsernameValues = files.flatMap((file) => propertyValues(file, "spring.boot.admin.client.username"));
+  if (adminClientUsernameValues.length
+      && !adminClientUsernameValues.every((value) => value.startsWith("${SPRING_BOOT_ADMIN_CLIENT_USERNAME:"))) {
+    fail(`${service}: spring.boot.admin.client.username must use \${SPRING_BOOT_ADMIN_CLIENT_USERNAME:...}`);
+  }
 }
 
 const springServerSecurityPasswords = propertiesFiles("spring-server")
@@ -362,6 +371,13 @@ const springServerSecurityPasswords = propertiesFiles("spring-server")
 if (!springServerSecurityPasswords.length
     || !springServerSecurityPasswords.every((value) => value.startsWith("${SPRING_SECURITY_USER_PASSWORD:"))) {
   fail("spring-server: spring.security.user.password must use ${SPRING_SECURITY_USER_PASSWORD:...}");
+}
+
+const springServerSecurityUsernames = propertiesFiles("spring-server")
+  .flatMap((file) => propertyValues(file, "spring.security.user.name"));
+if (!springServerSecurityUsernames.length
+    || !springServerSecurityUsernames.every((value) => value.startsWith("${SPRING_SECURITY_USER_NAME:"))) {
+  fail("spring-server: spring.security.user.name must use ${SPRING_SECURITY_USER_NAME:...}");
 }
 
 const readmeCoverageServices = [
@@ -503,12 +519,19 @@ if (!springServerComposeBlock.includes('profiles: ["platform-tools"]')) {
 if (!springServerComposeBlock.includes("SPRING_SECURITY_USER_PASSWORD=${SPRING_SECURITY_USER_PASSWORD:-client}")) {
   fail("docker-compose.yml: spring-server must expose SPRING_SECURITY_USER_PASSWORD for optional admin login overrides");
 }
+if (!springServerComposeBlock.includes("SPRING_SECURITY_USER_NAME=${SPRING_SECURITY_USER_NAME:-client}")) {
+  fail("docker-compose.yml: spring-server must expose SPRING_SECURITY_USER_NAME for optional admin login overrides");
+}
 if (!readmeText.includes("optional `platform-tools` profile")
     || !readmeText.includes("client / client; optional `platform-tools` profile")
     || !readmeText.includes("SPRING_BOOT_ADMIN_CLIENT_ENABLED=true docker compose --profile platform-tools up -d")
+    || !readmeText.includes("SPRING_SECURITY_USER_NAME")
+    || !readmeText.includes("SPRING_BOOT_ADMIN_CLIENT_USERNAME")
     || !implementationText.includes("optional `platform-tools` profile")
     || !implementationText.includes("client/client; optional `platform-tools` profile")
-    || !implementationText.includes("SPRING_BOOT_ADMIN_CLIENT_ENABLED=true docker compose --profile platform-tools up -d")) {
+    || !implementationText.includes("SPRING_BOOT_ADMIN_CLIENT_ENABLED=true docker compose --profile platform-tools up -d")
+    || !implementationText.includes("SPRING_SECURITY_USER_NAME")
+    || !implementationText.includes("SPRING_BOOT_ADMIN_CLIENT_USERNAME")) {
   fail("README.md and implementation.md must document the optional Spring Boot Admin platform-tools profile");
 }
 if (readmeText.includes("Spring Boot Admin | http://localhost:9000 (optional `platform-tools` profile)")
@@ -677,6 +700,10 @@ for (const service of Object.keys(expectedApplicationNames)) {
     if (block.includes("SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000")
         && !block.includes("SPRING_BOOT_ADMIN_CLIENT_PASSWORD=${SPRING_BOOT_ADMIN_CLIENT_PASSWORD:-client}")) {
       fail(`docker-compose.yml: ${service} must expose SPRING_BOOT_ADMIN_CLIENT_PASSWORD for optional admin client registration`);
+    }
+    if (block.includes("SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000")
+        && !block.includes("SPRING_BOOT_ADMIN_CLIENT_USERNAME=${SPRING_BOOT_ADMIN_CLIENT_USERNAME:-client}")) {
+      fail(`docker-compose.yml: ${service} must expose SPRING_BOOT_ADMIN_CLIENT_USERNAME for optional admin client registration`);
     }
   }
 }
