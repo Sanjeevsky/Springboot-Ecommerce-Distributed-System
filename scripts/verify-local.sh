@@ -112,6 +112,20 @@ RAW_GATEWAY_ROUTE_CHECKS=(
   "raw shopping-cart service route|$BASE_URL/shopping-cart-service/cart"
 )
 
+GATEWAY_ROUTE_TABLE_CHECKS=(
+  "auth-service|lb://auth-service|/auth-service/**"
+  "catalog-service|lb://catalog-service|/catalog-service/**"
+  "cart-service|lb://shopping-cart-service|/cart-service/**"
+  "customer-service|lb://customer-service|/customer-service/**"
+  "payment-service|lb://payment-service|/payment-service/**"
+  "inventory-service|lb://inventory-service|/inventory-service/**"
+  "notification-service|lb://notification-service|/notification-service/**"
+  "order-service|lb://order-service|/order-service/**"
+  "coupon-service|lb://coupon-service|/coupon-service/**"
+  "review-service|lb://review-service|/review-service/**"
+  "wishlist-service|lb://wishlist-service|/wishlist-service/**"
+)
+
 log() {
   printf '\n==> %s\n' "$1"
 }
@@ -256,6 +270,65 @@ verify_gateway_standard_routes() {
   done
 }
 
+verify_gateway_route_table() {
+  local routes_json
+  local route_specs
+
+  if ! routes_json="$(curl -fs "$BASE_URL/actuator/gateway/routes")"; then
+    echo "Gateway route table did not become readable at $BASE_URL/actuator/gateway/routes" >&2
+    print_url_diagnostics "API gateway route table" "$BASE_URL/actuator/gateway/routes"
+    return 1
+  fi
+
+  printf -v route_specs '%s\n' "${GATEWAY_ROUTE_TABLE_CHECKS[@]}"
+  GATEWAY_ROUTES_JSON="$routes_json" GATEWAY_ROUTE_SPECS="$route_specs" node <<'NODE'
+const routes = JSON.parse(process.env.GATEWAY_ROUTES_JSON || "[]");
+const specs = (process.env.GATEWAY_ROUTE_SPECS || "")
+  .split(/\n/)
+  .map((line) => line.trim())
+  .filter(Boolean)
+  .map((line) => {
+    const [id, uri, path] = line.split("|");
+    return { id, uri, path };
+  });
+
+const expectedIds = new Set(specs.map((spec) => spec.id));
+const routesById = new Map(routes.map((route) => [route.route_id, route]));
+const errors = [];
+
+for (const spec of specs) {
+  const route = routesById.get(spec.id);
+  if (!route) {
+    errors.push(`missing route ${spec.id}`);
+    continue;
+  }
+  if (route.uri !== spec.uri) {
+    errors.push(`${spec.id} uri ${route.uri} did not match ${spec.uri}`);
+  }
+  if (!String(route.predicate || "").includes(spec.path)) {
+    errors.push(`${spec.id} predicate ${route.predicate} did not include ${spec.path}`);
+  }
+}
+
+for (const route of routes) {
+  if (!expectedIds.has(route.route_id)) {
+    errors.push(`unexpected route ${route.route_id}`);
+  }
+  if (route.route_id === "shopping-cart-service"
+      || String(route.predicate || "").includes("/shopping-cart-service/**")) {
+    errors.push("raw shopping-cart-service route is exposed");
+  }
+}
+
+if (errors.length) {
+  for (const error of errors) {
+    console.error(error);
+  }
+  process.exit(1);
+}
+NODE
+}
+
 configure_maven_java() {
   local preferred_java_home="${MAVEN_JAVA_HOME:-$DEFAULT_MAVEN_JAVA_HOME}"
 
@@ -324,6 +397,8 @@ if [[ "$RUN_POSTMAN" == "1" ]]; then
   for check in "${GATEWAY_ROUTE_CHECKS[@]}"; do
     wait_for_gateway_route "$check"
   done
+  log "Verifying API gateway route table"
+  verify_gateway_route_table
   verify_gateway_standard_routes
 
   if [[ "$RUN_API_COLLECTION" == "1" ]]; then

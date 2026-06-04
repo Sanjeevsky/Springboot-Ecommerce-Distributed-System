@@ -1719,9 +1719,17 @@ if (!verifyLocalText.includes("GATEWAY_ROUTE_CHECKS")
     || !verifyLocalText.includes("/catalog-service/product/list")) {
   fail("scripts/verify-local.sh: local smoke verifier must wait for gateway route readiness before Postman runs");
 }
+if (!verifyLocalText.includes("GATEWAY_ROUTE_TABLE_CHECKS")
+    || !verifyLocalText.includes("verify_gateway_route_table")
+    || !verifyLocalText.includes("/actuator/gateway/routes")
+    || !verifyLocalText.includes("raw shopping-cart-service route is exposed")) {
+  fail("scripts/verify-local.sh: local smoke verifier must inspect live gateway route table and reject raw service-id routes");
+}
 if (!readmeText.includes("gateway auth-guard checks across all standard service prefixes")
-    || !implementationText.includes("gateway auth-guard checks across all standard service prefixes")) {
-  fail("README.md and implementation.md must document smoke gateway auth-guard checks");
+    || !implementationText.includes("gateway auth-guard checks across all standard service prefixes")
+    || !readmeText.includes("live gateway route-table")
+    || !implementationText.includes("live gateway route table")) {
+  fail("README.md and implementation.md must document smoke gateway route-table and auth-guard checks");
 }
 
 if (!verifyLocalText.includes("RUN_API_COLLECTION")

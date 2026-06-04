@@ -213,7 +213,7 @@ Full local verification:
 scripts/verify-local.sh
 ```
 
-By default this runs the API reference collection, the DataSeed collection, and the complete E2E collection after local health, platform endpoint, Eureka, gateway route readiness, and gateway auth-guard checks across all standard service prefixes. Readiness includes `cloud-config` health, `CONFIGSERVER` Eureka registration, and Kafka UI, Zipkin, Prometheus, and Grafana endpoints.
+By default this runs the API reference collection, the DataSeed collection, and the complete E2E collection after local health, platform endpoint, Eureka, live gateway route-table, gateway route readiness, and gateway auth-guard checks across all standard service prefixes. Readiness includes `cloud-config` health, `CONFIGSERVER` Eureka registration, and Kafka UI, Zipkin, Prometheus, and Grafana endpoints.
 The Maven phase runs `clean test` to avoid stale deleted classes; run `scripts/build-docker-jars.sh` again before any Docker image rebuild that needs fresh `target/*.jar` files.
 If a health or Eureka readiness check times out, the script prints the last HTTP response or a compact Eureka registry snapshot so missing registrations are visible without opening the dashboard manually.
 
