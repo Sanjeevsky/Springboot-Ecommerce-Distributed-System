@@ -1496,6 +1496,19 @@ if (!couponFallbackTestText.includes("validateCoupon_returnsInvalidResultWithout
   fail("order-service: CouponFeignClient fallback must document non-fatal coupon validation/apply behavior");
 }
 
+for (const service of Object.keys(expectedApplicationNames)) {
+  for (const fallbackFile of javaMainFiles(service)
+    .filter((file) => file.includes(`${path.sep}clients${path.sep}fallback${path.sep}`)
+      && /Fallback\.java$/.test(path.basename(file)))) {
+    const expectedTestFile = fallbackFile
+      .replace(`${path.sep}src${path.sep}main${path.sep}java${path.sep}`, `${path.sep}src${path.sep}test${path.sep}java${path.sep}`)
+      .replace(/\.java$/, "Test.java");
+    if (!fs.existsSync(expectedTestFile)) {
+      fail(`${path.relative(root, fallbackFile)}: missing focused fallback test ${path.relative(root, expectedTestFile)}`);
+    }
+  }
+}
+
 const kafkaRetryConfigs = [
   {
     service: "inventory-service",
