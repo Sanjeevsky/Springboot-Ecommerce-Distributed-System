@@ -1108,6 +1108,18 @@ const productCatalogControllerTestText = fs.readFileSync(
   path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "controller", "ProductCatalogControllerTest.java"),
   "utf8"
 );
+const brandControllerTestText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "controller", "BrandControllerTest.java"),
+  "utf8"
+);
+const categoryControllerTestText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "controller", "CategoryControllerTest.java"),
+  "utf8"
+);
+const subCategoryControllerTestText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "controller", "SubCategoryControllerTest.java"),
+  "utf8"
+);
 if (!productDtoText.includes("@PositiveOrZero(message = \"GST value must not be negative\")")
     || !productDtoText.includes("@PositiveOrZero(message = \"Discount must not be negative\")")
     || !productDtoText.includes("@Max(value = 1, message = \"Status must be 0 or 1\")")
@@ -1158,6 +1170,33 @@ for (const testName of [
   if (!productCatalogControllerTestText.includes(testName)) {
     fail(`catalog-service: missing controller test ${testName}`);
   }
+}
+for (const testName of [
+  "getBrand_forwardsId",
+  "getBrandByName_forwardsName",
+  "getBrands_returnsServiceList",
+  "addBrand_forwardsNameAndReturns201",
+]) {
+  if (!brandControllerTestText.includes(testName)) {
+    fail(`catalog-service: missing brand controller test ${testName}`);
+  }
+}
+for (const testName of [
+  "getCategory_forwardsId",
+  "getCategoryByName_forwardsName",
+  "getCategories_returnsServiceList",
+  "addCategory_forwardsNameAndReturns201",
+]) {
+  if (!categoryControllerTestText.includes(testName)) {
+    fail(`catalog-service: missing category controller test ${testName}`);
+  }
+}
+if (!subCategoryControllerTestText.includes("addSubCategory_forwardsCategoryIdAndName")
+    || !brandControllerTestText.includes('post("/catalog-service/add-brand")')
+    || !categoryControllerTestText.includes('post("/catalog-service/addCategory")')
+    || !subCategoryControllerTestText.includes('post("/catalog-service/add-subcategory/{category-id}", CATEGORY_ID)')
+    || !subCategoryControllerTestText.includes('verify(subCategoryService).addSubCategory(CATEGORY_ID, "Sneakers")')) {
+  fail("catalog-service: lookup controller tests must cover standard brand/category/subcategory routes and service forwarding");
 }
 for (const testName of [
   "addBrand_blankName_throwsInvalidCatalogRequestException",
