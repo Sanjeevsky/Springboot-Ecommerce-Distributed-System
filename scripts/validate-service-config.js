@@ -611,6 +611,10 @@ if (implementationText.includes("grep -o '<app>.*</app>'")
 if (/SPRING_ZIPKIN_ENABLED=true/.test(composeText)) {
   fail("docker-compose.yml: tracing must default to opt-in with SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}");
 }
+if (implementationText.includes("overridden to true in docker")
+    || !implementationText.includes("Docker also defaults tracing off; opt in with SPRING_ZIPKIN_ENABLED=true")) {
+  fail("implementation.md: Zipkin snippet must document Docker tracing as opt-in");
+}
 if (composeText.includes("MYSQL_ROOT_PASSWORD: 123456")
     || composeText.includes("SPRING_DATASOURCE_PASSWORD=123456")) {
   fail("docker-compose.yml: MySQL passwords must use overridable local defaults");

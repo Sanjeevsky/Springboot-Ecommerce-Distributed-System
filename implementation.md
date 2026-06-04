@@ -88,7 +88,7 @@ Business services include:
 ```properties
 spring.profiles.active=dev
 spring.zipkin.baseUrl=http://localhost:9411/
-spring.zipkin.enabled=false            # overridden to true in docker
+spring.zipkin.enabled=false            # Docker also defaults tracing off; opt in with SPRING_ZIPKIN_ENABLED=true
 spring.sleuth.sampler.probability=1.0
 management.endpoint.health.show-details=always
 management.endpoints.web.exposure.include=*
