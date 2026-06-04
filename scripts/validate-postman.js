@@ -384,8 +384,13 @@ function requestAuthType(item) {
   return item && item.request && item.request.auth && item.request.auth.type || "";
 }
 
+function hasBearerAuthorizationHeader(item) {
+  const value = requestHeaderValue(item, "Authorization");
+  return value && /^Bearer\s+\S+/.test(value.trim());
+}
+
 function hasAuthorization(item, collection) {
-  return hasRequestHeader(item, "Authorization")
+  return hasBearerAuthorizationHeader(item)
     || requestAuthType(item) === "bearer"
     || (!requestAuthType(item) && collection && collection.auth && collection.auth.type === "bearer");
 }
@@ -408,6 +413,9 @@ function validateGatewayRequestAuth(relativePath, collection) {
     if (requestAuthType(item) === "noauth") {
       fail(`${relativePath}: ${requestPath}: protected gateway request must not override auth with noauth`);
     }
+    if (hasRequestHeader(item, "Authorization") && !hasBearerAuthorizationHeader(item)) {
+      fail(`${relativePath}: ${requestPath}: protected gateway request Authorization header must use Bearer <token>`);
+    }
     if (!hasAuthorization(item, collection)) {
       fail(`${relativePath}: ${requestPath}: protected gateway request must include Authorization or inherit bearer auth`);
     }
@@ -422,6 +430,9 @@ function validateProtectedRequestAuth(relativePath, collection, requestName) {
   }
   if (requestAuthType(item) === "noauth") {
     fail(`${relativePath}: ${requestName}: protected request must not override auth with noauth`);
+  }
+  if (hasRequestHeader(item, "Authorization") && !hasBearerAuthorizationHeader(item)) {
+    fail(`${relativePath}: ${requestName}: protected request Authorization header must use Bearer <token>`);
   }
   if (!hasAuthorization(item, collection)) {
     fail(`${relativePath}: ${requestName}: protected request must include Authorization or inherit bearer auth`);
