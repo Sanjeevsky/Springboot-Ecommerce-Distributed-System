@@ -209,6 +209,68 @@ wait_for_eureka_app() {
   return 1
 }
 
+eureka_registry_has_clean_required_apps() {
+  local registry
+  local required_apps
+  local print_errors="${1:-0}"
+
+  if ! registry="$(curl -fs "$EUREKA_URL/eureka/apps" 2>/dev/null)"; then
+    return 1
+  fi
+
+  printf -v required_apps '%s\n' "${REQUIRED_EUREKA_APPS[@]}"
+  EUREKA_REGISTRY_XML="$registry" REQUIRED_EUREKA_APPS_TEXT="$required_apps" PRINT_EUREKA_ERRORS="$print_errors" node <<'NODE'
+const xml = process.env.EUREKA_REGISTRY_XML || "";
+const requiredApps = (process.env.REQUIRED_EUREKA_APPS_TEXT || "")
+  .split(/\n/)
+  .map((app) => app.trim())
+  .filter(Boolean);
+const printErrors = process.env.PRINT_EUREKA_ERRORS === "1";
+
+const apps = new Map();
+for (const [, appXml] of xml.matchAll(/<application>([\s\S]*?)<\/application>/g)) {
+  const name = (appXml.match(/<name>([^<]+)<\/name>/) || [null, ""])[1];
+  const statuses = [...appXml.matchAll(/<status>([^<]+)<\/status>/g)].map((match) => match[1]);
+  apps.set(name, statuses);
+}
+
+const errors = [];
+for (const app of requiredApps) {
+  const statuses = apps.get(app);
+  if (!statuses || statuses.length === 0) {
+    errors.push(`${app}: missing from aggregate registry`);
+  } else if (!statuses.some((status) => status === "UP")) {
+    errors.push(`${app}: no UP instances (${statuses.join(", ")})`);
+  } else if (statuses.some((status) => status !== "UP")) {
+    errors.push(`${app}: non-UP instances still visible (${statuses.join(", ")})`);
+  }
+}
+
+if (errors.length > 0) {
+  if (printErrors) {
+    for (const error of errors) {
+      console.error(error);
+    }
+  }
+  process.exit(1);
+}
+NODE
+}
+
+wait_for_eureka_registry_clean() {
+  for _ in $(seq 1 "$WAIT_RETRIES"); do
+    if eureka_registry_has_clean_required_apps 0; then
+      return 0
+    fi
+    sleep "$WAIT_SLEEP_SECONDS"
+  done
+
+  echo "Eureka aggregate registry did not converge to only UP required app instances" >&2
+  eureka_registry_has_clean_required_apps 1 || true
+  print_eureka_registry_snapshot
+  return 1
+}
+
 wait_for_health_check() {
   local check="$1"
   local name="${check%%|*}"
@@ -389,6 +451,8 @@ if [[ "$RUN_POSTMAN" == "1" ]]; then
   for app in "${REQUIRED_EUREKA_APPS[@]}"; do
     wait_for_eureka_app "$app"
   done
+  log "Verifying Eureka aggregate registry"
+  wait_for_eureka_registry_clean
   if [[ "$GATEWAY_DISCOVERY_STABILIZE_SECONDS" -gt 0 ]]; then
     log "Allowing gateway discovery cache to refresh"
     sleep "$GATEWAY_DISCOVERY_STABILIZE_SECONDS"

@@ -1748,6 +1748,11 @@ for (const requiredHealthCheckMarker of [
 if (!verifyLocalText.includes("CONFIGSERVER")) {
   fail("scripts/verify-local.sh: local smoke verifier must wait for cloud-config Eureka registration");
 }
+if (!verifyLocalText.includes("wait_for_eureka_registry_clean")
+    || !verifyLocalText.includes("Eureka aggregate registry did not converge")
+    || !verifyLocalText.includes("non-UP instances still visible")) {
+  fail("scripts/verify-local.sh: local smoke verifier must validate aggregate Eureka registry convergence");
+}
 
 if (!verifyLocalText.includes("GATEWAY_ROUTE_CHECKS")
     || !verifyLocalText.includes("wait_for_gateway_route")
@@ -1762,9 +1767,11 @@ if (!verifyLocalText.includes("GATEWAY_ROUTE_TABLE_CHECKS")
 }
 if (!readmeText.includes("gateway auth-guard checks across all standard service prefixes")
     || !implementationText.includes("gateway auth-guard checks across all standard service prefixes")
+    || !readmeText.includes("aggregate Eureka registry")
+    || !implementationText.includes("aggregate Eureka registrations")
     || !readmeText.includes("live gateway route-table")
     || !implementationText.includes("live gateway route table")) {
-  fail("README.md and implementation.md must document smoke gateway route-table and auth-guard checks");
+  fail("README.md and implementation.md must document smoke Eureka, gateway route-table, and auth-guard checks");
 }
 
 if (!verifyLocalText.includes("RUN_API_COLLECTION")
