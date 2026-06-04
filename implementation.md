@@ -347,7 +347,7 @@ Thresholds: p95 < 2s, error rate < 1%, order success > 95%.
 scripts/build-docker-jars.sh
 
 # 2. Start full stack
-docker-compose up -d
+docker compose up -d
 
 # 3. Verify all services registered in Eureka
 curl -sf http://localhost:8761/eureka/apps | grep -o '<name>[^<]*</name>'

@@ -405,6 +405,7 @@ const readmeCoverageServices = [
 ];
 const readmeText = fs.readFileSync(path.join(root, "README.md"), "utf8");
 const implementationText = fs.readFileSync(path.join(root, "implementation.md"), "utf8");
+const loadTestsReadmeText = fs.readFileSync(path.join(root, "load-tests", "README.md"), "utf8");
 const readmeCoverageStart = readmeText.indexOf("## Test Coverage");
 const readmeCoverageText = readmeCoverageStart === -1 ? "" : readmeText.slice(readmeCoverageStart);
 if (!readmeCoverageText) {
@@ -560,6 +561,11 @@ if (!readmeText.includes("optional `platform-tools` profile")
 if (readmeText.includes("Spring Boot Admin | http://localhost:9000 (optional `platform-tools` profile)")
     || implementationText.includes("Spring Boot Admin | http://localhost:9000 | admin/admin")) {
   fail("README.md and implementation.md must document actual Spring Boot Admin default credentials");
+}
+if (/\bdocker-compose\s+up\b/.test(readmeText)
+    || /\bdocker-compose\s+up\b/.test(implementationText)
+    || /\bdocker-compose\s+up\b/.test(loadTestsReadmeText)) {
+  fail("Runnable Docker Compose commands in docs must use `docker compose`, not `docker-compose`");
 }
 if (!readmeText.includes("Application services default to the `dev` profile")
     || !implementationText.includes("spring.profiles.active=dev")) {
@@ -1267,7 +1273,6 @@ if (checkoutFlowLoadTestText.includes('PRODUCT_ID || "00000000-0000-0000-0000-00
     || !checkoutFlowLoadTestText.includes("quantity: 100000")) {
   fail("load-tests/checkout-flow.js: checkout load test must self-seed product inventory and create per-user addresses");
 }
-const loadTestsReadmeText = fs.readFileSync(path.join(root, "load-tests", "README.md"), "utf8");
 if (!loadTestsReadmeText.includes("Optional: use existing catalog data")
     || !loadTestsReadmeText.includes("k6 run --env SCENARIO=smoke checkout-flow.js")
     || !loadTestsReadmeText.includes("k6 run --env SCENARIO=load checkout-flow.js")

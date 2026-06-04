@@ -10,7 +10,7 @@ brew install k6          # macOS
 # or: https://k6.io/docs/get-started/installation/
 
 # System must be running
-docker-compose up -d
+docker compose up -d
 
 # Optional: use existing catalog data instead of setup-time seed data
 export PRODUCT_ID=<uuid-from-catalog>

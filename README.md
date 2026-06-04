@@ -106,7 +106,7 @@ scripts/build-docker-jars.sh api-gateway order-service
 ### 2. Run the full stack
 
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 ### 3. Access services
@@ -121,7 +121,7 @@ docker-compose up -d
 | Grafana | http://localhost:3000 (admin / admin) |
 | API Gateway | http://localhost:8081 |
 
-The default `docker-compose up -d` stack starts the application services plus Kafka UI, Zipkin, Prometheus, and Grafana. Spring Boot Admin is optional; start it with admin client registration enabled when you need the UI:
+The default `docker compose up -d` stack starts the application services plus Kafka UI, Zipkin, Prometheus, and Grafana. Spring Boot Admin is optional; start it with admin client registration enabled when you need the UI:
 
 ```bash
 SPRING_BOOT_ADMIN_CLIENT_ENABLED=true docker compose --profile platform-tools up -d
