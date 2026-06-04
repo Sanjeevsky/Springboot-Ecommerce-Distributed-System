@@ -730,6 +730,7 @@ const cloudConfigBlock = composeServiceBlock("cloud-config");
 const cloudConfigNativeRepoPath = path.join(root, "cloud-config", "src", "main", "resources", "config-repo", "application.properties");
 if (!cloudConfigBlock.includes("SPRING_PROFILES_ACTIVE=native")
     || !cloudConfigBlock.includes("SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=classpath:/config-repo")
+    || !cloudConfigBlock.includes('test: ["CMD", "curl", "-f", "http://localhost:8071/actuator/health"]')
     || !fs.existsSync(cloudConfigNativeRepoPath)
     || !fs.readFileSync(cloudConfigNativeRepoPath, "utf8").includes("configserver.local.mode=true")
     || !readmeText.includes("native local mode, without cloning the remote config repository")
