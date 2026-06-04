@@ -655,6 +655,11 @@ for (const service of Object.keys(expectedApplicationNames)) {
           || !block.includes("SPRING_CLOUD_CONFIG_IMPORT_CHECK_ENABLED=false"))) {
       fail(`docker-compose.yml: ${service} must disable Spring Cloud Config client for Docker startup stability`);
     }
+    const usesKafkaBootstrap = propertiesFiles(service)
+      .some((file) => hasProperty(file, "spring.kafka.bootstrap-servers"));
+    if (usesKafkaBootstrap && !block.includes("SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092")) {
+      fail(`docker-compose.yml: ${service} must define SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092`);
+    }
   }
 }
 
