@@ -90,6 +90,11 @@ services:
       - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   grafana:
     image: grafana/grafana:10.1.0
@@ -106,6 +111,11 @@ services:
       - prometheus
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -120,6 +130,12 @@ services:
         condition: service_healthy
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 120s
 
   # ─── Spring Cloud Infrastructure ─────────────────────────────────────────────
 

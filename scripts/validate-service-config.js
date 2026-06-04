@@ -735,10 +735,24 @@ if (!kafkaUiBlock.includes('image: provectuslabs/kafka-ui')
     || !kafkaUiBlock.includes("KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092")) {
   fail("docker-compose.yml: kafka-ui must expose http://localhost:8080 and connect to kafka:29092");
 }
+if (!kafkaUiBlock.includes('test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]')
+    || !kafkaUiBlock.includes("start_period: 120s")) {
+  fail("docker-compose.yml: kafka-ui must define a native actuator healthcheck");
+}
 if (!readmeText.includes("| Kafka UI | http://localhost:8080 |")
     || !readmeText.includes("| Docker-internal services and Kafka UI | `kafka:29092` |")
     || !implementationText.includes("| Kafka UI | http://localhost:8080 |")) {
   fail("README.md and implementation.md must document Kafka UI at http://localhost:8080");
+}
+
+const prometheusBlock = composeServiceBlock("prometheus");
+if (!prometheusBlock.includes('test: ["CMD", "wget", "-qO-", "http://localhost:9090/-/healthy"]')) {
+  fail("docker-compose.yml: prometheus must define a native healthcheck");
+}
+
+const grafanaBlock = composeServiceBlock("grafana");
+if (!grafanaBlock.includes('test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]')) {
+  fail("docker-compose.yml: grafana must define a native healthcheck");
 }
 
 const serviceDiscoveryBlock = composeServiceBlock("service-discovery");
