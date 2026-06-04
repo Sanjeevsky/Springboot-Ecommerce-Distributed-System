@@ -302,12 +302,12 @@ GitHub Actions runs static validation and Java 11 module tests on pushes and pul
 | auth-server | 25 | 8 |
 | catalog-service | 72 | — |
 | customer-service | 27 | — |
-| order-service | 49 | — |
-| payment-service | 39 | 15 |
+| order-service | 52 | — |
+| payment-service | 42 | 15 |
 | shopping-cart-service | 31 | 8 |
 | coupon-service | 24 | 11 |
 | review-service | 36 | 10 |
 | wishlist-service | 17 | 10 |
-| inventory-service | 30 | 8 |
+| inventory-service | 32 | 8 |
 | notification-service | 16 | 8 |
-| **Total** | **382** | **78** |
+| **Total** | **390** | **78** |
