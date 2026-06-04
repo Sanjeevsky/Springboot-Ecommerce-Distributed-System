@@ -1455,6 +1455,7 @@ const mavenTestConfigFlags = [
 const verifyLocalText = fs.readFileSync(path.join(root, "scripts", "verify-local.sh"), "utf8");
 const buildDockerJarsText = fs.readFileSync(path.join(root, "scripts", "build-docker-jars.sh"), "utf8");
 const ciWorkflowText = fs.readFileSync(path.join(root, ".github", "workflows", "ci.yml"), "utf8");
+const platformCommonsPomText = fs.readFileSync(path.join(root, "platform-commons", "pom.xml"), "utf8");
 const expectedServiceModules = Object.keys(expectedApplicationNames);
 const expectedRequiredEurekaApps = Object.entries(expectedApplicationNames)
   .filter(([service]) => !["service-discovery", "spring-server"].includes(service))
@@ -1490,6 +1491,9 @@ if (!verifyLocalText.includes("mvn -B -f platform-commons/pom.xml clean install 
 if (!buildDockerJarsText.includes("mvn -B -f platform-commons/pom.xml clean install -DskipTests")
     || !buildDockerJarsText.includes('mvn -B -f "$module/pom.xml" clean package -DskipTests')) {
   fail("scripts/build-docker-jars.sh: Docker jar builds must run clean package to avoid stale deleted classes");
+}
+if (!platformCommonsPomText.includes("<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>")) {
+  fail("platform-commons/pom.xml: shared module must set UTF-8 source encoding for reproducible builds");
 }
 requireSameOrderedValues(
   "Maven test module",
