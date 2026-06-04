@@ -1679,6 +1679,9 @@ if (!readmeText.includes("Kafka UI, Zipkin, Prometheus, and Grafana endpoints")
     || !implementationText.includes("Smoke verification waits for Kafka UI, Zipkin, Prometheus, and Grafana endpoints")) {
   fail("README.md and implementation.md must document smoke platform endpoint checks");
 }
+if (!readmeText.includes("RUN_PLATFORM_ENDPOINT_CHECKS=0 scripts/verify-local.sh # skip Kafka UI, Zipkin, Prometheus, and Grafana endpoint checks")) {
+  fail("README.md: RUN_PLATFORM_ENDPOINT_CHECKS docs must list every platform endpoint family");
+}
 for (const requiredHealthCheckMarker of [
   "$BASE_URL/actuator/health",
   "${CLOUD_CONFIG_PORT:-8071}",
