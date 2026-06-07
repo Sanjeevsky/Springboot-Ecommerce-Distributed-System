@@ -6,19 +6,25 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
+/**
+ * Reply event published by payment-service to the {@code payment-events} topic when a charge
+ * fails. The saga orchestrator in order-service consumes it to trigger compensation
+ * (release reserved stock + cancel the order).
+ */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class StockReservationRequestedEvent {
+public class PaymentFailedEvent {
     @Builder.Default
-    private String eventType = "STOCK_RESERVATION_REQUESTED";
+    private String eventType = "PAYMENT_FAILED";
+    private UUID paymentId;
     private UUID orderId;
     private String userId;
-    private List<OrderItemEvent> items;
+    private double amount;
+    private String reason;
     @Builder.Default
     private Instant timestamp = Instant.now();
 }

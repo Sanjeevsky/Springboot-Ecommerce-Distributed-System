@@ -9,13 +9,16 @@ import com.sanjeevsky.paymentservice.model.PaymentRequest;
 import com.sanjeevsky.paymentservice.model.PaymentStatus;
 import com.sanjeevsky.paymentservice.repository.PaymentRepository;
 import com.sanjeevsky.paymentservice.service.PaymentService;
+import com.sanjeevsky.platform.events.ChargePaymentCommand;
 import com.sanjeevsky.platform.events.PaymentConfirmedEvent;
+import com.sanjeevsky.platform.events.PaymentFailedEvent;
 import com.sanjeevsky.platform.events.PaymentInitiatedEvent;
 import com.sanjeevsky.platform.events.PaymentRefundedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -70,6 +73,77 @@ public class PaymentServiceImpl implements PaymentService {
                 .build());
 
         return savedPayment;
+    }
+
+    @Override
+    public Payment charge(ChargePaymentCommand command) {
+        if (command == null || command.getOrderId() == null) {
+            throw new InvalidPaymentRequestException("Charge command with orderId is required");
+        }
+        String idempotencyKey = normalizeIdempotencyKey(command.getIdempotencyKey());
+        log.info("Saga charge for orderId={}, amount={}, simulateFailure={}, idempotencyKey={}",
+                command.getOrderId(), command.getAmount(), command.isSimulateFailure(), idempotencyKey);
+
+        // Idempotent: if this charge was already settled (duplicate command delivery),
+        // re-publish the matching reply and return the existing payment.
+        if (idempotencyKey != null) {
+            Optional<Payment> existing = paymentRepository.findByUserIdAndIdempotencyKey(command.getUserId(), idempotencyKey);
+            if (existing.isPresent()) {
+                Payment payment = existing.get();
+                log.info("Charge already processed for orderId={}, paymentId={}, status={}",
+                        command.getOrderId(), payment.getId(), payment.getStatus());
+                republishChargeReply(payment, command);
+                return payment;
+            }
+        }
+
+        Payment payment = Payment.builder()
+                .orderId(command.getOrderId())
+                .userId(command.getUserId())
+                .idempotencyKey(idempotencyKey)
+                .amount(command.getAmount())
+                .status(command.isSimulateFailure() ? PaymentStatus.FAILED : PaymentStatus.SUCCESS)
+                .build();
+        Payment saved = paymentRepository.save(payment);
+
+        if (command.isSimulateFailure()) {
+            log.warn("Simulated payment failure for orderId={}, paymentId={}", command.getOrderId(), saved.getId());
+            eventPublisher.publishPaymentFailed(PaymentFailedEvent.builder()
+                    .paymentId(saved.getId())
+                    .orderId(saved.getOrderId())
+                    .userId(saved.getUserId())
+                    .amount(saved.getAmount())
+                    .reason("Simulated payment gateway failure")
+                    .build());
+        } else {
+            log.info("Payment charged successfully for orderId={}, paymentId={}", command.getOrderId(), saved.getId());
+            eventPublisher.publishPaymentConfirmed(PaymentConfirmedEvent.builder()
+                    .paymentId(saved.getId())
+                    .orderId(saved.getOrderId())
+                    .userId(saved.getUserId())
+                    .amount(saved.getAmount())
+                    .build());
+        }
+        return saved;
+    }
+
+    private void republishChargeReply(Payment payment, ChargePaymentCommand command) {
+        if (payment.getStatus() == PaymentStatus.FAILED) {
+            eventPublisher.publishPaymentFailed(PaymentFailedEvent.builder()
+                    .paymentId(payment.getId())
+                    .orderId(payment.getOrderId())
+                    .userId(payment.getUserId())
+                    .amount(payment.getAmount())
+                    .reason("Simulated payment gateway failure")
+                    .build());
+        } else {
+            eventPublisher.publishPaymentConfirmed(PaymentConfirmedEvent.builder()
+                    .paymentId(payment.getId())
+                    .orderId(payment.getOrderId())
+                    .userId(payment.getUserId())
+                    .amount(payment.getAmount())
+                    .build());
+        }
     }
 
     @Override

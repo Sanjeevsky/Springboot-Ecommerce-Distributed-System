@@ -14,8 +14,11 @@ import com.sanjeevsky.orderservice.model.CouponValidationResult;
 import com.sanjeevsky.orderservice.model.InventoryStock;
 import com.sanjeevsky.orderservice.model.Order;
 import com.sanjeevsky.orderservice.model.OrderItem;
+import com.sanjeevsky.orderservice.model.SagaInstance;
 import com.sanjeevsky.orderservice.model.ShippingAddress;
 import com.sanjeevsky.orderservice.repository.OrderRepository;
+import com.sanjeevsky.orderservice.repository.SagaInstanceRepository;
+import com.sanjeevsky.orderservice.service.OrderSagaOrchestrator;
 import com.sanjeevsky.orderservice.service.OrderService;
 import com.sanjeevsky.platform.events.OrderCancelledEvent;
 import com.sanjeevsky.platform.events.OrderConfirmedEvent;
@@ -48,6 +51,8 @@ public class OrderServiceImpl implements OrderService {
     private final CouponFeignClient couponFeignClient;
     private final InventoryFeignClient inventoryFeignClient;
     private final OrderEventPublisher eventPublisher;
+    private final SagaInstanceRepository sagaRepository;
+    private final OrderSagaOrchestrator sagaOrchestrator;
 
     @Override
     public Order getOrderById(String userId, UUID id) {
@@ -91,6 +96,42 @@ public class OrderServiceImpl implements OrderService {
         return createNewOrder(normalizedUserId, addressId, normalizedCouponCode, null);
     }
 
+    @Override
+    public Order createOrderSaga(String userId, UUID addressId, String couponCode, String idempotencyKey, boolean simulatePaymentFailure) {
+        String normalizedUserId = validateUserId(userId);
+        validateCreateOrderRequest(addressId);
+        String normalizedIdempotencyKey = normalizeIdempotencyKey(idempotencyKey);
+        String normalizedCouponCode = normalizeCouponCode(couponCode);
+        log.info("Starting saga checkout for user={}, addressId={}, couponCode={}, idempotencyKey={}, simulatePaymentFailure={}",
+                normalizedUserId, addressId, normalizedCouponCode, normalizedIdempotencyKey, simulatePaymentFailure);
+
+        if (normalizedIdempotencyKey != null) {
+            Optional<Order> existing = orderRepository.findByUserIdAndIdempotencyKey(normalizedUserId, normalizedIdempotencyKey);
+            if (existing.isPresent()) {
+                Order order = existing.get();
+                validateIdempotentReplay(order, addressId, normalizedCouponCode, normalizedIdempotencyKey);
+                log.info("Returning existing saga order id={} for user={}, idempotencyKey={}",
+                        order.getId(), normalizedUserId, normalizedIdempotencyKey);
+                return order;
+            }
+        }
+
+        Order savedOrder = buildAndSavePendingOrder(normalizedUserId, addressId, normalizedCouponCode, normalizedIdempotencyKey);
+        sagaOrchestrator.startSaga(savedOrder, simulatePaymentFailure);
+        return savedOrder;
+    }
+
+    @Override
+    public SagaInstance getSaga(String userId, UUID orderId) {
+        String normalizedUserId = validateUserId(userId);
+        validateOrderId(orderId);
+        // Ensures the order belongs to the caller before exposing its saga state.
+        orderRepository.findByIdAndUserId(orderId, normalizedUserId)
+                .orElseThrow(() -> new OrderNotFoundException("Order not found: " + orderId));
+        return sagaRepository.findByOrderId(orderId)
+                .orElseThrow(() -> new OrderNotFoundException("No saga found for order: " + orderId));
+    }
+
     private void validateCreateOrderRequest(UUID addressId) {
         if (addressId == null) {
             throw new InvalidRequestException("Order addressId is required");
@@ -98,6 +139,15 @@ public class OrderServiceImpl implements OrderService {
     }
 
     private Order createNewOrder(String userId, UUID addressId, String couponCode, String idempotencyKey) {
+        Order savedOrder = buildAndSavePendingOrder(userId, addressId, couponCode, idempotencyKey);
+        return completeOrderCheckout(savedOrder, userId, addressId, idempotencyKey);
+    }
+
+    /**
+     * Builds a {@code PENDING} order from the cart/address/coupon and persists it. Shared by the
+     * legacy synchronous checkout and the saga checkout — neither charges payment here.
+     */
+    private Order buildAndSavePendingOrder(String userId, UUID addressId, String couponCode, String idempotencyKey) {
 
         CartSnapshot cart = cartFeignClient.getCheckoutSnapshot(userId);
         if (cart == null) {
@@ -167,7 +217,7 @@ public class OrderServiceImpl implements OrderService {
         Order savedOrder = orderRepository.save(order);
         log.info("Order saved id={}", savedOrder.getId());
 
-        return completeOrderCheckout(savedOrder, userId, addressId, idempotencyKey);
+        return savedOrder;
     }
 
     private Order completeOrderCheckout(Order savedOrder, String userId, UUID addressId, String idempotencyKey) {

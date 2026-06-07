@@ -1,158 +1,284 @@
 {
   "info": {
-    "name": "Ecommerce Distributed System — E2E Complete",
+    "name": "Ecommerce Distributed System \u2014 E2E Complete",
     "_postman_id": "ecommerce-e2e-complete-v2",
-    "description": "Complete end-to-end collection covering all 11 microservices routed through API Gateway (port 8081).\n\n## Quick Start\n1. Import this collection + `Ecommerce-Local` environment; Ecommerce-Local supplies only baseUrl\n2. Run folders **in order** with Collection Runner for the full E2E happy path\n3. The **Register** pre-request auto-generates a unique email + coupon code every run\n4. Test scripts auto-save every ID into collection variables and mirror them into the active environment\n\n## Order of execution\n00-Auth → 01-Catalog → 02-Inventory → 03-Customer → 04-Cart → 05-Wishlist → 06-Coupon → 07-Order → 08-Payment → 09-Review → 10-Notification\n\n## Collection defaults\n`baseUrl` http://localhost:8081 · `runnerPassword` password123 · `brandName` Samsung · `categoryName` Electronics · `subCategoryName` Smartphones · `productName` Galaxy S24 Ultra · `couponCode` SAVE10 (overridden per run)",
+    "description": "Complete end-to-end collection covering all 11 microservices routed through API Gateway (port 8081).\n\n## Quick Start\n1. Import this collection + `Ecommerce-Local` environment; Ecommerce-Local supplies only baseUrl\n2. Run folders **in order** with Collection Runner for the full E2E happy path\n3. The **Register** pre-request auto-generates a unique email + coupon code every run\n4. Test scripts auto-save every ID into collection variables and mirror them into the active environment\n\n## Order of execution\n00-Auth \u2192 01-Catalog \u2192 02-Inventory \u2192 03-Customer \u2192 04-Cart \u2192 05-Wishlist \u2192 06-Coupon \u2192 07-Order \u2192 08-Payment \u2192 09-Review \u2192 10-Notification\n\n## Collection defaults\n`baseUrl` http://localhost:8081 \u00b7 `runnerPassword` password123 \u00b7 `brandName` Samsung \u00b7 `categoryName` Electronics \u00b7 `subCategoryName` Smartphones \u00b7 `productName` Galaxy S24 Ultra \u00b7 `couponCode` SAVE10 (overridden per run)",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-    "auth": {
-      "type": "bearer",
-      "bearer": [
-        { "key": "token", "value": "{{token}}", "type": "string" }
-      ]
-    },
-    "event": [
+  "auth": {
+    "type": "bearer",
+    "bearer": [
       {
-        "listen": "prerequest",
-        "script": {
-          "type": "text/javascript",
-          "exec": [
-            "function setRunnerVar(key, value) {",
-            "  pm.collectionVariables.set(key, value);",
-            "  try { pm.environment.set(key, value); } catch (e) {}",
-            "}",
-            "",
-            "function seedRunnerVariables() {",
-            "  var runId = Date.now().toString();",
-            "  var suffix = runId.slice(-8);",
-            "  setRunnerVar('runId', runId);",
-            "  setRunnerVar('runnerEmail', 'e2e_' + suffix + '@example.com');",
-            "  setRunnerVar('runnerPassword', 'password123');",
-            "  setRunnerVar('brandName', 'Samsung_' + suffix);",
-            "  setRunnerVar('categoryName', 'Electronics_' + suffix);",
-            "  setRunnerVar('subCategoryName', 'Smartphones_' + suffix);",
-            "  setRunnerVar('productName', 'Galaxy S24 Ultra ' + suffix);",
-            "  setRunnerVar('couponCode', 'SAVE' + suffix);",
-            "  setRunnerVar('orderIdempotencyKey', 'order-' + runId);",
-            "  setRunnerVar('couponOrderIdempotencyKey', 'coupon-order-' + runId);",
-            "  setRunnerVar('insufficientOrderIdempotencyKey', 'insufficient-order-' + runId);",
-            "  setRunnerVar('paymentIdempotencyKey', 'payment-' + runId);",
-            "  setRunnerVar('failedPaymentIdempotencyKey', 'payment-fail-' + runId);",
-            "}",
-            "",
-            "function missingRunnerVariables() {",
-            "  return ['runId', 'runnerEmail', 'couponCode', 'orderIdempotencyKey', 'couponOrderIdempotencyKey', 'insufficientOrderIdempotencyKey', 'paymentIdempotencyKey', 'failedPaymentIdempotencyKey'].some(function (key) {",
-            "    return !pm.collectionVariables.get(key);",
-            "  });",
-            "}",
-            "",
-            "var requestName = pm.info.requestName || '';",
-            "if (requestName.indexOf('Register User') !== -1 || missingRunnerVariables()) {",
-            "  seedRunnerVariables();",
-            "}"
-          ]
-        }
-      },
-      {
-        "listen": "test",
-        "script": {
-          "type": "text/javascript",
-          "exec": [
-            "function responseJson() {",
-            "  try {",
-            "    return pm.response.json();",
-            "  } catch (e) {",
-            "    return {};",
-            "  }",
-            "}",
-            "",
-            "function responseData(json) {",
-            "  return json && Object.prototype.hasOwnProperty.call(json, 'data') ? json.data : json;",
-            "}",
-            "",
-            "function saveRunnerVar(key, value) {",
-            "  if (value === undefined || value === null || value === '') {",
-            "    return;",
-            "  }",
-            "  pm.collectionVariables.set(key, value);",
-            "  try { pm.environment.set(key, value); } catch (e) {}",
-            "  var loggedValue = /token|password/i.test(key) ? '<redacted>' : value;",
-            "  console.log('saved ' + key + ':', loggedValue);",
-            "}",
-            "",
-            "var json = responseJson();",
-            "var data = responseData(json);",
-            "var rawUrl = pm.request.url ? pm.request.url.toString() : '';",
-            "var method = pm.request.method || '';",
-            "",
-            "if (rawUrl.indexOf('/auth-service/login') !== -1) {",
-            "  var token = typeof data === 'string' ? data : data && (data.token || data.accessToken || data.jwt);",
-            "  saveRunnerVar('token', token);",
-            "}",
-            "",
-            "if (data && typeof data === 'object') {",
-            "  if (rawUrl.indexOf('/catalog-service/add-brand') !== -1) { saveRunnerVar('brandId', data.id); }",
-            "  if (rawUrl.indexOf('/catalog-service/addCategory') !== -1) { saveRunnerVar('categoryId', data.id); }",
-            "  if (rawUrl.indexOf('/catalog-service/add-subcategory') !== -1) { saveRunnerVar('subCategoryId', data.id); }",
-            "  if (rawUrl.indexOf('/catalog-service/product/addProduct') !== -1) { saveRunnerVar('productId', data.id); saveRunnerVar('productName', data.name); }",
-            "  if (rawUrl.indexOf('/catalog-service/variant/add') !== -1) { saveRunnerVar('variantId', data.id); }",
-            "  if (method === 'POST' && rawUrl.indexOf('/customer-service/address') !== -1) { saveRunnerVar('addressId', data.id); }",
-            "  if (method === 'POST' && rawUrl.indexOf('/order-service/order') !== -1) { saveRunnerVar('orderId', data.id); saveRunnerVar('paymentId', data.paymentId); }",
-            "  if (rawUrl.indexOf('/order-service/order') !== -1) { saveRunnerVar('orderStatus', data.status); }",
-            "  if (rawUrl.indexOf('/payment-service/') !== -1) { saveRunnerVar('paymentId', data.id || data.paymentId); saveRunnerVar('paymentStatus', data.status); }",
-            "  if (method === 'POST' && rawUrl.indexOf('/coupon-service/coupon') !== -1) { saveRunnerVar('couponId', data.id); saveRunnerVar('couponCode', data.code || pm.collectionVariables.get('couponCode')); }",
-            "  if (method === 'POST' && rawUrl.indexOf('/review-service/review') !== -1) { saveRunnerVar('reviewId', data.id); }",
-            "}",
-            "",
-            "if (rawUrl.indexOf('/notification-service/notifications') !== -1) {",
-            "  var notifications = Array.isArray(data) ? data : (data && Array.isArray(data.content) ? data.content : []);",
-            "  saveRunnerVar('notificationId', notifications[0] && notifications[0].id);",
-            "}"
-          ]
-        }
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
       }
-    ],
-    "variable": [
-      { "key": "baseUrl",         "value": "http://localhost:8081", "type": "default" },
-      { "key": "token",           "value": "",                      "type": "default" },
-      { "key": "runId",           "value": "",                      "type": "default" },
-      { "key": "runnerEmail",     "value": "e2e.test@example.com",  "type": "default" },
-    { "key": "runnerPassword",  "value": "password123",           "type": "default" },
-    { "key": "brandId",         "value": "",                      "type": "default" },
-    { "key": "brandName",       "value": "Samsung",               "type": "default" },
-    { "key": "categoryId",      "value": "",                      "type": "default" },
-    { "key": "categoryName",    "value": "Electronics",           "type": "default" },
-    { "key": "subCategoryId",   "value": "",                      "type": "default" },
-    { "key": "subCategoryName", "value": "Smartphones",           "type": "default" },
-    { "key": "productId",       "value": "",                      "type": "default" },
-    { "key": "productName",     "value": "Galaxy S24 Ultra",      "type": "default" },
-    { "key": "variantId",       "value": "",                      "type": "default" },
-      { "key": "addressId",       "value": "",                      "type": "default" },
-      { "key": "orderId",         "value": "",                      "type": "default" },
-      { "key": "orderStatus",     "value": "",                      "type": "default" },
-      { "key": "paymentId",       "value": "",                      "type": "default" },
-      { "key": "paymentStatus",   "value": "",                      "type": "default" },
-    { "key": "directPaymentOrderId", "value": "",                 "type": "default" },
-    { "key": "failedPaymentOrderId", "value": "",                 "type": "default" },
-    { "key": "orderIdempotencyKey",       "value": "",            "type": "default" },
-    { "key": "couponOrderIdempotencyKey", "value": "",            "type": "default" },
-    { "key": "insufficientOrderIdempotencyKey", "value": "",      "type": "default" },
-    { "key": "paymentIdempotencyKey",     "value": "",            "type": "default" },
-    { "key": "failedPaymentIdempotencyKey", "value": "",          "type": "default" },
-    { "key": "couponCode",      "value": "SAVE10",                "type": "default" },
-    { "key": "couponId",        "value": "",                      "type": "default" },
-    { "key": "reviewId",        "value": "",                      "type": "default" },
-    { "key": "notificationId",  "value": "",                      "type": "default" }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function setRunnerVar(key, value) {",
+          "  pm.collectionVariables.set(key, value);",
+          "  try { pm.environment.set(key, value); } catch (e) {}",
+          "}",
+          "",
+          "function seedRunnerVariables() {",
+          "  var runId = Date.now().toString();",
+          "  var suffix = runId.slice(-8);",
+          "  setRunnerVar('runId', runId);",
+          "  setRunnerVar('runnerEmail', 'e2e_' + suffix + '@example.com');",
+          "  setRunnerVar('runnerPassword', 'password123');",
+          "  setRunnerVar('brandName', 'Samsung_' + suffix);",
+          "  setRunnerVar('categoryName', 'Electronics_' + suffix);",
+          "  setRunnerVar('subCategoryName', 'Smartphones_' + suffix);",
+          "  setRunnerVar('productName', 'Galaxy S24 Ultra ' + suffix);",
+          "  setRunnerVar('couponCode', 'SAVE' + suffix);",
+          "  setRunnerVar('orderIdempotencyKey', 'order-' + runId);",
+          "  setRunnerVar('couponOrderIdempotencyKey', 'coupon-order-' + runId);",
+          "  setRunnerVar('insufficientOrderIdempotencyKey', 'insufficient-order-' + runId);",
+          "  setRunnerVar('paymentIdempotencyKey', 'payment-' + runId);",
+          "  setRunnerVar('failedPaymentIdempotencyKey', 'payment-fail-' + runId);",
+          "}",
+          "",
+          "function missingRunnerVariables() {",
+          "  return ['runId', 'runnerEmail', 'couponCode', 'orderIdempotencyKey', 'couponOrderIdempotencyKey', 'insufficientOrderIdempotencyKey', 'paymentIdempotencyKey', 'failedPaymentIdempotencyKey'].some(function (key) {",
+          "    return !pm.collectionVariables.get(key);",
+          "  });",
+          "}",
+          "",
+          "var requestName = pm.info.requestName || '';",
+          "if (requestName.indexOf('Register User') !== -1 || missingRunnerVariables()) {",
+          "  seedRunnerVariables();",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function responseJson() {",
+          "  try {",
+          "    return pm.response.json();",
+          "  } catch (e) {",
+          "    return {};",
+          "  }",
+          "}",
+          "",
+          "function responseData(json) {",
+          "  return json && Object.prototype.hasOwnProperty.call(json, 'data') ? json.data : json;",
+          "}",
+          "",
+          "function saveRunnerVar(key, value) {",
+          "  if (value === undefined || value === null || value === '') {",
+          "    return;",
+          "  }",
+          "  pm.collectionVariables.set(key, value);",
+          "  try { pm.environment.set(key, value); } catch (e) {}",
+          "  var loggedValue = /token|password/i.test(key) ? '<redacted>' : value;",
+          "  console.log('saved ' + key + ':', loggedValue);",
+          "}",
+          "",
+          "var json = responseJson();",
+          "var data = responseData(json);",
+          "var rawUrl = pm.request.url ? pm.request.url.toString() : '';",
+          "var method = pm.request.method || '';",
+          "",
+          "if (rawUrl.indexOf('/auth-service/login') !== -1) {",
+          "  var token = typeof data === 'string' ? data : data && (data.token || data.accessToken || data.jwt);",
+          "  saveRunnerVar('token', token);",
+          "}",
+          "",
+          "if (data && typeof data === 'object') {",
+          "  if (rawUrl.indexOf('/catalog-service/add-brand') !== -1) { saveRunnerVar('brandId', data.id); }",
+          "  if (rawUrl.indexOf('/catalog-service/addCategory') !== -1) { saveRunnerVar('categoryId', data.id); }",
+          "  if (rawUrl.indexOf('/catalog-service/add-subcategory') !== -1) { saveRunnerVar('subCategoryId', data.id); }",
+          "  if (rawUrl.indexOf('/catalog-service/product/addProduct') !== -1) { saveRunnerVar('productId', data.id); saveRunnerVar('productName', data.name); }",
+          "  if (rawUrl.indexOf('/catalog-service/variant/add') !== -1) { saveRunnerVar('variantId', data.id); }",
+          "  if (method === 'POST' && rawUrl.indexOf('/customer-service/address') !== -1) { saveRunnerVar('addressId', data.id); }",
+          "  if (method === 'POST' && rawUrl.indexOf('/order-service/order') !== -1) { saveRunnerVar('orderId', data.id); saveRunnerVar('paymentId', data.paymentId); }",
+          "  if (rawUrl.indexOf('/order-service/order') !== -1) { saveRunnerVar('orderStatus', data.status); }",
+          "  if (rawUrl.indexOf('/payment-service/') !== -1) { saveRunnerVar('paymentId', data.id || data.paymentId); saveRunnerVar('paymentStatus', data.status); }",
+          "  if (method === 'POST' && rawUrl.indexOf('/coupon-service/coupon') !== -1) { saveRunnerVar('couponId', data.id); saveRunnerVar('couponCode', data.code || pm.collectionVariables.get('couponCode')); }",
+          "  if (method === 'POST' && rawUrl.indexOf('/review-service/review') !== -1) { saveRunnerVar('reviewId', data.id); }",
+          "}",
+          "",
+          "if (rawUrl.indexOf('/notification-service/notifications') !== -1) {",
+          "  var notifications = Array.isArray(data) ? data : (data && Array.isArray(data.content) ? data.content : []);",
+          "  saveRunnerVar('notificationId', notifications[0] && notifications[0].id);",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081",
+      "type": "default"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "runId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "runnerEmail",
+      "value": "e2e.test@example.com",
+      "type": "default"
+    },
+    {
+      "key": "runnerPassword",
+      "value": "password123",
+      "type": "default"
+    },
+    {
+      "key": "brandId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "brandName",
+      "value": "Samsung",
+      "type": "default"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "categoryName",
+      "value": "Electronics",
+      "type": "default"
+    },
+    {
+      "key": "subCategoryId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "subCategoryName",
+      "value": "Smartphones",
+      "type": "default"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "productName",
+      "value": "Galaxy S24 Ultra",
+      "type": "default"
+    },
+    {
+      "key": "variantId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "addressId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "orderId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "orderStatus",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "paymentId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "paymentStatus",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "directPaymentOrderId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "failedPaymentOrderId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "orderIdempotencyKey",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "couponOrderIdempotencyKey",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "insufficientOrderIdempotencyKey",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "paymentIdempotencyKey",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "failedPaymentIdempotencyKey",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "couponCode",
+      "value": "SAVE10",
+      "type": "default"
+    },
+    {
+      "key": "couponId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "reviewId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "notificationId",
+      "value": "",
+      "type": "default"
+    },
+    {
+      "key": "sagaOrderId",
+      "value": ""
+    }
   ],
   "item": [
-
     {
       "name": "00 - Auth",
       "description": "User registration and authentication. All auth-service routes are open (no JWT required).",
       "item": [
-
         {
-          "name": "01 — Register User",
+          "name": "01 \u2014 Register User",
           "event": [
             {
               "listen": "prerequest",
@@ -194,24 +320,39 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{runnerEmail}}\",\n  \"password\": \"{{runnerPassword}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/auth-service/signup",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth-service", "signup"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth-service",
+                "signup"
+              ]
             }
           }
         },
-
         {
-          "name": "02 — Login → save token",
+          "name": "02 \u2014 Login \u2192 save token",
           "event": [
             {
               "listen": "test",
@@ -230,24 +371,39 @@
             }
           ],
           "request": {
-            "auth": { "type": "noauth" },
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{runnerEmail}}\",\n  \"password\": \"{{runnerPassword}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/auth-service/login",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth-service", "login"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth-service",
+                "login"
+              ]
             }
           }
         },
-
         {
-          "name": "03 — Update Password",
+          "name": "03 \u2014 Update Password",
           "event": [
             {
               "listen": "test",
@@ -262,32 +418,44 @@
           "request": {
             "method": "PUT",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Authorization", "value": "Bearer {{token}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"{{runnerEmail}}\",\n  \"oldPassword\": \"{{runnerPassword}}\",\n  \"newPassword\": \"newPassword456\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/auth-service/updatePassword",
-              "host": ["{{baseUrl}}"],
-              "path": ["auth-service", "updatePassword"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "auth-service",
+                "updatePassword"
+              ]
             }
           }
         }
-
       ]
     },
-
     {
       "name": "01 - Catalog",
       "description": "Brand, Category, SubCategory, Product, and Variant management. Brand/Category/SubCategory/Variant creation requires auth; Product list/search/get are public.",
       "item": [
-
         {
-          "name": "04 — Add Brand",
+          "name": "04 \u2014 Add Brand",
           "event": [
             {
               "listen": "test",
@@ -310,15 +478,24 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/add-brand?name={{brandName}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "add-brand"],
-              "query": [{ "key": "name", "value": "{{brandName}}" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "add-brand"
+              ],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "{{brandName}}"
+                }
+              ]
             }
           }
         },
-
         {
-          "name": "05 — Get Brand by ID",
+          "name": "05 \u2014 Get Brand by ID",
           "event": [
             {
               "listen": "test",
@@ -337,14 +514,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/getBrand/{{brandId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "getBrand", "{{brandId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "getBrand",
+                "{{brandId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "06 — Get Brand by Name",
+          "name": "06 \u2014 Get Brand by Name",
           "event": [
             {
               "listen": "test",
@@ -361,14 +543,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/getBrandByName/{{brandName}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "getBrandByName", "{{brandName}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "getBrandByName",
+                "{{brandName}}"
+              ]
             }
           }
         },
-
         {
-          "name": "07 — Get All Brands",
+          "name": "07 \u2014 Get All Brands",
           "event": [
             {
               "listen": "test",
@@ -388,14 +575,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/getBrands",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "getBrands"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "getBrands"
+              ]
             }
           }
         },
-
         {
-          "name": "08 — Add Category",
+          "name": "08 \u2014 Add Category",
           "event": [
             {
               "listen": "test",
@@ -417,15 +608,24 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/addCategory?categoryName={{categoryName}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "addCategory"],
-              "query": [{ "key": "categoryName", "value": "{{categoryName}}" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "addCategory"
+              ],
+              "query": [
+                {
+                  "key": "categoryName",
+                  "value": "{{categoryName}}"
+                }
+              ]
             }
           }
         },
-
         {
-          "name": "09 — Get Category by ID",
+          "name": "09 \u2014 Get Category by ID",
           "event": [
             {
               "listen": "test",
@@ -442,14 +642,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/getCategory/{{categoryId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "getCategory", "{{categoryId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "getCategory",
+                "{{categoryId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "09a — Get Category by Name",
+          "name": "09a \u2014 Get Category by Name",
           "event": [
             {
               "listen": "test",
@@ -468,14 +673,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/getCategoryByName/{{categoryName}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "getCategoryByName", "{{categoryName}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "getCategoryByName",
+                "{{categoryName}}"
+              ]
             }
           }
         },
-
         {
-          "name": "10 — Get All Categories",
+          "name": "10 \u2014 Get All Categories",
           "event": [
             {
               "listen": "test",
@@ -495,14 +705,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/getCategories",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "getCategories"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "getCategories"
+              ]
             }
           }
         },
-
         {
-          "name": "11 — Add SubCategory",
+          "name": "11 \u2014 Add SubCategory",
           "event": [
             {
               "listen": "test",
@@ -524,15 +738,25 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/add-subcategory/{{categoryId}}?subcategoryName={{subCategoryName}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "add-subcategory", "{{categoryId}}"],
-              "query": [{ "key": "subcategoryName", "value": "{{subCategoryName}}" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "add-subcategory",
+                "{{categoryId}}"
+              ],
+              "query": [
+                {
+                  "key": "subcategoryName",
+                  "value": "{{subCategoryName}}"
+                }
+              ]
             }
           }
         },
-
         {
-          "name": "11a — Product Service Status",
+          "name": "11a \u2014 Product Service Status",
           "event": [
             {
               "listen": "test",
@@ -549,14 +773,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/product/status",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "product", "status"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "product",
+                "status"
+              ]
             }
           }
         },
-
         {
-          "name": "12 — Add Product",
+          "name": "12 \u2014 Add Product",
           "event": [
             {
               "listen": "test",
@@ -576,27 +805,50 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"name\": \"{{productName}}\",\n  \"description\": \"Samsung Galaxy S24 Ultra flagship smartphone with AI features\",\n  \"model\": \"SM-S928B-{{runId}}\",\n  \"mrpPrice\": 134999,\n  \"salePrice\": 119999,\n  \"gstValue\": 18,\n  \"status\": 1,\n  \"discount\": 10.99,\n  \"images\": [\"https://example.com/galaxy-s24-ultra-front.jpg\", \"https://example.com/galaxy-s24-ultra-back.jpg\"],\n  \"hasVariant\": true\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/catalog-service/product/addProduct?brandId={{brandId}}&categoryId={{categoryId}}&subCategoryId={{subCategoryId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "product", "addProduct"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "product",
+                "addProduct"
+              ],
               "query": [
-                { "key": "brandId",       "value": "{{brandId}}" },
-                { "key": "categoryId",    "value": "{{categoryId}}" },
-                { "key": "subCategoryId", "value": "{{subCategoryId}}" }
+                {
+                  "key": "brandId",
+                  "value": "{{brandId}}"
+                },
+                {
+                  "key": "categoryId",
+                  "value": "{{categoryId}}"
+                },
+                {
+                  "key": "subCategoryId",
+                  "value": "{{subCategoryId}}"
+                }
               ]
             }
           }
         },
-
         {
-          "name": "13 — Get Product by ID",
+          "name": "13 \u2014 Get Product by ID",
           "event": [
             {
               "listen": "test",
@@ -615,14 +867,20 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/product/getProduct/{{productId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "product", "getProduct", "{{productId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "product",
+                "getProduct",
+                "{{productId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "14 — List Products",
+          "name": "14 \u2014 List Products",
           "event": [
             {
               "listen": "test",
@@ -642,19 +900,33 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/product/list?page=0&size=20&sort=name",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "product", "list"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "product",
+                "list"
+              ],
               "query": [
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "20" },
-                { "key": "sort", "value": "name" }
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "sort",
+                  "value": "name"
+                }
               ]
             }
           }
         },
-
         {
-          "name": "15 — Search Products",
+          "name": "15 \u2014 Search Products",
           "event": [
             {
               "listen": "test",
@@ -674,19 +946,33 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/product/search?q=Galaxy&page=0&size=10",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "product", "search"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "product",
+                "search"
+              ],
               "query": [
-                { "key": "q",    "value": "Galaxy" },
-                { "key": "page", "value": "0" },
-                { "key": "size", "value": "10" }
+                {
+                  "key": "q",
+                  "value": "Galaxy"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
               ]
             }
           }
         },
-
         {
-          "name": "16 — Add Variant (256GB Titanium Black)",
+          "name": "16 \u2014 Add Variant (256GB Titanium Black)",
           "event": [
             {
               "listen": "test",
@@ -705,22 +991,37 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"condition1Name\": \"Storage\",\n  \"condition1Value\": \"256GB\",\n  \"condition2Name\": \"Color\",\n  \"condition2Value\": \"Titanium Black\",\n  \"mrpPrice\": 134999,\n  \"salePrice\": 119999\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/catalog-service/variant/add/{{productId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "variant", "add", "{{productId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "variant",
+                "add",
+                "{{productId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "17 — Get Variant by ID",
+          "name": "17 \u2014 Get Variant by ID",
           "event": [
             {
               "listen": "test",
@@ -737,22 +1038,25 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/catalog-service/variant/{{variantId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["catalog-service", "variant", "{{variantId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "catalog-service",
+                "variant",
+                "{{variantId}}"
+              ]
             }
           }
         }
-
       ]
     },
-
     {
       "name": "02 - Inventory",
       "description": "Stock management for products and variants.",
       "item": [
-
         {
-          "name": "18 — Add Stock (100 units)",
+          "name": "18 \u2014 Add Stock (100 units)",
           "event": [
             {
               "listen": "test",
@@ -781,22 +1085,35 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"quantity\": 100\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/inventory-service/stock",
-              "host": ["{{baseUrl}}"],
-              "path": ["inventory-service", "stock"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory-service",
+                "stock"
+              ]
             }
           }
         },
-
         {
-          "name": "19 — Get Stock by Product",
+          "name": "19 \u2014 Get Stock by Product",
           "event": [
             {
               "listen": "test",
@@ -816,14 +1133,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/inventory-service/stock/{{productId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["inventory-service", "stock", "{{productId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory-service",
+                "stock",
+                "{{productId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "20 — Get Variant Stock",
+          "name": "20 \u2014 Get Variant Stock",
           "event": [
             {
               "listen": "test",
@@ -842,14 +1164,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/inventory-service/stock/{{productId}}/variant/{{variantId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["inventory-service", "stock", "{{productId}}", "variant", "{{variantId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory-service",
+                "stock",
+                "{{productId}}",
+                "variant",
+                "{{variantId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "21 — Get Available Qty",
+          "name": "21 \u2014 Get Available Qty",
           "event": [
             {
               "listen": "test",
@@ -869,22 +1198,26 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/inventory-service/stock/{{productId}}/available",
-              "host": ["{{baseUrl}}"],
-              "path": ["inventory-service", "stock", "{{productId}}", "available"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "inventory-service",
+                "stock",
+                "{{productId}}",
+                "available"
+              ]
             }
           }
         }
-
       ]
     },
-
     {
       "name": "03 - Customer (Addresses)",
       "description": "Shipping address CRUD. Gateway injects X-User from JWT; no need to send it manually.",
       "item": [
-
         {
-          "name": "22 — Add Address → save addressId",
+          "name": "22 \u2014 Add Address \u2192 save addressId",
           "event": [
             {
               "listen": "test",
@@ -903,22 +1236,35 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"country\": \"India\",\n  \"zipCode\": 560001,\n  \"home\": \"Flat 42B, Tower-C\",\n  \"streetLocality\": \"MG Road, Shivaji Nagar\",\n  \"landmark\": \"Near Metro Station\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/customer-service/address",
-              "host": ["{{baseUrl}}"],
-              "path": ["customer-service", "address"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer-service",
+                "address"
+              ]
             }
           }
         },
-
         {
-          "name": "23 — Get Address by ID",
+          "name": "23 \u2014 Get Address by ID",
           "event": [
             {
               "listen": "test",
@@ -937,14 +1283,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/customer-service/address/{{addressId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["customer-service", "address", "{{addressId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer-service",
+                "address",
+                "{{addressId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "24 — Get All Addresses",
+          "name": "24 \u2014 Get All Addresses",
           "event": [
             {
               "listen": "test",
@@ -964,14 +1315,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/customer-service/addresses",
-              "host": ["{{baseUrl}}"],
-              "path": ["customer-service", "addresses"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer-service",
+                "addresses"
+              ]
             }
           }
         },
-
         {
-          "name": "25 — Update Address",
+          "name": "25 \u2014 Update Address",
           "event": [
             {
               "listen": "test",
@@ -987,22 +1342,36 @@
           ],
           "request": {
             "method": "PUT",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"country\": \"India\",\n  \"zipCode\": 560034,\n  \"home\": \"Flat 42B, Tower-C\",\n  \"streetLocality\": \"Koramangala 5th Block\",\n  \"landmark\": \"Near Forum Mall\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/customer-service/address/{{addressId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["customer-service", "address", "{{addressId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer-service",
+                "address",
+                "{{addressId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "25a — Delete Address",
+          "name": "25a \u2014 Delete Address",
           "event": [
             {
               "listen": "test",
@@ -1019,14 +1388,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/customer-service/address/{{addressId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["customer-service", "address", "{{addressId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer-service",
+                "address",
+                "{{addressId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "25b — Re-add Address for Order",
+          "name": "25b \u2014 Re-add Address for Order",
           "event": [
             {
               "listen": "test",
@@ -1044,30 +1418,41 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"city\": \"Bangalore\",\n  \"state\": \"Karnataka\",\n  \"country\": \"India\",\n  \"zipCode\": 560034,\n  \"home\": \"Flat 42B, Tower-C\",\n  \"streetLocality\": \"Koramangala 5th Block\",\n  \"landmark\": \"Near Forum Mall\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/customer-service/address",
-              "host": ["{{baseUrl}}"],
-              "path": ["customer-service", "address"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "customer-service",
+                "address"
+              ]
             }
           }
         }
-
       ]
     },
-
     {
       "name": "04 - Cart",
       "description": "Shopping cart operations. All routes require auth.",
       "item": [
-
         {
-          "name": "26 — Get Cart (or create)",
+          "name": "26 \u2014 Get Cart (or create)",
           "event": [
             {
               "listen": "test",
@@ -1087,14 +1472,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/cart-service/cart",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart-service", "cart"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart"
+              ]
             }
           }
         },
-
         {
-          "name": "27 — Add Item to Cart",
+          "name": "27 \u2014 Add Item to Cart",
           "event": [
             {
               "listen": "test",
@@ -1123,22 +1512,36 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"qty\": 1\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/cart-service/cart/add",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart-service", "cart", "add"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "add"
+              ]
             }
           }
         },
-
         {
-          "name": "28 — Update Item Quantity",
+          "name": "28 \u2014 Update Item Quantity",
           "event": [
             {
               "listen": "test",
@@ -1157,15 +1560,26 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/cart-service/cart/item/{{productId}}?qty=2",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart-service", "cart", "item", "{{productId}}"],
-              "query": [{ "key": "qty", "value": "2" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "item",
+                "{{productId}}"
+              ],
+              "query": [
+                {
+                  "key": "qty",
+                  "value": "2"
+                }
+              ]
             }
           }
         },
-
         {
-          "name": "29 — Get Checkout Snapshot",
+          "name": "29 \u2014 Get Checkout Snapshot",
           "event": [
             {
               "listen": "test",
@@ -1185,14 +1599,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/cart-service/cart/checkout",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart-service", "cart", "checkout"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "checkout"
+              ]
             }
           }
         },
-
         {
-          "name": "29a — Clear Cart",
+          "name": "29a \u2014 Clear Cart",
           "event": [
             {
               "listen": "test",
@@ -1211,14 +1630,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/cart-service/cart/clear",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart-service", "cart", "clear"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "clear"
+              ]
             }
           }
         },
-
         {
-          "name": "29b — Re-add Item after Clear",
+          "name": "29b \u2014 Re-add Item after Clear",
           "event": [
             {
               "listen": "test",
@@ -1245,22 +1669,36 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"qty\": 1\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/cart-service/cart/add",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart-service", "cart", "add"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "add"
+              ]
             }
           }
         },
-
         {
-          "name": "30 — Remove Item from Cart",
+          "name": "30 \u2014 Remove Item from Cart",
           "event": [
             {
               "listen": "test",
@@ -1277,14 +1715,20 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/cart-service/cart/item/{{productId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart-service", "cart", "item", "{{productId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "item",
+                "{{productId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "31 — Re-add Item (before order)",
+          "name": "31 \u2014 Re-add Item (before order)",
           "event": [
             {
               "listen": "test",
@@ -1309,30 +1753,42 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"qty\": 1\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/cart-service/cart/add",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart-service", "cart", "add"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "add"
+              ]
             }
           }
         }
-
       ]
     },
-
     {
       "name": "05 - Wishlist",
       "description": "Wishlist management. All routes require auth.",
       "item": [
-
         {
-          "name": "32 — Add to Wishlist",
+          "name": "32 \u2014 Add to Wishlist",
           "event": [
             {
               "listen": "test",
@@ -1349,22 +1805,35 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"productName\": \"{{productName}}\",\n  \"salePrice\": 119999\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/wishlist-service/wishlist",
-              "host": ["{{baseUrl}}"],
-              "path": ["wishlist-service", "wishlist"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist-service",
+                "wishlist"
+              ]
             }
           }
         },
-
         {
-          "name": "33 — Get Wishlist",
+          "name": "33 \u2014 Get Wishlist",
           "event": [
             {
               "listen": "test",
@@ -1384,14 +1853,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/wishlist-service/wishlist",
-              "host": ["{{baseUrl}}"],
-              "path": ["wishlist-service", "wishlist"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist-service",
+                "wishlist"
+              ]
             }
           }
         },
-
         {
-          "name": "34 — Move to Cart",
+          "name": "34 \u2014 Move to Cart",
           "event": [
             {
               "listen": "test",
@@ -1408,14 +1881,20 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/wishlist-service/wishlist/{{productId}}/move-to-cart",
-              "host": ["{{baseUrl}}"],
-              "path": ["wishlist-service", "wishlist", "{{productId}}", "move-to-cart"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist-service",
+                "wishlist",
+                "{{productId}}",
+                "move-to-cart"
+              ]
             }
           }
         },
-
         {
-          "name": "34b — Re-add to Wishlist before delete",
+          "name": "34b \u2014 Re-add to Wishlist before delete",
           "event": [
             {
               "listen": "test",
@@ -1429,22 +1908,35 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"productName\": \"{{productName}}\",\n  \"salePrice\": 119999\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/wishlist-service/wishlist",
-              "host": ["{{baseUrl}}"],
-              "path": ["wishlist-service", "wishlist"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist-service",
+                "wishlist"
+              ]
             }
           }
         },
-
         {
-          "name": "35 — Remove from Wishlist",
+          "name": "35 \u2014 Remove from Wishlist",
           "event": [
             {
               "listen": "test",
@@ -1461,22 +1953,25 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/wishlist-service/wishlist/{{productId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["wishlist-service", "wishlist", "{{productId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "wishlist-service",
+                "wishlist",
+                "{{productId}}"
+              ]
             }
           }
         }
-
       ]
     },
-
     {
       "name": "06 - Coupon",
       "description": "Coupon creation, validation, and application.",
       "item": [
-
         {
-          "name": "36 — Create Coupon → save couponId",
+          "name": "36 \u2014 Create Coupon \u2192 save couponId",
           "event": [
             {
               "listen": "test",
@@ -1496,22 +1991,35 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"code\": \"{{couponCode}}\",\n  \"type\": \"PERCENTAGE\",\n  \"value\": 10,\n  \"minOrderAmount\": 50000,\n  \"maxUsageCount\": 100,\n  \"expiryDate\": \"2099-12-31\",\n  \"active\": true\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/coupon-service/coupon",
-              "host": ["{{baseUrl}}"],
-              "path": ["coupon-service", "coupon"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "coupon-service",
+                "coupon"
+              ]
             }
           }
         },
-
         {
-          "name": "37 — Get Active Coupons",
+          "name": "37 \u2014 Get Active Coupons",
           "event": [
             {
               "listen": "test",
@@ -1531,14 +2039,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/coupon-service/coupons",
-              "host": ["{{baseUrl}}"],
-              "path": ["coupon-service", "coupons"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "coupon-service",
+                "coupons"
+              ]
             }
           }
         },
-
         {
-          "name": "38 — Validate Coupon",
+          "name": "38 \u2014 Validate Coupon",
           "event": [
             {
               "listen": "test",
@@ -1557,18 +2069,29 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/coupon-service/coupon/validate?code={{couponCode}}&amount=119999",
-              "host": ["{{baseUrl}}"],
-              "path": ["coupon-service", "coupon", "validate"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "coupon-service",
+                "coupon",
+                "validate"
+              ],
               "query": [
-                { "key": "code",   "value": "{{couponCode}}" },
-                { "key": "amount", "value": "119999" }
+                {
+                  "key": "code",
+                  "value": "{{couponCode}}"
+                },
+                {
+                  "key": "amount",
+                  "value": "119999"
+                }
               ]
             }
           }
         },
-
         {
-          "name": "39 — Apply Coupon",
+          "name": "39 \u2014 Apply Coupon",
           "event": [
             {
               "listen": "test",
@@ -1587,23 +2110,31 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/coupon-service/coupon/apply?code={{couponCode}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["coupon-service", "coupon", "apply"],
-              "query": [{ "key": "code", "value": "{{couponCode}}" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "coupon-service",
+                "coupon",
+                "apply"
+              ],
+              "query": [
+                {
+                  "key": "code",
+                  "value": "{{couponCode}}"
+                }
+              ]
             }
           }
         }
-
       ]
     },
-
     {
       "name": "07 - Order",
       "description": "Order placement and lifecycle management. Creates order from current cart.",
       "item": [
-
         {
-          "name": "40 — Create Order (plain) → save orderId + paymentId",
+          "name": "40 \u2014 Create Order (plain) \u2192 save orderId + paymentId",
           "event": [
             {
               "listen": "test",
@@ -1640,24 +2171,38 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "{{orderIdempotencyKey}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{orderIdempotencyKey}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"addressId\": \"{{addressId}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/order-service/order",
-              "host": ["{{baseUrl}}"],
-              "path": ["order-service", "order"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order"
+              ]
             }
           }
         },
-
         {
-          "name": "40a — Re-add Item for Coupon Order",
+          "name": "40a \u2014 Re-add Item for Coupon Order",
           "event": [
             {
               "listen": "test",
@@ -1682,22 +2227,36 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"qty\": 1\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/cart-service/cart/add",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart-service", "cart", "add"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "add"
+              ]
             }
           }
         },
-
         {
-          "name": "40b — Create Order with Coupon → verify discount applied",
+          "name": "40b \u2014 Create Order with Coupon \u2192 verify discount applied",
           "event": [
             {
               "listen": "test",
@@ -1733,24 +2292,38 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "{{couponOrderIdempotencyKey}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{couponOrderIdempotencyKey}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"addressId\": \"{{addressId}}\",\n  \"couponCode\": \"{{couponCode}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/order-service/order",
-              "host": ["{{baseUrl}}"],
-              "path": ["order-service", "order"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order"
+              ]
             }
           }
         },
-
         {
-          "name": "40c — Reject Order Idempotency Conflict",
+          "name": "40c \u2014 Reject Order Idempotency Conflict",
           "event": [
             {
               "listen": "test",
@@ -1780,24 +2353,38 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "{{orderIdempotencyKey}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{orderIdempotencyKey}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"addressId\": \"{{productId}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/order-service/order",
-              "host": ["{{baseUrl}}"],
-              "path": ["order-service", "order"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order"
+              ]
             }
           }
         },
-
         {
-          "name": "41 — Get Order by ID",
+          "name": "41 \u2014 Get Order by ID",
           "event": [
             {
               "listen": "test",
@@ -1817,14 +2404,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/order-service/order/{{orderId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["order-service", "order", "{{orderId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order",
+                "{{orderId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "42 — Get All Orders",
+          "name": "42 \u2014 Get All Orders",
           "event": [
             {
               "listen": "test",
@@ -1844,14 +2436,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/order-service/orders",
-              "host": ["{{baseUrl}}"],
-              "path": ["order-service", "orders"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "orders"
+              ]
             }
           }
         },
-
         {
-          "name": "43 — Confirm Order",
+          "name": "43 \u2014 Confirm Order",
           "event": [
             {
               "listen": "test",
@@ -1871,14 +2467,20 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/order-service/order/{{orderId}}/confirm",
-              "host": ["{{baseUrl}}"],
-              "path": ["order-service", "order", "{{orderId}}", "confirm"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order",
+                "{{orderId}}",
+                "confirm"
+              ]
             }
           }
         },
-
         {
-          "name": "44 — Cancel Order",
+          "name": "44 \u2014 Cancel Order",
           "event": [
             {
               "listen": "test",
@@ -1898,14 +2500,20 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/order-service/order/{{orderId}}/cancel",
-              "host": ["{{baseUrl}}"],
-              "path": ["order-service", "order", "{{orderId}}", "cancel"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order",
+                "{{orderId}}",
+                "cancel"
+              ]
             }
           }
         },
-
         {
-          "name": "44a — Verify Cancel Refund",
+          "name": "44a \u2014 Verify Cancel Refund",
           "event": [
             {
               "listen": "test",
@@ -1925,14 +2533,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/payment-service/{{paymentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["payment-service", "{{paymentId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "{{paymentId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "44b — Re-add Item for Insufficient Inventory Check",
+          "name": "44b \u2014 Re-add Item for Insufficient Inventory Check",
           "event": [
             {
               "listen": "test",
@@ -1957,22 +2569,36 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"qty\": 1\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/cart-service/cart/add",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart-service", "cart", "add"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "add"
+              ]
             }
           }
         },
-
         {
-          "name": "44c — Set Cart Quantity beyond Stock",
+          "name": "44c \u2014 Set Cart Quantity beyond Stock",
           "event": [
             {
               "listen": "test",
@@ -1995,15 +2621,26 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/cart-service/cart/item/{{productId}}?qty=9999",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart-service", "cart", "item", "{{productId}}"],
-              "query": [{ "key": "qty", "value": "9999" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "item",
+                "{{productId}}"
+              ],
+              "query": [
+                {
+                  "key": "qty",
+                  "value": "9999"
+                }
+              ]
             }
           }
         },
-
         {
-          "name": "44d — Reject Order with Insufficient Inventory",
+          "name": "44d \u2014 Reject Order with Insufficient Inventory",
           "event": [
             {
               "listen": "test",
@@ -2033,24 +2670,38 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "{{insufficientOrderIdempotencyKey}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{insufficientOrderIdempotencyKey}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"addressId\": \"{{addressId}}\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/order-service/order",
-              "host": ["{{baseUrl}}"],
-              "path": ["order-service", "order"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order"
+              ]
             }
           }
         },
-
         {
-          "name": "44e — Clear Cart after Insufficient Inventory Check",
+          "name": "44e \u2014 Clear Cart after Insufficient Inventory Check",
           "event": [
             {
               "listen": "test",
@@ -2071,22 +2722,164 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/cart-service/cart/clear",
-              "host": ["{{baseUrl}}"],
-              "path": ["cart-service", "cart", "clear"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "clear"
+              ]
             }
           }
+        },
+        {
+          "name": "Re-add Item for Saga Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var retryKey = '_cartAddRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 5;",
+                  "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Cart add dependency not ready; retrying Re-add Item for Saga Order ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(retryKey);",
+                  "  try { pm.environment.unset(retryKey); } catch (e) {}",
+                  "  pm.test('Re-add Item for Saga Order: status 200', () => pm.response.to.have.status(200));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cart-service/cart/add",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "add"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"qty\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Place Saga Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Place Saga Order: status 202 Accepted', () => pm.response.to.have.status(202));",
+                  "var json = pm.response.json();",
+                  "pm.test('Saga order id present', () => pm.expect(json.data.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('sagaOrderId', json.data.id);",
+                  "try { pm.environment.set('sagaOrderId', json.data.id); } catch (e) {}",
+                  "console.log('sagaOrderId:', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/order-service/order/saga",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order",
+                "saga"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressId\": \"{{addressId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Saga State",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/order-service/order/{{sagaOrderId}}/saga",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order",
+                "{{sagaOrderId}}",
+                "saga"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get Saga State: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.status) {",
+                  "  console.log('saga.status:', json.data.status);",
+                  "}"
+                ]
+              }
+            }
+          ]
         }
-
       ]
     },
-
     {
       "name": "08 - Payment",
-      "description": "Payment lifecycle: initiate → confirm / fail → refund.",
+      "description": "Payment lifecycle: initiate \u2192 confirm / fail \u2192 refund.",
       "item": [
-
         {
-          "name": "45 — Initiate Payment → save paymentId",
+          "name": "45 \u2014 Initiate Payment \u2192 save paymentId",
           "event": [
             {
               "listen": "prerequest",
@@ -2118,24 +2911,38 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "{{paymentIdempotencyKey}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{paymentIdempotencyKey}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"orderId\": \"{{directPaymentOrderId}}\",\n  \"userId\": \"{{runnerEmail}}\",\n  \"amount\": 119999\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/payment-service/initiate",
-              "host": ["{{baseUrl}}"],
-              "path": ["payment-service", "initiate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "initiate"
+              ]
             }
           }
         },
-
         {
-          "name": "45a — Reject Payment Idempotency Conflict",
+          "name": "45a \u2014 Reject Payment Idempotency Conflict",
           "event": [
             {
               "listen": "test",
@@ -2154,24 +2961,38 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "{{paymentIdempotencyKey}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{paymentIdempotencyKey}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"orderId\": \"{{productId}}\",\n  \"userId\": \"{{runnerEmail}}\",\n  \"amount\": 999\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/payment-service/initiate",
-              "host": ["{{baseUrl}}"],
-              "path": ["payment-service", "initiate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "initiate"
+              ]
             }
           }
         },
-
         {
-          "name": "46 — Confirm Payment",
+          "name": "46 \u2014 Confirm Payment",
           "event": [
             {
               "listen": "test",
@@ -2191,14 +3012,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/payment-service/confirm/{{paymentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["payment-service", "confirm", "{{paymentId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "confirm",
+                "{{paymentId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "47 — Get Payment by ID",
+          "name": "47 \u2014 Get Payment by ID",
           "event": [
             {
               "listen": "test",
@@ -2217,14 +3043,18 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/payment-service/{{paymentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["payment-service", "{{paymentId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "{{paymentId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "48 — Get Payment Status by Order ID",
+          "name": "48 \u2014 Get Payment Status by Order ID",
           "event": [
             {
               "listen": "test",
@@ -2243,14 +3073,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/payment-service/status/{{directPaymentOrderId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["payment-service", "status", "{{directPaymentOrderId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "status",
+                "{{directPaymentOrderId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "49 — Refund Payment",
+          "name": "49 \u2014 Refund Payment",
           "event": [
             {
               "listen": "test",
@@ -2270,14 +3105,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/payment-service/refund/{{paymentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["payment-service", "refund", "{{paymentId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "refund",
+                "{{paymentId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "50 — Initiate Payment for Failure → save paymentId",
+          "name": "50 \u2014 Initiate Payment for Failure \u2192 save paymentId",
           "event": [
             {
               "listen": "prerequest",
@@ -2309,24 +3149,38 @@
           "request": {
             "method": "POST",
             "header": [
-              { "key": "Content-Type", "value": "application/json" },
-              { "key": "Idempotency-Key", "value": "{{failedPaymentIdempotencyKey}}" }
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{failedPaymentIdempotencyKey}}"
+              }
             ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"orderId\": \"{{failedPaymentOrderId}}\",\n  \"userId\": \"{{runnerEmail}}\",\n  \"amount\": 119999\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/payment-service/initiate",
-              "host": ["{{baseUrl}}"],
-              "path": ["payment-service", "initiate"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "initiate"
+              ]
             }
           }
         },
-
         {
-          "name": "51 — Fail Payment",
+          "name": "51 \u2014 Fail Payment",
           "event": [
             {
               "listen": "test",
@@ -2346,68 +3200,84 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/payment-service/fail/{{paymentId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["payment-service", "fail", "{{paymentId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "payment-service",
+                "fail",
+                "{{paymentId}}"
+              ]
             }
           }
         }
-
       ]
     },
-
     {
       "name": "09 - Review",
-      "description": "Product reviews with moderation workflow. Submit → Moderate (APPROVED/REJECTED) → Read.",
+      "description": "Product reviews with moderation workflow. Submit \u2192 Moderate (APPROVED/REJECTED) \u2192 Read.",
       "item": [
-
         {
-          "name": "52 — Submit Review → save reviewId",
+          "name": "52 \u2014 Submit Review \u2192 save reviewId",
           "event": [
             {
               "listen": "test",
               "script": {
-                  "type": "text/javascript",
-                  "exec": [
-                    "var retryKey = '_reviewRetryCount';",
-                    "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
-                    "var maxRetries = 30;",
-                    "if (pm.response.code === 403 && retryCount < maxRetries) {",
-                    "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
-                    "  console.log('Review eligibility not ready; retrying Submit Review ' + (retryCount + 1) + '/' + maxRetries);",
-                    "  pm.execution.setNextRequest(pm.info.requestName);",
-                    "} else {",
-                    "  pm.collectionVariables.unset(retryKey);",
-                    "  try { pm.environment.unset(retryKey); } catch(e) {}",
-                    "  pm.test('Submit Review: status 201', function () { pm.response.to.have.status(201); });",
-                    "  var json = pm.response.json();",
-                    "  pm.test('Review ID present', function () { pm.expect(json.data.id).to.be.a('string'); });",
-                    "  pm.collectionVariables.set('reviewId', json.data.id);",
-                    "  try { pm.environment.set('reviewId', json.data.id); } catch(e) {}",
-                    "  pm.test('Review status is PENDING', function () { pm.expect(json.data.status).to.eql('PENDING'); });",
-                    "  console.log('reviewId:', json.data.id, '| status:', json.data.status);",
-                    "}"
-                  ]
-                }
+                "type": "text/javascript",
+                "exec": [
+                  "var retryKey = '_reviewRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 30;",
+                  "if (pm.response.code === 403 && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Review eligibility not ready; retrying Submit Review ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(retryKey);",
+                  "  try { pm.environment.unset(retryKey); } catch(e) {}",
+                  "  pm.test('Submit Review: status 201', function () { pm.response.to.have.status(201); });",
+                  "  var json = pm.response.json();",
+                  "  pm.test('Review ID present', function () { pm.expect(json.data.id).to.be.a('string'); });",
+                  "  pm.collectionVariables.set('reviewId', json.data.id);",
+                  "  try { pm.environment.set('reviewId', json.data.id); } catch(e) {}",
+                  "  pm.test('Review status is PENDING', function () { pm.expect(json.data.status).to.eql('PENDING'); });",
+                  "  console.log('reviewId:', json.data.id, '| status:', json.data.status);",
+                  "}"
+                ]
               }
+            }
           ],
           "request": {
             "method": "POST",
-            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
               "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"rating\": 5,\n  \"title\": \"Excellent flagship phone!\",\n  \"comment\": \"The Galaxy S24 Ultra is absolutely amazing. Camera quality is top-notch, battery life is great, and the S-Pen integration is seamless.\"\n}",
-              "options": { "raw": { "language": "json" } }
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "{{baseUrl}}/review-service/review",
-              "host": ["{{baseUrl}}"],
-              "path": ["review-service", "review"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "review-service",
+                "review"
+              ]
             }
           }
         },
-
         {
-          "name": "53 — Moderate Review (APPROVED)",
+          "name": "53 \u2014 Moderate Review (APPROVED)",
           "event": [
             {
               "listen": "test",
@@ -2427,15 +3297,26 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/review-service/review/{{reviewId}}/moderate?status=APPROVED",
-              "host": ["{{baseUrl}}"],
-              "path": ["review-service", "review", "{{reviewId}}", "moderate"],
-              "query": [{ "key": "status", "value": "APPROVED" }]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "review-service",
+                "review",
+                "{{reviewId}}",
+                "moderate"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "APPROVED"
+                }
+              ]
             }
           }
         },
-
         {
-          "name": "54 — Get Approved Reviews for Product",
+          "name": "54 \u2014 Get Approved Reviews for Product",
           "event": [
             {
               "listen": "test",
@@ -2455,14 +3336,20 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/review-service/review/product/{{productId}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["review-service", "review", "product", "{{productId}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "review-service",
+                "review",
+                "product",
+                "{{productId}}"
+              ]
             }
           }
         },
-
         {
-          "name": "55 — Get Review Summary for Product",
+          "name": "55 \u2014 Get Review Summary for Product",
           "event": [
             {
               "listen": "test",
@@ -2481,14 +3368,21 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/review-service/review/product/{{productId}}/summary",
-              "host": ["{{baseUrl}}"],
-              "path": ["review-service", "review", "product", "{{productId}}", "summary"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "review-service",
+                "review",
+                "product",
+                "{{productId}}",
+                "summary"
+              ]
             }
           }
         },
-
         {
-          "name": "56 — Get My Reviews",
+          "name": "56 \u2014 Get My Reviews",
           "event": [
             {
               "listen": "test",
@@ -2508,68 +3402,75 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/review-service/review/my",
-              "host": ["{{baseUrl}}"],
-              "path": ["review-service", "review", "my"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "review-service",
+                "review",
+                "my"
+              ]
             }
           }
         }
-
       ]
     },
-
     {
       "name": "10 - Notification",
       "description": "User notification inbox. Notifications are generated by order/payment events.",
       "item": [
-
         {
-          "name": "57 — Get All Notifications → save notificationId",
+          "name": "57 \u2014 Get All Notifications \u2192 save notificationId",
           "event": [
             {
               "listen": "test",
               "script": {
-                  "type": "text/javascript",
-                  "exec": [
-                    "pm.test('Get Notifications: status 200', () => pm.response.to.have.status(200));",
-                    "var json = pm.response.json();",
-                    "pm.test('Notifications is array', () => pm.expect(json.data).to.be.an('array'));",
-                    "var notifications = Array.isArray(json.data) ? json.data : [];",
-                    "var retryKey = '_notificationRetryCount';",
-                    "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
-                    "var maxRetries = 30;",
-                    "if (!notifications.length && retryCount < maxRetries) {",
-                    "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
-                    "  console.log('Notifications not available yet; retrying ' + (retryCount + 1) + '/' + maxRetries);",
-                    "  pm.execution.setNextRequest(pm.info.requestName);",
-                    "} else {",
-                    "  pm.collectionVariables.unset(retryKey);",
-                    "  try { pm.environment.unset(retryKey); } catch(e) {}",
-                    "  pm.test('Notification available for mark-read step', function () { pm.expect(notifications.length).to.be.above(0); });",
-                    "  console.log('Total notifications:', notifications.length);",
-                    "  if (notifications.length > 0) {",
-                    "    var id = notifications[0].id;",
-                    "    pm.collectionVariables.set('notificationId', id);",
-                    "    try { pm.environment.set('notificationId', id); } catch(e) {}",
-                    "    console.log('notificationId saved:', id);",
-                    "  }",
-                    "}"
-                  ]
-                }
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get Notifications: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "pm.test('Notifications is array', () => pm.expect(json.data).to.be.an('array'));",
+                  "var notifications = Array.isArray(json.data) ? json.data : [];",
+                  "var retryKey = '_notificationRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 30;",
+                  "if (!notifications.length && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Notifications not available yet; retrying ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(retryKey);",
+                  "  try { pm.environment.unset(retryKey); } catch(e) {}",
+                  "  pm.test('Notification available for mark-read step', function () { pm.expect(notifications.length).to.be.above(0); });",
+                  "  console.log('Total notifications:', notifications.length);",
+                  "  if (notifications.length > 0) {",
+                  "    var id = notifications[0].id;",
+                  "    pm.collectionVariables.set('notificationId', id);",
+                  "    try { pm.environment.set('notificationId', id); } catch(e) {}",
+                  "    console.log('notificationId saved:', id);",
+                  "  }",
+                  "}"
+                ]
               }
+            }
           ],
           "request": {
             "method": "GET",
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/notification-service/notifications",
-              "host": ["{{baseUrl}}"],
-              "path": ["notification-service", "notifications"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-service",
+                "notifications"
+              ]
             }
           }
         },
-
         {
-          "name": "58 — Get Unread Notifications",
+          "name": "58 \u2014 Get Unread Notifications",
           "event": [
             {
               "listen": "test",
@@ -2588,14 +3489,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/notification-service/notifications/unread",
-              "host": ["{{baseUrl}}"],
-              "path": ["notification-service", "notifications", "unread"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-service",
+                "notifications",
+                "unread"
+              ]
             }
           }
         },
-
         {
-          "name": "59 — Mark Notification as Read",
+          "name": "59 \u2014 Mark Notification as Read",
           "event": [
             {
               "listen": "test",
@@ -2615,14 +3521,19 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/notification-service/notifications/{{notificationId}}/read",
-              "host": ["{{baseUrl}}"],
-              "path": ["notification-service", "notifications", "{{notificationId}}", "read"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "notification-service",
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
             }
           }
         }
-
       ]
     }
-
   ]
 }

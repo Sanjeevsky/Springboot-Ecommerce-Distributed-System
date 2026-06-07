@@ -3,6 +3,8 @@ package com.sanjeevsky.orderservice.events;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sanjeevsky.orderservice.model.Order;
 import com.sanjeevsky.orderservice.repository.OrderRepository;
+import com.sanjeevsky.orderservice.repository.SagaInstanceRepository;
+import com.sanjeevsky.orderservice.service.OrderSagaOrchestrator;
 import com.sanjeevsky.platform.events.OrderCancelledEvent;
 import com.sanjeevsky.platform.model.order.OrderStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,11 +35,18 @@ class InventoryEventConsumerTest {
     @Mock
     private OrderEventPublisher eventPublisher;
 
+    @Mock
+    private SagaInstanceRepository sagaRepository;
+
+    @Mock
+    private OrderSagaOrchestrator orchestrator;
+
     private InventoryEventConsumer consumer;
 
     @BeforeEach
     void setUp() {
-        consumer = new InventoryEventConsumer(orderRepository, eventPublisher, new ObjectMapper());
+        // sagaRepository returns Optional.empty() by default -> exercises the legacy (non-saga) path.
+        consumer = new InventoryEventConsumer(orderRepository, eventPublisher, sagaRepository, orchestrator, new ObjectMapper());
     }
 
     @Test

@@ -19,6 +19,7 @@ import java.util.Map;
 public class KafkaConfig {
 
     public static final String ORDER_EVENTS_TOPIC = "order-events";
+    public static final String PAYMENT_COMMANDS_TOPIC = "payment-commands";
 
     @Value("${spring.kafka.bootstrap-servers}")
     private String bootstrapServers;
@@ -46,5 +47,10 @@ public class KafkaConfig {
     @Bean
     public NewTopic inventoryEventsTopic() {
         return TopicBuilder.name("inventory-events").partitions(3).replicas(1).build();
+    }
+
+    @Bean
+    public NewTopic paymentCommandsTopic() {
+        return TopicBuilder.name(PAYMENT_COMMANDS_TOPIC).partitions(3).replicas(1).build();
     }
 }

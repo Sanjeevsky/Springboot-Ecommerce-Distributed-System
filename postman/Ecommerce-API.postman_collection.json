@@ -125,6 +125,10 @@
     {
       "key": "failedPaymentIdempotencyKey",
       "value": ""
+    },
+    {
+      "key": "sagaOrderId",
+      "value": ""
     }
   ],
   "item": [
@@ -1879,6 +1883,145 @@
               ]
             }
           }
+        },
+        {
+          "name": "Re-add Item for Saga Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "var retryKey = '_cartAddRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 5;",
+                  "if ([500, 502, 503, 504].indexOf(pm.response.code) !== -1 && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Cart add dependency not ready; retrying Re-add Item for Saga Order ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(retryKey);",
+                  "  try { pm.environment.unset(retryKey); } catch (e) {}",
+                  "  pm.test('Re-add Item for Saga Order: status 200', () => pm.response.to.have.status(200));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/cart-service/cart/add",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "cart-service",
+                "cart",
+                "add"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"variantId\": \"{{variantId}}\",\n  \"qty\": 1\n}"
+            }
+          }
+        },
+        {
+          "name": "Place Saga Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Place Saga Order: status 202 Accepted', () => pm.response.to.have.status(202));",
+                  "var json = pm.response.json();",
+                  "pm.test('Saga order id present', () => pm.expect(json.data.id).to.be.a('string'));",
+                  "pm.collectionVariables.set('sagaOrderId', json.data.id);",
+                  "try { pm.environment.set('sagaOrderId', json.data.id); } catch (e) {}",
+                  "console.log('sagaOrderId:', json.data.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/order-service/order/saga",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order",
+                "saga"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"addressId\": \"{{addressId}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get Saga State",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/order-service/order/{{sagaOrderId}}/saga",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "order-service",
+                "order",
+                "{{sagaOrderId}}",
+                "saga"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get Saga State: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "if (json.data && json.data.status) {",
+                  "  console.log('saga.status:', json.data.status);",
+                  "}"
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -2608,29 +2751,29 @@
             {
               "listen": "test",
               "script": {
-                  "type": "text/javascript",
-                  "exec": [
-                    "var retryKey = '_reviewRetryCount';",
-                    "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
-                    "var maxRetries = 30;",
-                    "if (pm.response.code === 403 && retryCount < maxRetries) {",
-                    "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
-                    "  console.log('Review eligibility not ready; retrying Submit Review ' + (retryCount + 1) + '/' + maxRetries);",
-                    "  pm.execution.setNextRequest(pm.info.requestName);",
-                    "} else {",
-                    "  pm.collectionVariables.unset(retryKey);",
-                    "  try { pm.environment.unset(retryKey); } catch (e) {}",
-                    "  pm.test('Submit Review: status 201', function () { pm.response.to.have.status(201); });",
-                    "  var json = pm.response.json();",
-                    "  if (json.data && json.data.id) {",
-                    "    pm.collectionVariables.set('reviewId', json.data.id);",
-                    "    try { pm.environment.set('reviewId', json.data.id); } catch (e) {}",
-                    "    console.log('reviewId:', json.data.id);",
-                    "  }",
-                    "}"
-                  ]
-                }
+                "type": "text/javascript",
+                "exec": [
+                  "var retryKey = '_reviewRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 30;",
+                  "if (pm.response.code === 403 && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Review eligibility not ready; retrying Submit Review ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(retryKey);",
+                  "  try { pm.environment.unset(retryKey); } catch (e) {}",
+                  "  pm.test('Submit Review: status 201', function () { pm.response.to.have.status(201); });",
+                  "  var json = pm.response.json();",
+                  "  if (json.data && json.data.id) {",
+                  "    pm.collectionVariables.set('reviewId', json.data.id);",
+                  "    try { pm.environment.set('reviewId', json.data.id); } catch (e) {}",
+                  "    console.log('reviewId:', json.data.id);",
+                  "  }",
+                  "}"
+                ]
               }
+            }
           ]
         },
         {
@@ -2950,31 +3093,31 @@
             {
               "listen": "test",
               "script": {
-                  "type": "text/javascript",
-                  "exec": [
-                    "pm.test('Get All Notifications: status 200', () => pm.response.to.have.status(200));",
-                    "var json = pm.response.json();",
-                    "var notifications = Array.isArray(json.data) ? json.data : (json.data && Array.isArray(json.data.content) ? json.data.content : []);",
-                    "var retryKey = '_notificationRetryCount';",
-                    "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
-                    "var maxRetries = 30;",
-                    "if (!notifications.length && retryCount < maxRetries) {",
-                    "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
-                    "  console.log('Notifications not available yet; retrying ' + (retryCount + 1) + '/' + maxRetries);",
-                    "  pm.execution.setNextRequest(pm.info.requestName);",
-                    "} else {",
-                    "  pm.collectionVariables.unset(retryKey);",
-                    "  try { pm.environment.unset(retryKey); } catch (e) {}",
-                    "  pm.test('Notification available for mark-read step', function () { pm.expect(notifications.length).to.be.above(0); });",
-                    "  if (notifications.length && notifications[0].id) {",
-                    "    pm.collectionVariables.set('notificationId', notifications[0].id);",
-                    "    try { pm.environment.set('notificationId', notifications[0].id); } catch (e) {}",
-                    "    console.log('notificationId:', notifications[0].id);",
-                    "  }",
-                    "}"
-                  ]
-                }
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Get All Notifications: status 200', () => pm.response.to.have.status(200));",
+                  "var json = pm.response.json();",
+                  "var notifications = Array.isArray(json.data) ? json.data : (json.data && Array.isArray(json.data.content) ? json.data.content : []);",
+                  "var retryKey = '_notificationRetryCount';",
+                  "var retryCount = parseInt(pm.collectionVariables.get(retryKey) || '0', 10);",
+                  "var maxRetries = 30;",
+                  "if (!notifications.length && retryCount < maxRetries) {",
+                  "  pm.collectionVariables.set(retryKey, String(retryCount + 1));",
+                  "  console.log('Notifications not available yet; retrying ' + (retryCount + 1) + '/' + maxRetries);",
+                  "  pm.execution.setNextRequest(pm.info.requestName);",
+                  "} else {",
+                  "  pm.collectionVariables.unset(retryKey);",
+                  "  try { pm.environment.unset(retryKey); } catch (e) {}",
+                  "  pm.test('Notification available for mark-read step', function () { pm.expect(notifications.length).to.be.above(0); });",
+                  "  if (notifications.length && notifications[0].id) {",
+                  "    pm.collectionVariables.set('notificationId', notifications[0].id);",
+                  "    try { pm.environment.set('notificationId', notifications[0].id); } catch (e) {}",
+                  "    console.log('notificationId:', notifications[0].id);",
+                  "  }",
+                  "}"
+                ]
               }
+            }
           ]
         },
         {
@@ -3036,25 +3179,25 @@
               "path": [
                 "notification-service",
                 "notifications",
-                  "{{notificationId}}",
-                  "read"
+                "{{notificationId}}",
+                "read"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Mark Notification as Read: status 200', function () { pm.response.to.have.status(200); });",
+                  "var json = pm.response.json();",
+                  "pm.test('Notification is read', function () { pm.expect(json.data && json.data.read).to.be.true; });"
                 ]
               }
-            },
-            "event": [
-              {
-                "listen": "test",
-                "script": {
-                  "type": "text/javascript",
-                  "exec": [
-                    "pm.test('Mark Notification as Read: status 200', function () { pm.response.to.have.status(200); });",
-                    "var json = pm.response.json();",
-                    "pm.test('Notification is read', function () { pm.expect(json.data && json.data.read).to.be.true; });"
-                  ]
-                }
-              }
-            ]
-          }
+            }
+          ]
+        }
       ]
     }
   ],
@@ -3139,12 +3282,12 @@
           "      || rawUrl.indexOf('/order-service/order') !== -1",
           "      || rawUrl.indexOf('/inventory-service/stock') !== -1;",
           "}",
-        "",
-        "function isExpectedRunnerNon2xx(code) {",
-        "  return code === 400 && (pm.info.requestName === 'Reject Order with Insufficient Inventory'",
-        "      || pm.info.requestName === 'Reject Order Idempotency Conflict'",
-        "      || pm.info.requestName === 'Reject Payment Idempotency Conflict');",
-        "}",
+          "",
+          "function isExpectedRunnerNon2xx(code) {",
+          "  return code === 400 && (pm.info.requestName === 'Reject Order with Insufficient Inventory'",
+          "      || pm.info.requestName === 'Reject Order Idempotency Conflict'",
+          "      || pm.info.requestName === 'Reject Payment Idempotency Conflict');",
+          "}",
           "",
           "if (!isTransientRunnerRetry(pm.response.code) && !isExpectedRunnerNon2xx(pm.response.code)) {",
           "  pm.test('Runner request returned 2xx', function () {",

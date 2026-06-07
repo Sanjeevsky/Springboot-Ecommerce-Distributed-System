@@ -6,6 +6,13 @@ A production-grade ecommerce platform built as a microservices architecture usin
 
 ---
 
+## Documentation
+
+- **[End-to-End Workflow](docs/WORKFLOW.md)** — how a request travels the system, service by service and method by method (login → browse → cart → checkout → fulfillment).
+- **[Checkout Saga](docs/SAGA.md)** — the orchestration-based saga for distributed checkout: state machine, compensation, and a live run transcript.
+
+---
+
 ## Architecture
 
 [Live Architecture Diagram](https://sanjeevsky.github.io/Springboot-Ecommerce-Distributed-System/architecture.html)
@@ -50,10 +57,16 @@ order-service    ──► order-events ──► inventory-service
                                   ──► notification-service
                                   ──► review-service
 
+order-service    ──► payment-commands ──► payment-service          (saga charge/refund)
+
 payment-service  ──► payment-events ──► notification-service
+                                    ──► order-service              (saga reply)
 
 inventory-service ─► inventory-events ─► order-service
 ```
+
+The distributed checkout is coordinated by an orchestration-based **[saga](docs/SAGA.md)**
+(`reserve stock → charge payment → confirm order`, with compensation on failure).
 
 Kafka consumers retry failed records twice with a 1 second backoff, then publish the original record to a dead-letter topic:
 
@@ -419,7 +432,7 @@ GitHub Actions runs static validation and Java 11 module tests on pushes and pul
 | auth-server | 25 | 8 |
 | catalog-service | 72 | — |
 | customer-service | 27 | — |
-| order-service | 52 | — |
+| order-service | 59 | — |
 | payment-service | 42 | 15 |
 | shopping-cart-service | 31 | 8 |
 | coupon-service | 24 | 11 |
@@ -427,4 +440,4 @@ GitHub Actions runs static validation and Java 11 module tests on pushes and pul
 | wishlist-service | 17 | 10 |
 | inventory-service | 32 | 8 |
 | notification-service | 16 | 8 |
-| **Total** | **390** | **78** |
+| **Total** | **397** | **78** |
