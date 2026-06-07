@@ -34,7 +34,9 @@ def find_service_dirs():
 def read_props(service_dir):
     """Return merged dict from all application*.properties and application*.yml in resources."""
     props = {}
-    for f in service_dir.rglob('application*.properties'):
+    # Sort rglob results: filesystem iteration order is platform-dependent, which would
+    # make merged props (and therefore the generated HTML) differ between macOS and CI.
+    for f in sorted(service_dir.rglob('application*.properties'), key=str):
         if 'test' in str(f): continue
         for line in f.read_text(errors='ignore').splitlines():
             line = line.strip()
@@ -42,7 +44,7 @@ def read_props(service_dir):
                 k, _, v = line.partition('=')
                 props[k.strip()] = v.strip()
     # Also parse YAML (covers api-gateway which uses application.yml)
-    for f in service_dir.rglob('application*.yml'):
+    for f in sorted(service_dir.rglob('application*.yml'), key=str):
         if 'test' in str(f): continue
         src = f.read_text(errors='ignore')
         # spring.application.name
@@ -78,7 +80,9 @@ def scan_java(service_dir):
     topic_constants = {}  # CONST_NAME → "topic-string-value"
     has_kafka_send_files = set()  # file paths that call kafkaTemplate.send
 
-    all_java = [f for f in service_dir.rglob('*.java') if 'test' not in str(f).lower()]
+    # Sort so file scan order is deterministic across platforms (rglob order is
+    # filesystem-dependent; feign_clients order below feeds the rendered HTML).
+    all_java = sorted((f for f in service_dir.rglob('*.java') if 'test' not in str(f).lower()), key=str)
 
     for f in all_java:
         src = f.read_text(errors='ignore')

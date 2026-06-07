@@ -634,7 +634,7 @@ if (generateArchText.includes("<div class=\"lbl\">Unit Tests</div>")
 }
 if (!architectureText.includes("Services emit B3 traces when SPRING_ZIPKIN_ENABLED=true")
     || !architectureText.includes("<div class=\"lbl\">Tests</div>")
-    || !architectureText.includes("payment-service, inventory-service")) {
+    || !architectureText.includes("inventory-service, payment-service")) {
   fail("architecture.html must be regenerated from current architecture metadata");
 }
 if (composeText.includes("MYSQL_ROOT_PASSWORD: 123456")

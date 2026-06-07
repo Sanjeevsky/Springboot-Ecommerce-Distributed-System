@@ -239,10 +239,10 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     <path class="path-kafka-sub active" d="M 660,544 C 660,495.0 583,495.0 583,446" marker-end="url(#ak)"/>
     <path class="path-db" d="M 519,426 C 519,501.0 354,501.0 354,576"/>
     <path class="path-feign active" d="M 801,414 C 801,329.0 956,329.0 956,244" marker-end="url(#af)"/>
-    <path class="path-feign active" d="M 737,394 C 737,335.0 660,335.0 660,276" marker-end="url(#af)"/>
     <path class="path-feign active" d="M 673,414 C 673,414.0 339,414.0 339,414" marker-end="url(#af)"/>
-    <path class="path-feign active" d="M 737,394 C 737,335.0 840,335.0 840,276" marker-end="url(#af)"/>
+    <path class="path-feign active" d="M 737,394 C 737,335.0 660,335.0 660,276" marker-end="url(#af)"/>
     <path class="path-feign active" d="M 673,414 C 673,414.0 493,414.0 493,414" marker-end="url(#af)"/>
+    <path class="path-feign active" d="M 737,394 C 737,335.0 840,335.0 840,276" marker-end="url(#af)"/>
     <path class="path-kafka-pub active" d="M 737,446 C 737,495.0 660,495.0 660,544" marker-end="url(#ak)"/>
     <path class="path-kafka-sub active" d="M 660,544 C 660,495.0 737,495.0 737,446" marker-end="url(#ak)"/>
     <path class="path-db" d="M 673,426 C 673,501.0 354,501.0 354,576"/>
@@ -385,7 +385,7 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
   </div>
   <div class="node node-ext"
        style="left:737px;top:420px;animation-delay:1.66s;width:130px"
-       data-tip="Feign → shopping-cart-service, customer-service, coupon-service, payment-service, inventory-service; Publishes: order-events; Consumes: inventory-events, payment-events">
+       data-tip="Feign → shopping-cart-service, coupon-service, customer-service, inventory-service, payment-service; Publishes: order-events; Consumes: inventory-events, payment-events">
     <div class="node-header">
       <div class="node-icon">◬</div>
       <div class="node-name">order-service</div>
@@ -651,30 +651,6 @@ const PATHS=[
     {
         "pts": [
             [
-                737,
-                394
-            ],
-            [
-                737,
-                335.0
-            ],
-            [
-                660,
-                335.0
-            ],
-            [
-                660,
-                276
-            ]
-        ],
-        "color": "#00c8f0",
-        "speed": 0.9,
-        "r": 3.0,
-        "count": 2
-    },
-    {
-        "pts": [
-            [
                 673,
                 414
             ],
@@ -707,11 +683,11 @@ const PATHS=[
                 335.0
             ],
             [
-                840,
+                660,
                 335.0
             ],
             [
-                840,
+                660,
                 276
             ]
         ],
@@ -737,6 +713,30 @@ const PATHS=[
             [
                 493,
                 414
+            ]
+        ],
+        "color": "#00c8f0",
+        "speed": 0.9,
+        "r": 3.0,
+        "count": 2
+    },
+    {
+        "pts": [
+            [
+                737,
+                394
+            ],
+            [
+                737,
+                335.0
+            ],
+            [
+                840,
+                335.0
+            ],
+            [
+                840,
+                276
             ]
         ],
         "color": "#00c8f0",
