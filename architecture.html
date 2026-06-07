@@ -175,10 +175,10 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
   </div>
   <div class="header-right">
     <div class="stat-chip"><div class="num">15</div><div class="lbl">Services</div></div>
-    <div class="stat-chip"><div class="num">3</div><div class="lbl">Kafka Topics</div></div>
+    <div class="stat-chip"><div class="num">4</div><div class="lbl">Kafka Topics</div></div>
     <div class="stat-chip"><div class="num">11</div><div class="lbl">Databases</div></div>
     <div class="stat-chip"><div class="num">4</div><div class="lbl">Observability</div></div>
-    <div class="stat-chip"><div class="num">468</div><div class="lbl">Tests</div></div>
+    <div class="stat-chip"><div class="num">475</div><div class="lbl">Tests</div></div>
     <div class="live-badge"><div class="live-dot"></div>LIVE MAP</div>
   </div>
 </header>
@@ -247,6 +247,7 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
     <path class="path-kafka-sub active" d="M 660,544 C 660,495.0 737,495.0 737,446" marker-end="url(#ak)"/>
     <path class="path-db" d="M 673,426 C 673,501.0 354,501.0 354,576"/>
     <path class="path-kafka-pub active" d="M 840,276 C 840,410.0 660,410.0 660,544" marker-end="url(#ak)"/>
+    <path class="path-kafka-sub active" d="M 660,544 C 660,410.0 840,410.0 840,276" marker-end="url(#ak)"/>
     <path class="path-db" d="M 776,256 C 776,416.0 354,416.0 354,576"/>
     <path class="path-kafka-sub active" d="M 724,576 C 724,501.0 827,501.0 827,426" marker-end="url(#ak)"/>
     <path class="path-db" d="M 827,426 C 827,501.0 354,501.0 354,576"/>
@@ -260,7 +261,8 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
 
   <div class="topic-chip" style="left:560px;top:510px;animation-delay:1.8s">inventory-events</div>
   <div class="topic-chip" style="left:720px;top:515px;animation-delay:2.05s">order-events</div>
-  <div class="topic-chip" style="left:520px;top:540px;animation-delay:2.3s">payment-events</div>
+  <div class="topic-chip" style="left:520px;top:540px;animation-delay:2.3s">payment-commands</div>
+  <div class="topic-chip" style="left:740px;top:545px;animation-delay:2.55s">payment-events</div>
   <div class="node node-cloud"
        style="left:80px;top:270px;animation-delay:0.05s;width:120px"
        data-tip="cloud service on :8071">
@@ -333,13 +335,13 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
   </div>
   <div class="node node-core"
        style="left:840px;top:250px;animation-delay:0.86s;width:130px"
-       data-tip="Publishes: payment-events">
+       data-tip="Publishes: payment-events; Consumes: payment-commands">
     <div class="node-header">
       <div class="node-icon">◉</div>
       <div class="node-name">payment-service</div>
     </div>
     <div class="node-port">:8085</div>
-    <div class="node-tag">Kafka pub</div>
+    <div class="node-tag">Kafka pub · Kafka sub</div>
   </div>
   <div class="node node-core"
        style="left:1020px;top:250px;animation-delay:0.94s;width:130px"
@@ -383,7 +385,7 @@ footer{position:relative;z-index:10;padding:20px 48px;border-top:1px solid var(-
   </div>
   <div class="node node-ext"
        style="left:737px;top:420px;animation-delay:1.66s;width:130px"
-       data-tip="Feign → shopping-cart-service, customer-service, coupon-service, payment-service, inventory-service; Publishes: order-events; Consumes: inventory-events">
+       data-tip="Feign → shopping-cart-service, customer-service, coupon-service, payment-service, inventory-service; Publishes: order-events; Consumes: inventory-events, payment-events">
     <div class="node-header">
       <div class="node-icon">◬</div>
       <div class="node-name">order-service</div>
@@ -811,6 +813,30 @@ const PATHS=[
         ],
         "color": "#ff6b00",
         "speed": 1.1,
+        "r": 3.5,
+        "count": 3
+    },
+    {
+        "pts": [
+            [
+                660,
+                544
+            ],
+            [
+                660,
+                410.0
+            ],
+            [
+                840,
+                410.0
+            ],
+            [
+                840,
+                276
+            ]
+        ],
+        "color": "#ff9900",
+        "speed": 0.95,
         "r": 3.5,
         "count": 3
     },
