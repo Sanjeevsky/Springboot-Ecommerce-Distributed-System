@@ -1,9 +1,12 @@
 package com.sanjeevsky.orderservice.events;
 
 import com.sanjeevsky.orderservice.config.KafkaConfig;
+import com.sanjeevsky.platform.events.ChargePaymentCommand;
 import com.sanjeevsky.platform.events.OrderCancelledEvent;
 import com.sanjeevsky.platform.events.OrderConfirmedEvent;
 import com.sanjeevsky.platform.events.OrderPlacedEvent;
+import com.sanjeevsky.platform.events.RefundPaymentCommand;
+import com.sanjeevsky.platform.events.StockReservationRequestedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -29,5 +32,20 @@ public class OrderEventPublisher {
     public void publishOrderCancelled(OrderCancelledEvent event) {
         log.info("Publishing OrderCancelledEvent for orderId={}", event.getOrderId());
         kafkaTemplate.send(KafkaConfig.ORDER_EVENTS_TOPIC, event.getOrderId().toString(), event);
+    }
+
+    public void publishStockReservationRequested(StockReservationRequestedEvent event) {
+        log.info("Publishing StockReservationRequestedEvent for orderId={}", event.getOrderId());
+        kafkaTemplate.send(KafkaConfig.ORDER_EVENTS_TOPIC, event.getOrderId().toString(), event);
+    }
+
+    public void publishChargePayment(ChargePaymentCommand command) {
+        log.info("Publishing ChargePaymentCommand for orderId={}", command.getOrderId());
+        kafkaTemplate.send(KafkaConfig.PAYMENT_COMMANDS_TOPIC, command.getOrderId().toString(), command);
+    }
+
+    public void publishRefundPayment(RefundPaymentCommand command) {
+        log.info("Publishing RefundPaymentCommand for orderId={}", command.getOrderId());
+        kafkaTemplate.send(KafkaConfig.PAYMENT_COMMANDS_TOPIC, command.getOrderId().toString(), command);
     }
 }

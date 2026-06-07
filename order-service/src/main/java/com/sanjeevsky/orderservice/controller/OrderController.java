@@ -1,6 +1,7 @@
 package com.sanjeevsky.orderservice.controller;
 
 import com.sanjeevsky.orderservice.model.Order;
+import com.sanjeevsky.orderservice.model.SagaInstance;
 import com.sanjeevsky.orderservice.service.OrderService;
 import com.sanjeevsky.platform.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
@@ -43,6 +45,25 @@ public class OrderController {
             @RequestBody @Valid CreateOrderRequest request) {
         Order order = orderService.createOrder(userId, request.getAddressId(), request.getCouponCode(), idempotencyKey);
         return new ResponseEntity<>(ApiResponse.ok("Order placed successfully", order), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/order/saga")
+    public ResponseEntity<ApiResponse<Order>> createOrderSaga(
+            @RequestHeader("X-User") String userId,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+            @RequestParam(value = "simulatePaymentFailure", defaultValue = "false") boolean simulatePaymentFailure,
+            @RequestBody @Valid CreateOrderRequest request) {
+        Order order = orderService.createOrderSaga(
+                userId, request.getAddressId(), request.getCouponCode(), idempotencyKey, simulatePaymentFailure);
+        // 202: the saga runs asynchronously; poll GET /order/{id}/saga to watch it progress.
+        return new ResponseEntity<>(ApiResponse.ok("Order saga started", order), HttpStatus.ACCEPTED);
+    }
+
+    @GetMapping("/order/{id}/saga")
+    public ResponseEntity<ApiResponse<SagaInstance>> getSaga(
+            @RequestHeader("X-User") String userId,
+            @PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(orderService.getSaga(userId, id)));
     }
 
     @GetMapping("/orders")

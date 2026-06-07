@@ -1,6 +1,7 @@
 package com.sanjeevsky.paymentservice.events;
 
 import com.sanjeevsky.platform.events.PaymentConfirmedEvent;
+import com.sanjeevsky.platform.events.PaymentFailedEvent;
 import com.sanjeevsky.platform.events.PaymentInitiatedEvent;
 import com.sanjeevsky.platform.events.PaymentRefundedEvent;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,11 @@ public class PaymentEventPublisher {
 
     public void publishPaymentRefunded(PaymentRefundedEvent event) {
         log.info("Publishing PaymentRefundedEvent for paymentId={}", event.getPaymentId());
+        kafkaTemplate.send(PAYMENT_EVENTS_TOPIC, event.getOrderId().toString(), event);
+    }
+
+    public void publishPaymentFailed(PaymentFailedEvent event) {
+        log.info("Publishing PaymentFailedEvent for orderId={}, reason={}", event.getOrderId(), event.getReason());
         kafkaTemplate.send(PAYMENT_EVENTS_TOPIC, event.getOrderId().toString(), event);
     }
 }

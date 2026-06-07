@@ -11,6 +11,7 @@ import com.sanjeevsky.platform.events.OrderCancelledEvent;
 import com.sanjeevsky.platform.events.OrderItemEvent;
 import com.sanjeevsky.platform.events.OrderPlacedEvent;
 import com.sanjeevsky.platform.events.StockInsufficientEvent;
+import com.sanjeevsky.platform.events.StockReservationRequestedEvent;
 import com.sanjeevsky.platform.events.StockReservedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,8 +38,11 @@ public class OrderEventConsumer {
             JsonNode root = objectMapper.readTree(message);
             String eventType = root.has("eventType") ? root.get("eventType").asText() : "";
 
-            if ("ORDER_PLACED".equals(eventType) || (eventType.isEmpty() && root.has("items"))) {
-                // OrderPlacedEvent
+            if ("STOCK_RESERVATION_REQUESTED".equals(eventType)) {
+                // Saga step 1: reserve stock for an orchestrated order
+                handleStockReservationRequested(objectMapper.treeToValue(root, StockReservationRequestedEvent.class));
+            } else if ("ORDER_PLACED".equals(eventType) || (eventType.isEmpty() && root.has("items"))) {
+                // OrderPlacedEvent (legacy synchronous checkout)
                 handleOrderPlaced(objectMapper.treeToValue(root, OrderPlacedEvent.class));
             } else if ("ORDER_CANCELLED".equals(eventType) || (eventType.isEmpty() && root.has("reason"))) {
                 // OrderCancelledEvent
@@ -56,16 +60,27 @@ public class OrderEventConsumer {
 
     private void handleOrderPlaced(OrderPlacedEvent event) {
         log.info("Handling OrderPlacedEvent for orderId={}", event.getOrderId());
-        List<OrderItemEvent> items = event.getItems();
-
-        if (event.getOrderId() == null || event.getUserId() == null || items == null || items.isEmpty()) {
+        if (event.getOrderId() == null || event.getUserId() == null
+                || event.getItems() == null || event.getItems().isEmpty()) {
             throw new IllegalArgumentException("OrderPlacedEvent missing required fields");
         }
+        reserveStockForOrder(event.getOrderId(), event.getUserId(), event.getItems());
+    }
 
+    private void handleStockReservationRequested(StockReservationRequestedEvent event) {
+        log.info("Handling StockReservationRequestedEvent for orderId={}", event.getOrderId());
+        if (event.getOrderId() == null || event.getUserId() == null
+                || event.getItems() == null || event.getItems().isEmpty()) {
+            throw new IllegalArgumentException("StockReservationRequestedEvent missing required fields");
+        }
+        reserveStockForOrder(event.getOrderId(), event.getUserId(), event.getItems());
+    }
+
+    private void reserveStockForOrder(UUID orderId, String userId, List<OrderItemEvent> items) {
         for (OrderItemEvent item : items) {
             try {
                 inventoryService.reserveStock(
-                        event.getOrderId(),
+                        orderId,
                         item.getProductId(),
                         item.getVariantId(),
                         item.getQty()
@@ -80,8 +95,8 @@ public class OrderEventConsumer {
                 }
 
                 StockInsufficientEvent insufficientEvent = StockInsufficientEvent.builder()
-                        .orderId(event.getOrderId())
-                        .userId(event.getUserId())
+                        .orderId(orderId)
+                        .userId(userId)
                         .productId(item.getProductId())
                         .variantId(item.getVariantId())
                         .availableQty(available)
@@ -94,12 +109,12 @@ public class OrderEventConsumer {
 
         // All items reserved successfully
         StockReservedEvent reservedEvent = StockReservedEvent.builder()
-                .orderId(event.getOrderId())
-                .userId(event.getUserId())
+                .orderId(orderId)
+                .userId(userId)
                 .items(items)
                 .build();
         eventPublisher.publishStockReserved(reservedEvent);
-        log.info("StockReservedEvent published for orderId={}", event.getOrderId());
+        log.info("StockReservedEvent published for orderId={}", orderId);
     }
 
     private void handleOrderCancelled(OrderCancelledEvent event) {

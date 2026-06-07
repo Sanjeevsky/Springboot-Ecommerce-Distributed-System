@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sanjeevsky.orderservice.model.Order;
 import com.sanjeevsky.orderservice.repository.OrderRepository;
+import com.sanjeevsky.orderservice.repository.SagaInstanceRepository;
+import com.sanjeevsky.orderservice.service.OrderSagaOrchestrator;
 import com.sanjeevsky.platform.events.OrderCancelledEvent;
 import com.sanjeevsky.platform.model.order.OrderStatus;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,8 @@ public class InventoryEventConsumer {
 
     private final OrderRepository orderRepository;
     private final OrderEventPublisher eventPublisher;
+    private final SagaInstanceRepository sagaRepository;
+    private final OrderSagaOrchestrator orchestrator;
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "inventory-events", groupId = "order-group")
@@ -52,6 +56,13 @@ public class InventoryEventConsumer {
         int requested = root.has("requestedQty") ? root.get("requestedQty").asInt() : 0;
         log.warn("StockInsufficientEvent orderId={} productId={} available={} requested={}", orderId, productId, available, requested);
 
+        // Saga orders are driven by the orchestrator; only legacy orders fall through below.
+        if (sagaRepository.findByOrderId(orderId).isPresent()) {
+            orchestrator.onStockInsufficient(orderId,
+                    "Insufficient stock for product " + productId + " (available=" + available + ", requested=" + requested + ")");
+            return;
+        }
+
         orderRepository.findById(orderId).ifPresentOrElse(order -> {
             if (order.getStatus() == OrderStatus.CANCELLED || order.getStatus() == OrderStatus.DELIVERED) {
                 return;
@@ -69,6 +80,13 @@ public class InventoryEventConsumer {
 
     private void handleStockReserved(UUID orderId, String userId) {
         log.info("StockReservedEvent orderId={}, stock reserved", orderId);
+
+        // Saga orders advance to the payment step via the orchestrator; legacy orders stay PENDING.
+        if (sagaRepository.findByOrderId(orderId).isPresent()) {
+            orchestrator.onStockReserved(orderId);
+            return;
+        }
+
         orderRepository.findById(orderId).ifPresentOrElse(order -> {
             if (order.getStatus() != OrderStatus.PENDING) {
                 log.info("Order {} is already {}; stock reservation does not change status", orderId, order.getStatus());

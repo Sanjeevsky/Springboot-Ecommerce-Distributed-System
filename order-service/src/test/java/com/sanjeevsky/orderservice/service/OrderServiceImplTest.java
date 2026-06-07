@@ -57,6 +57,8 @@ class OrderServiceImplTest {
     @Mock CouponFeignClient couponFeignClient;
     @Mock InventoryFeignClient inventoryFeignClient;
     @Mock OrderEventPublisher eventPublisher;
+    @Mock com.sanjeevsky.orderservice.repository.SagaInstanceRepository sagaRepository;
+    @Mock com.sanjeevsky.orderservice.service.OrderSagaOrchestrator sagaOrchestrator;
 
     @InjectMocks OrderServiceImpl orderService;
 

@@ -6,6 +6,13 @@ A production-grade ecommerce platform built as a microservices architecture usin
 
 ---
 
+## Documentation
+
+- **[End-to-End Workflow](docs/WORKFLOW.md)** — how a request travels the system, service by service and method by method (login → browse → cart → checkout → fulfillment).
+- **[Checkout Saga](docs/SAGA.md)** — the orchestration-based saga for distributed checkout: state machine, compensation, and a live run transcript.
+
+---
+
 ## Architecture
 
 [Live Architecture Diagram](https://sanjeevsky.github.io/Springboot-Ecommerce-Distributed-System/architecture.html)
@@ -50,10 +57,16 @@ order-service    ──► order-events ──► inventory-service
                                   ──► notification-service
                                   ──► review-service
 
+order-service    ──► payment-commands ──► payment-service          (saga charge/refund)
+
 payment-service  ──► payment-events ──► notification-service
+                                    ──► order-service              (saga reply)
 
 inventory-service ─► inventory-events ─► order-service
 ```
+
+The distributed checkout is coordinated by an orchestration-based **[saga](docs/SAGA.md)**
+(`reserve stock → charge payment → confirm order`, with compensation on failure).
 
 Kafka consumers retry failed records twice with a 1 second backoff, then publish the original record to a dead-letter topic:
 
