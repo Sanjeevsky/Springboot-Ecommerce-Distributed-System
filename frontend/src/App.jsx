@@ -13,6 +13,7 @@ import Product from "./pages/Product.jsx";
 import Checkout from "./pages/Checkout.jsx";
 import OrderConfirmation from "./pages/OrderConfirmation.jsx";
 import Login from "./pages/Login.jsx";
+import Signup from "./pages/Signup.jsx";
 
 import AccountLayout from "./pages/account/AccountLayout.jsx";
 import Orders from "./pages/account/Orders.jsx";
@@ -64,6 +65,7 @@ export default function App() {
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/order/:orderId" element={<OrderConfirmation />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
 
         <Route path="/account" element={<AccountLayout />}>
           <Route path="orders" element={<Orders />} />
