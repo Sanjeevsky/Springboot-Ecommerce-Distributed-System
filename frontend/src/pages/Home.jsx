@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, ShieldCheck, RotateCcw, BadgeCheck,
-  Smartphone, Lamp, Shirt, Headphones, Tent, Gamepad2, Sparkles, Baby } from "lucide-react";
+  Smartphone, Laptop, Headphones, Watch, Footprints, Shirt,
+  Lamp, UtensilsCrossed, Dumbbell, Sparkles, Zap, ShoppingBag,
+  Tent, Gamepad2, Baby } from "lucide-react";
 import { Button } from "../components/index.js";
 import { NavCard } from "../components/storefront/NavCard.jsx";
 import { useStore } from "../store/StoreContext.jsx";
 import { catalog } from "../lib/services.js";
 
-const CAT_ICONS = { Smartphone, Lamp, Shirt, Headphones, Tent, Gamepad2, Sparkles, Baby };
+const CAT_ICONS = {
+  Smartphone, Laptop, Headphones, Watch, Footprints, Shirt,
+  Lamp, UtensilsCrossed, Dumbbell, Sparkles, Zap, ShoppingBag,
+  Tent, Gamepad2, Baby,
+};
 
 function SectionHead({ eyebrow, title, to, action }) {
   return (
@@ -68,7 +74,7 @@ export default function Home() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
 
-  useEffect(() => { catalog.list().then(setProducts); }, []);
+  useEffect(() => { catalog.list({ size: 50 }).then(setProducts); }, []);
   useEffect(() => { catalog.categories().then(setCategories); }, []);
 
   const withHandlers = (p) => ({ ...p, wished: !!wishlist[p.id], onWish: () => toggleWish(p.id), onAdd: () => addToCart(p) });

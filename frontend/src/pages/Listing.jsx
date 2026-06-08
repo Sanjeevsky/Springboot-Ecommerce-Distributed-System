@@ -29,12 +29,14 @@ export default function Listing() {
 
   useEffect(() => {
     if (q != null) catalog.search(q).then(setAll);
-    else catalog.list().then(setAll);
+    else catalog.list({ size: 50 }).then(setAll);
   }, [q, categoryId]);
   useEffect(() => { catalog.categories().then(setCategories); }, []);
 
   const cat = categories.find((c) => c.id === categoryId);
-  const title = q != null ? `Results for "${q}"` : cat ? cat.label : "All products";
+  // Also derive title from first product's catLabel when category nav hasn't loaded yet
+  const catLabelFallback = all.length > 0 ? all[0]?.catLabel : "";
+  const title = q != null ? `Results for "${q}"` : cat ? cat.label : catLabelFallback || "All products";
 
   const PRICE_MAP = { "Under $50": [0, 50], "$50–$150": [50, 150], "$150–$400": [150, 400], "$400+": [400, Infinity] };
   const togglePriceRange = (r) => setPriceRanges((s) => s.includes(r) ? s.filter((x) => x !== r) : [...s, r]);

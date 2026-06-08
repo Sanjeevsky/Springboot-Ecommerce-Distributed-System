@@ -48,8 +48,11 @@ function normalizeProduct(p) {
     price,
     compareAt: hasDiscount ? mrp : undefined,
     cat: typeof p.category === "object"
-      ? (p.category?.categoryName ?? "general")
+      ? (p.category?.id ?? p.category?.categoryName ?? "general")
       : (p.category || p.cat || "general"),
+    catLabel: typeof p.category === "object"
+      ? (p.category?.categoryName ?? "")
+      : "",
     image: isPlaceholder(rawImg) ? nextImg() : rawImg,
     rating: p.rating ?? 4.3,
     reviews: p.reviews ?? 0,
@@ -71,15 +74,20 @@ function normalizeProducts(raw) {
 // ── Category icon guesser ─────────────────────────────────────────────────────
 function guessIcon(name = "") {
   const n = name.toLowerCase();
-  if (n.match(/phone|mobile|electr|device|gadget/)) return "Smartphone";
-  if (n.match(/home|furnit|lamp|decor|living/)) return "Lamp";
-  if (n.match(/fashion|cloth|wear|apparel/)) return "Shirt";
-  if (n.match(/audio|sound|head|speaker|music/)) return "Headphones";
-  if (n.match(/outdoor|sport|camp|trail|fitness/)) return "Tent";
+  if (n.match(/smartphone|phone|mobile/)) return "Smartphone";
+  if (n.match(/laptop|macbook|notebook|computer/)) return "Laptop";
+  if (n.match(/headphone|audio|speaker|earphone|earbuds/)) return "Headphones";
+  if (n.match(/watch|wearable/)) return "Watch";
+  if (n.match(/sneaker|shoe|footwear|running/)) return "Footprints";
+  if (n.match(/cloth|wear|apparel|fashion|jeans|shirt/)) return "Shirt";
+  if (n.match(/furni|sofa|chair|table|shelf|home/)) return "Lamp";
+  if (n.match(/kitchen|cook|air fry|blender|appliance/)) return "UtensilsCrossed";
+  if (n.match(/fitness|gym|sport|yoga|dumbbell|cycling/)) return "Dumbbell";
+  if (n.match(/skin|beauty|serum|cosmet|fragrance|health/)) return "Sparkles";
+  if (n.match(/electr|device|gadget/)) return "Zap";
   if (n.match(/game|gaming|console/)) return "Gamepad2";
-  if (n.match(/beauty|cosmet|skincare|health/)) return "Sparkles";
-  if (n.match(/kid|baby|toy|child/)) return "Baby";
-  return "Smartphone";
+  if (n.match(/outdoor|camp|trail/)) return "Tent";
+  return "ShoppingBag";
 }
 
 // ── Order normalizer ──────────────────────────────────────────────────────────
