@@ -6,6 +6,7 @@ This document describes every significant workflow in the Trove system — the s
 
 ## Table of Contents
 
+1. [Correlation ID — Cross-Service Stitching](#0-correlation-id--cross-service-stitching)
 1. [Authentication](#1-authentication)
 2. [Catalog & Search](#2-catalog--search)
 3. [Cart Management](#3-cart-management)
@@ -19,6 +20,116 @@ This document describes every significant workflow in the Trove system — the s
 11. [Review Submission](#11-review-submission)
 12. [Wishlist & Move-to-Cart](#12-wishlist--move-to-cart)
 13. [Error Recovery Paths](#13-error-recovery-paths)
+
+---
+
+## 0. Correlation ID — Cross-Service Stitching
+
+Every request that enters the system gets a `correlationId` that travels through every log line, every Feign call, and every Kafka message belonging to that logical operation.
+
+### HTTP path (synchronous)
+
+```
+Client
+  │ GET /catalog-service/product/list
+  │ (no X-Correlation-ID header)
+  ▼
+api-gateway — CorrelationIdGatewayFilter  (WebFilter, Ordered.HIGHEST_PRECEDENCE)
+  │  Detect: X-Correlation-ID absent
+  │  Generate: UUID "355b4f6c-..."
+  │  Mutate request: add X-Correlation-ID: 355b4f6c-...
+  │  Mutate response: add X-Correlation-ID: 355b4f6c-...
+  │
+  ▼ (downstream request now carries X-Correlation-ID)
+api-gateway — AuthenticationFilter
+  │  JWT validation, inject X-User: user@example.com
+  │
+  ▼
+catalog-service — MdcFilter  (OncePerRequestFilter, runs first)
+  │  Read X-Correlation-ID: "355b4f6c-..."  →  MDC.put("correlationId", "355b4f6c-...")
+  │  Read X-User: "user@example.com"         →  MDC.put("userId", "user@example.com")
+  │
+  │  [every log line in this thread now includes correlationId + userId]
+  │
+  │  ProductCatalogController.listProducts()
+  │    LOG: {"message":"List products","correlationId":"355b4f6c-...","userId":"user@example.com","traceId":"..."}
+  │
+  │  [response complete]
+  │  MDC.remove("correlationId")
+  │  MDC.remove("userId")
+  │
+Response → client: X-Correlation-ID: 355b4f6c-...
+```
+
+If the client provides its own `X-Correlation-ID`, the gateway forwards it unchanged.
+
+### Feign propagation (service-to-service)
+
+```
+order-service (handling POST /order)
+  │  MDC: correlationId="355b4f6c-..."
+  │
+  │  CartFeignClient.getCheckoutSnapshot()
+  │    → CorrelationIdFeignInterceptor runs before the request:
+  │       template.header("X-Correlation-ID", MDC.get("correlationId"))
+  │       template.header("X-User",           MDC.get("userId"))
+  │
+  ▼
+shopping-cart-service
+  │  MdcFilter reads X-Correlation-ID from Feign request
+  │  MDC: correlationId="355b4f6c-..."  (same ID as the originating request)
+  │
+  │  [log lines in cart-service share the same correlationId]
+```
+
+### Kafka propagation (async event flows)
+
+```
+order-service (same request, correlationId still in MDC)
+  │
+  │  kafkaTemplate.send("order-events", StockReservationRequestedEvent)
+  │    → KafkaMdcProducerInterceptor.onSend():
+  │         record.headers().add("X-Correlation-ID", "355b4f6c-...")
+  │         record.headers().add("X-User",           "user@example.com")
+  │
+  ▼  [async, different thread, possibly different container restart]
+inventory-service — @KafkaListener
+  │
+  │  KafkaMdcConsumerInterceptor.intercept(record):
+  │    MDC.put("correlationId", header("X-Correlation-ID"))  →  "355b4f6c-..."
+  │    MDC.put("userId",        header("X-User"))            →  "user@example.com"
+  │
+  │  InventoryService.reserveStock()
+  │    LOG: {"message":"Stock reserved","correlationId":"355b4f6c-...","traceId":"..."}
+  │
+  │  KafkaMdcConsumerInterceptor.success():
+  │    MDC.remove("correlationId")
+  │    MDC.remove("userId")
+```
+
+**Result:** The log line in inventory-service (async consumer) shares the same `correlationId` as the log line in order-service (HTTP handler). A `grep correlationId=355b4f6c` in any log aggregator returns the complete trace of the operation across all services.
+
+### Log format
+
+All services output JSON lines. Example:
+
+```json
+{
+  "@timestamp": "2026-06-08T18:38:23.618Z",
+  "level": "INFO",
+  "logger": "c.s.c.controller.ProductCatalogController",
+  "message": "List products request - page=0, size=20",
+  "service": "catalog-service",
+  "traceId": "2d963372bc91db2c",
+  "spanId": "020ca600851d99ec",
+  "correlationId": "355b4f6c-d162-42dd-8e66-e80a038a268b",
+  "userId": "user@example.com"
+}
+```
+
+`traceId`/`spanId` — Spring Cloud Sleuth (distributed tracing, Zipkin-exportable)  
+`correlationId` — business-level request ID (survives async hops, visible to API clients)  
+`userId` — authenticated user from the gateway `X-User` header
 
 ---
 

@@ -309,7 +309,62 @@ If payment fails after stock has been reserved, the saga publishes `OrderCancell
 
 ## Observability
 
-### Distributed Tracing
+### Structured JSON Logging
+
+Every service outputs JSON lines via `logstash-logback-encoder 7.2`. The format is configured in `platform-commons/src/main/resources/logback-spring.xml` — picked up automatically by all services that have platform-commons on the classpath.
+
+Each log line is a single JSON object:
+
+```json
+{
+  "@timestamp": "2026-06-08T18:38:23.618Z",
+  "level": "INFO",
+  "logger": "com.sanjeevsky.catalogservice.controller.ProductCatalogController",
+  "thread": "http-nio-8084-exec-10",
+  "message": "List products request - page=0, size=20",
+  "service": "catalog-service",
+  "traceId": "2d963372bc91db2c",
+  "spanId": "020ca600851d99ec",
+  "correlationId": "validate-mdc-001",
+  "userId": "user@example.com"
+}
+```
+
+`traceId` and `spanId` come from Spring Cloud Sleuth. `correlationId` and `userId` come from the MDC filter (see below). Stack traces are included as a `stack_trace` string field (root cause first).
+
+### Distributed MDC — Correlation ID Propagation
+
+Every request and every async event carries a `correlationId` that links all log lines from the same logical operation across services.
+
+**Components** (all in `platform-commons`, auto-configured via `spring.factories`):
+
+| Component | Type | What it does |
+|-----------|------|--------------|
+| `CorrelationIdGatewayFilter` | `WebFilter` (api-gateway only) | Generates `X-Correlation-ID` UUID if absent; echoes it in the response header |
+| `MdcFilter` | `OncePerRequestFilter` (servlet services) | Reads `X-Correlation-ID` and `X-User` headers; puts `correlationId`/`userId` in MDC for the request lifetime |
+| `CorrelationIdFeignInterceptor` | `RequestInterceptor` | Copies `correlationId`/`userId` from MDC into outgoing Feign `X-Correlation-ID`/`X-User` headers |
+| `KafkaMdcProducerInterceptor` | `ProducerInterceptor` | Injects `correlationId`/`userId` as Kafka message headers on every published record |
+| `KafkaMdcConsumerInterceptor` | `RecordInterceptor` | Extracts those Kafka headers into MDC before `@KafkaListener` executes; clears on `success`/`failure` |
+
+**Auto-configuration** (`MdcLoggingAutoConfiguration`):
+- Nested `@Configuration` classes with class-level `@ConditionalOnClass` — only activated on services that have the required dependency (servlet, Feign, Kafka).
+- `KafkaMdcConsumerInterceptor` is auto-detected by Spring Kafka 2.7.x's `ConcurrentKafkaListenerContainerFactory`.
+- `KafkaMdcProducerInterceptor` is wired into `DefaultKafkaProducerFactory` via a static `BeanPostProcessor`.
+
+**Why Kafka headers?** Sleuth propagates its own B3 trace headers through Kafka automatically. The Kafka MDC components carry `correlationId` (the business-level request ID) and `userId` through async event flows so log lines from an async consumer can be stitched to the HTTP request that originated the event.
+
+**Key files:**
+- `platform-commons/.../mdc/MdcConstants.java` — header and MDC key names
+- `platform-commons/.../mdc/MdcFilter.java` — servlet MDC setup
+- `platform-commons/.../mdc/CorrelationIdFeignInterceptor.java` — Feign propagation
+- `platform-commons/.../mdc/KafkaMdcProducerInterceptor.java` — Kafka producer headers
+- `platform-commons/.../mdc/KafkaMdcConsumerInterceptor.java` — Kafka consumer MDC
+- `platform-commons/.../mdc/MdcLoggingAutoConfiguration.java` — Spring Boot auto-configuration
+- `platform-commons/src/main/resources/META-INF/spring.factories` — auto-config registration
+- `platform-commons/src/main/resources/logback-spring.xml` — JSON log format
+- `api-gateway/.../filter/CorrelationIdGatewayFilter.java` — gateway correlation ID generation
+
+### Distributed Tracing (Sleuth + Zipkin)
 
 Spring Cloud Sleuth propagates `X-B3-TraceId` and `X-B3-SpanId` headers across all service-to-service calls (Feign and Kafka). Trace data is exported to Zipkin on port 9411.
 
