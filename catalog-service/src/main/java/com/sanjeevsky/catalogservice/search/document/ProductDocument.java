@@ -4,7 +4,7 @@ import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.elasticsearch.annotations.*;
 
-@Document(indexName = "products")
+@Document(indexName = "products", createIndex = false)
 @Setting(shards = 1, replicas = 0)
 @Getter
 @Setter

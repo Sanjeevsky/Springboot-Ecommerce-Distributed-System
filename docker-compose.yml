@@ -736,14 +736,10 @@ services:
     restart: "no"
     environment:
       - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
-    command: >
-      sh -c "
-        curl -sf http://kafka-connect:8083/connectors/catalog-mysql-connector > /dev/null 2>&1
-        && echo 'Connector already registered'
-        || curl -sf -X POST http://kafka-connect:8083/connectors
-           -H 'Content-Type: application/json'
-           -d '{\"name\":\"catalog-mysql-connector\",\"config\":{\"connector.class\":\"io.debezium.connector.mysql.MySqlConnector\",\"database.hostname\":\"mysql\",\"database.port\":\"3306\",\"database.user\":\"root\",\"database.password\":\"'$$MYSQL_PASSWORD'\",\"database.server.id\":\"184054\",\"topic.prefix\":\"catalog\",\"database.include.list\":\"product-catalog-db\",\"table.include.list\":\"product-catalog-db.product\",\"schema.history.internal.kafka.bootstrap.servers\":\"kafka:29092\",\"schema.history.internal.kafka.topic\":\"schema-changes.catalog\",\"include.schema.changes\":\"false\",\"snapshot.mode\":\"schema_only\",\"key.converter\":\"org.apache.kafka.connect.json.JsonConverter\",\"value.converter\":\"org.apache.kafka.connect.json.JsonConverter\",\"key.converter.schemas.enabled\":\"false\",\"value.converter.schemas.enabled\":\"false\"}}'
-      "
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        curl -sf http://kafka-connect:8083/connectors/catalog-mysql-connector > /dev/null 2>&1 && echo "Connector already registered" || curl -sf -X POST http://kafka-connect:8083/connectors -H "Content-Type: application/json" -d "{\"name\":\"catalog-mysql-connector\",\"config\":{\"connector.class\":\"io.debezium.connector.mysql.MySqlConnector\",\"database.hostname\":\"mysql\",\"database.port\":\"3306\",\"database.user\":\"root\",\"database.password\":\"$$MYSQL_PASSWORD\",\"database.server.id\":\"184054\",\"topic.prefix\":\"catalog\",\"database.include.list\":\"product-catalog-db\",\"table.include.list\":\"product-catalog-db.product\",\"schema.history.internal.kafka.bootstrap.servers\":\"kafka:29092\",\"schema.history.internal.kafka.topic\":\"schema-changes.catalog\",\"include.schema.changes\":\"false\",\"snapshot.mode\":\"schema_only\",\"key.converter\":\"org.apache.kafka.connect.json.JsonConverter\",\"value.converter\":\"org.apache.kafka.connect.json.JsonConverter\",\"key.converter.schemas.enabled\":\"false\",\"value.converter.schemas.enabled\":\"false\"}}"
     networks:
       - ecommerce-network
 
