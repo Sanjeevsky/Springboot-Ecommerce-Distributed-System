@@ -47,6 +47,8 @@ const SHIPPING_OPTIONS = [
   { id: "next",     label: "Next day",  sub: "Order by 2pm",      price: 18 },
 ];
 
+const EMPTY_ADDR = { name: "", phone: "", home: "", streetLocality: "", landmark: "", city: "", state: "", zipCode: "", country: "India" };
+
 export default function Checkout() {
   const navigate = useNavigate();
   const { cart, cartSubtotal, clearCart } = useStore();
@@ -56,10 +58,19 @@ export default function Checkout() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [addresses, setAddresses] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
   const [placeError, setPlaceError] = useState("");
 
+  // Inline address form state (shown when no saved addresses)
+  const [addrForm, setAddrForm] = useState(EMPTY_ADDR);
+  const [savingAddr, setSavingAddr] = useState(false);
+  const [addrError, setAddrError] = useState("");
+
   useEffect(() => {
-    customer.addresses().then(setAddresses).catch(() => {});
+    customer.addresses().then((list) => {
+      setAddresses(list);
+      if (list.length > 0) setSelectedId(list[0].id);
+    }).catch(() => {});
   }, []);
 
   const shippingCost = SHIPPING_OPTIONS.find((o) => o.id === ship)?.price ?? 0;
@@ -74,15 +85,40 @@ export default function Checkout() {
     setCouponLoading(false);
   };
 
+  const set = (k) => (e) => setAddrForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const saveAddress = async (e) => {
+    e.preventDefault();
+    setAddrError("");
+    if (!addrForm.home || !addrForm.streetLocality || !addrForm.city || !addrForm.state || !addrForm.zipCode) {
+      setAddrError("Please fill in all required fields.");
+      return;
+    }
+    if (String(addrForm.zipCode).length < 4) {
+      setAddrError("Please enter a valid ZIP / PIN code.");
+      return;
+    }
+    setSavingAddr(true);
+    try {
+      await customer.addAddress({ ...addrForm, zipCode: Number(addrForm.zipCode) });
+      const updated = await customer.addresses();
+      setAddresses(updated);
+      if (updated.length > 0) setSelectedId(updated[0].id);
+    } catch (err) {
+      setAddrError(err.message || "Failed to save address.");
+    } finally {
+      setSavingAddr(false);
+    }
+  };
+
   const placeOrder = async () => {
     setPlacing(true);
     setPlaceError("");
     try {
-      // Ensure backend cart matches localStorage cart before placing
       await cartApi.clear().catch(() => {});
       await Promise.all(cart.map((it) => cartApi.add(it.id, it.qty)));
-      const addressId = addresses[0]?.id;
-      if (!addressId) throw new Error("No saved address found. Please add an address first.");
+      const addressId = selectedId || addresses[0]?.id;
+      if (!addressId) throw new Error("Please add a shipping address before placing your order.");
       const order = await ordersApi.place({
         addressId,
         couponCode: couponResult?.valid ? couponResult.code : undefined,
@@ -115,29 +151,68 @@ export default function Checkout() {
           {/* step 2 — shipping */}
           <Step n="2" title="Shipping address" active>
             {addresses.length > 0 ? (
-              <div style={{ padding: "14px 16px", border: "1.5px solid var(--primary-border)", borderRadius: "var(--radius-md)", background: "var(--primary-subtle)", fontSize: 14, color: "var(--text)", lineHeight: 1.6 }}>
-                <div style={{ fontWeight: 700 }}>{addresses[0].name || addresses[0].label}</div>
-                <div style={{ color: "var(--text-secondary)" }}>
-                  {addresses[0].line1}{addresses[0].line2 ? `, ${addresses[0].line2}` : ""}<br />
-                  {addresses[0].city}, {addresses[0].state} {addresses[0].zip}
-                  {addresses[0].phone && <><br />{addresses[0].phone}</>}
-                </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {addresses.map((a) => (
+                  <button key={a.id} type="button" onClick={() => setSelectedId(a.id)}
+                    style={{ display: "flex", gap: 12, padding: "14px 16px", borderRadius: "var(--radius-md)", border: `1.5px solid ${selectedId === a.id ? "var(--primary)" : "var(--border-strong)"}`, background: selectedId === a.id ? "var(--primary-subtle)" : "var(--surface)", cursor: "pointer", textAlign: "left", width: "100%" }}>
+                    <span style={{ width: 18, height: 18, borderRadius: 999, border: `2px solid ${selectedId === a.id ? "var(--primary)" : "var(--border-strong)"}`, flex: "none", marginTop: 2, display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                      {selectedId === a.id && <span style={{ width: 8, height: 8, borderRadius: 999, background: "var(--primary)" }} />}
+                    </span>
+                    <div style={{ fontSize: 14, color: "var(--text)", lineHeight: 1.6 }}>
+                      <div style={{ fontWeight: 700 }}>{a.name || a.label}</div>
+                      <div style={{ color: "var(--text-secondary)" }}>
+                        {a.line1}{a.line2 ? `, ${a.line2}` : ""}<br />
+                        {a.city}, {a.state} {a.zip}
+                        {a.phone && <><br />{a.phone}</>}
+                      </div>
+                    </div>
+                  </button>
+                ))}
               </div>
             ) : (
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                <Field label="Full name" half><Input placeholder="Full name" /></Field>
-                <Field label="Phone" half><Input placeholder="Phone" /></Field>
-                <Field label="Address"><Input placeholder="Street address" /></Field>
-                <Field label="City" half><Input placeholder="City" /></Field>
-                <Field label="ZIP" half><Input placeholder="ZIP" /></Field>
-                <Field label="Country">
-                  <Select defaultValue="in">
-                    <option value="in">India</option>
-                    <option value="us">United States</option>
-                    <option value="uk">United Kingdom</option>
-                  </Select>
-                </Field>
-              </div>
+              <form onSubmit={saveAddress} style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                  <Field label="Full name" half>
+                    <Input value={addrForm.name} onChange={set("name")} placeholder="Aisha Patel" />
+                  </Field>
+                  <Field label="Phone" half>
+                    <Input value={addrForm.phone} onChange={set("phone")} placeholder="+91 98765 43210" />
+                  </Field>
+                  <Field label="Flat / House no." half>
+                    <Input value={addrForm.home} onChange={set("home")} placeholder="Flat 4B, Tower C" required />
+                  </Field>
+                  <Field label="Landmark" half>
+                    <Input value={addrForm.landmark} onChange={set("landmark")} placeholder="Near Metro Station" />
+                  </Field>
+                  <Field label="Street / Locality">
+                    <Input value={addrForm.streetLocality} onChange={set("streetLocality")} placeholder="MG Road, Koramangala" required />
+                  </Field>
+                  <Field label="City" half>
+                    <Input value={addrForm.city} onChange={set("city")} placeholder="Bangalore" required />
+                  </Field>
+                  <Field label="State" half>
+                    <Input value={addrForm.state} onChange={set("state")} placeholder="Karnataka" required />
+                  </Field>
+                  <Field label="ZIP / PIN code" half>
+                    <Input value={addrForm.zipCode} onChange={set("zipCode")} placeholder="560001" required />
+                  </Field>
+                  <Field label="Country" half>
+                    <Select value={addrForm.country} onChange={set("country")}>
+                      <option value="India">India</option>
+                      <option value="United States">United States</option>
+                      <option value="United Kingdom">United Kingdom</option>
+                    </Select>
+                  </Field>
+                </div>
+                {addrError && (
+                  <div style={{ marginTop: 12, fontSize: 13, color: "var(--danger)", background: "var(--danger-subtle)", padding: "8px 12px", borderRadius: "var(--radius-md)" }}>
+                    {addrError}
+                  </div>
+                )}
+                <div style={{ marginTop: 16 }}>
+                  <Button type="submit" variant="primary" loading={savingAddr}>Save address & continue</Button>
+                </div>
+              </form>
             )}
 
             <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 10 }}>
