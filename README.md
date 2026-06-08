@@ -8,8 +8,14 @@ A production-grade ecommerce platform built as a microservices architecture usin
 
 ## Documentation
 
-- **[End-to-End Workflow](docs/WORKFLOW.md)** — how a request travels the system, service by service and method by method (login → browse → cart → checkout → fulfillment).
-- **[Checkout Saga](docs/SAGA.md)** — the orchestration-based saga for distributed checkout: state machine, compensation, and a live run transcript.
+| Doc | What it covers |
+|-----|---------------|
+| **[Product Overview](docs/product-overview.md)** | What Trove does — user-facing features, admin capabilities, pages, and key product properties |
+| **[Technical Implementation](docs/technical-implementation.md)** | Full stack, service-by-service design, Kafka topics, Elasticsearch, Redis, resilience patterns, observability |
+| **[Workflows](docs/workflows.md)** | Step-by-step sequence diagrams for every major flow: auth, search, cart, saga checkout, payment, CDC sync, notifications, reviews |
+| **[Checkout Saga](docs/SAGA.md)** | Orchestration-based saga deep-dive: state machine, compensation path, and a live run transcript |
+| **[Search Architecture](docs/search-architecture.md)** | Elasticsearch index, search/suggest queries, and three CDC sync paths (startup, inline, Debezium) |
+| **[End-to-End Workflow](docs/WORKFLOW.md)** | Legacy narrative walkthrough: login → browse → cart → checkout → fulfillment |
 
 ---
 
@@ -21,7 +27,7 @@ A production-grade ecommerce platform built as a microservices architecture usin
 
 | Tier | Services |
 |------|----------|
-| Infrastructure | MySQL, Redis, Kafka + Zookeeper, Kafka UI, Zipkin, Prometheus, Grafana |
+| Infrastructure | MySQL 8.0, Redis 7.2, Kafka 3.5 (KRaft), Kafka Connect (Debezium CDC), Elasticsearch 7.13, Kafka UI, Zipkin, Prometheus, Grafana |
 | Spring Cloud | Eureka (service-discovery), Config Server (cloud-config), Spring Boot Admin (spring-server), API Gateway |
 | Business | auth, catalog, customer, order, shopping-cart, payment, inventory, notification, review, wishlist, coupon |
 
@@ -37,7 +43,7 @@ A production-grade ecommerce platform built as a microservices architecture usin
 | kafka-ui | 8080 | Kafka topics, brokers, and consumer groups UI |
 | api-gateway | 8081 | JWT auth + explicit standard-prefix routing to all services |
 | auth-server | 8083 | Register / login / JWT issuance |
-| catalog-service | 8084 | Products, categories, brands (Redis cached) |
+| catalog-service | 8084 | Products, categories, brands (Redis cached); full-text search + auto-suggest (Elasticsearch); real-time index sync via Debezium CDC |
 | customer-service | 8082 | Customer profiles, address management |
 | order-service | 8092 | Order lifecycle — create / confirm / cancel |
 | shopping-cart-service | 8086 | Cart CRUD + checkout snapshot |
@@ -84,14 +90,15 @@ Kafka consumers retry failed records twice with a 1 second backoff, then publish
 - **API Gateway**: Spring Cloud Gateway + JWT authentication
 - **Service Discovery**: Netflix Eureka
 - **Config**: Spring Cloud Config Server
-- **Messaging**: Apache Kafka (Confluent CP 7.5.0)
-- **Caching**: Redis 7.2 (catalog-service)
-- **Database**: MySQL 8.0 (one DB per service)
-- **Resilience**: Resilience4j circuit breakers + Feign fallbacks
+- **Messaging**: Apache Kafka 3.5 — KRaft mode (no ZooKeeper), Confluent CP 7.5.0
+- **CDC**: Debezium MySQL Connector 2.4 via Kafka Connect
+- **Search**: Elasticsearch 7.13 — full-text search + auto-suggest + Spring Data Elasticsearch
+- **Caching**: Redis 7.2 — catalog product cache + cart session
+- **Database**: MySQL 8.0 (one schema per service, 11 total)
+- **Resilience**: Resilience4j circuit breakers + Feign fallbacks + DLT retry
 - **Tracing**: Spring Cloud Sleuth + Zipkin
 - **Metrics**: Micrometer + Prometheus + Grafana
 - **Monitoring**: Spring Boot Admin
-- **Docs**: Springfox Swagger
 
 ---
 

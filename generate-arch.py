@@ -19,7 +19,7 @@ ROOT = Path(__file__).parent
 # ── 1. DISCOVER SERVICES ─────────────────────────────────────────────────────
 
 INFRA_DIRS = {'service-discovery', 'cloud-config', 'spring-server', 'platform-commons'}
-INFRA_NAMES = {'mysql', 'redis', 'kafka', 'zookeeper'}
+INFRA_NAMES = {'mysql', 'redis', 'kafka', 'elasticsearch', 'kafka-connect'}
 
 def find_service_dirs():
     """Every immediate subdirectory with a pom.xml, minus infra and platform-commons."""
@@ -160,12 +160,15 @@ def build_graph():
         {'id':'redis',      'name':'Redis 7.2',    'port':'6379',  'type':'db',
          'tag':'Cache · Session','icon':'◩',
          'tip':'Used by catalog-service (@Cacheable) and shopping-cart-service.'},
-        {'id':'kafka',      'name':'Kafka 7.5',    'port':'9092',  'type':'mq',
-         'tag':'3 topics','icon':'◧',
-         'tip':'order-events (3p), payment-events (3p), inventory-events (3p). JSON serialization.'},
-        {'id':'zookeeper',  'name':'ZooKeeper',    'port':'2181',  'type':'mq',
-         'tag':'Kafka Coord.','icon':'◫',
-         'tip':'ZooKeeper for Kafka cluster coordination.'},
+        {'id':'kafka',      'name':'Kafka (KRaft)', 'port':'9092',  'type':'mq',
+         'tag':'5 topics','icon':'◧',
+         'tip':'KRaft mode (no ZooKeeper). Topics: order-events, payment-events, inventory-events, payment-commands, catalog.product-catalog-db.product. DLTs for all event topics.'},
+        {'id':'elasticsearch','name':'Elasticsearch','port':'9200','type':'db',
+         'tag':'Search Index','icon':'◩',
+         'tip':'Elasticsearch 7.13 (opensearch container). products index: 1 shard, 0 replicas. Full-text search + match_phrase_prefix suggestions. Synced via startup bulk load, inline write, and Debezium CDC.'},
+        {'id':'kafka-connect','name':'Kafka Connect','port':'8093', 'type':'mq',
+         'tag':'Debezium CDC','icon':'◧',
+         'tip':'Debezium MySQL Connector 2.4. Streams MySQL binlog (ROW format) to catalog.product-catalog-db.product Kafka topic. Snapshot mode: schema_only.'},
         # Observability stack — always-on
         {'id':'zipkin',     'name':'Zipkin',       'port':'9411',  'type':'obs',
          'tag':'Distributed Traces','icon':'◈',
@@ -199,6 +202,7 @@ def build_graph():
         uses_kafka = bool(kafka_pub or kafka_sub)
         uses_redis = 'redis' in str(props)
         uses_mysql = 'datasource' in str(props)
+        uses_es    = 'elasticsearch' in str(props)
 
         tip_parts = []
         if feign_clients:
@@ -213,6 +217,7 @@ def build_graph():
         if kafka_pub:     tag_parts.append('Kafka pub')
         if kafka_sub:     tag_parts.append('Kafka sub')
         if uses_redis:    tag_parts.append('Redis')
+        if uses_es:       tag_parts.append('ES')
         if not tag_parts: tag_parts.append(stype.capitalize())
 
         services[app_name] = {
@@ -228,6 +233,7 @@ def build_graph():
             'sub':   sorted(kafka_sub),
             'mysql': uses_mysql,
             'redis': uses_redis,
+            'es':    uses_es,
         }
 
     # Build connection list
@@ -257,10 +263,16 @@ def build_graph():
             connections.append({'from': sname, 'to': 'mysql', 'type': 'db'})
         if svc.get('redis'):
             connections.append({'from': sname, 'to': 'redis', 'type': 'db'})
+        if svc.get('es'):
+            connections.append({'from': sname, 'to': 'elasticsearch', 'type': 'db'})
 
     # Static observability connections
-    connections.append({'from': 'grafana',  'to': 'prometheus', 'type': 'obs'})
-    connections.append({'from': 'kafka-ui', 'to': 'kafka',      'type': 'obs'})
+    connections.append({'from': 'grafana',      'to': 'prometheus',   'type': 'obs'})
+    connections.append({'from': 'kafka-ui',     'to': 'kafka',        'type': 'obs'})
+    # CDC pipeline: MySQL binlog → kafka-connect → kafka topic → catalog-service
+    connections.append({'from': 'mysql',        'to': 'kafka-connect','type': 'db'})
+    connections.append({'from': 'kafka-connect','to': 'kafka',        'type': 'kafka-pub',
+                         'topics': ['catalog.product-catalog-db.product']})
 
     return services, connections
 
@@ -312,17 +324,18 @@ def compute_layout(services):
     for i, name in enumerate(clouds):
         positions[name] = (80, 270 + i * 90)
 
-    # DB — MySQL, Redis (left half of infra row)
+    # DB — MySQL, Redis, Elasticsearch (left/center of infra row)
     dbs = sorted(buckets['db'])
-    db_xs = [290, 470]
+    db_xs = [200, 380, 560]
     for i, name in enumerate(dbs):
-        positions[name] = (db_xs[i] if i < len(db_xs) else 290 + i*180, 570)
+        positions[name] = (db_xs[i] if i < len(db_xs) else 200 + i*180, 570)
 
-    # MQ — Kafka, ZooKeeper (right half of infra row)
-    mqs = sorted(buckets['mq'])
-    mq_xs = [660, 840]
+    # MQ — Kafka, Kafka Connect (right half of infra row)
+    mq_order = ['kafka', 'kafka-connect']
+    mqs = mq_order + [n for n in sorted(buckets['mq']) if n not in mq_order]
+    mq_xs = [760, 960]
     for i, name in enumerate(mqs):
-        positions[name] = (mq_xs[i] if i < len(mq_xs) else 660 + i*180, 570)
+        positions[name] = (mq_xs[i] if i < len(mq_xs) else 760 + i*200, 570)
 
     # Observability row — Zipkin, Prometheus, Grafana, Kafka UI
     obs_order = ['zipkin', 'prometheus', 'grafana', 'kafka-ui']
