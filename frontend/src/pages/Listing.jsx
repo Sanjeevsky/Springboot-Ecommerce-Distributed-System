@@ -28,8 +28,13 @@ export default function Listing() {
   const [minRating, setMinRating] = useState(0);
 
   useEffect(() => {
-    if (q != null) catalog.search(q).then(setAll);
-    else catalog.list({ size: 50 }).then(setAll);
+    if (q != null) {
+      catalog.search({ q, size: 50 }).then(setAll);
+    } else if (categoryId && categoryId !== "all") {
+      catalog.search({ categoryId, size: 50 }).then(setAll);
+    } else {
+      catalog.list({ size: 50 }).then(setAll);
+    }
   }, [q, categoryId]);
   useEffect(() => { catalog.categories().then(setCategories); }, []);
 
@@ -43,7 +48,6 @@ export default function Listing() {
   const toggleBrand = (b) => setSelectedBrands((s) => s.includes(b) ? s.filter((x) => x !== b) : [...s, b]);
 
   let list = all.slice();
-  if (categoryId && categoryId !== "all" && !q) list = list.filter((p) => p.cat === categoryId);
   if (onlyFree) list = list.filter((p) => p.freeShipping);
   if (priceRanges.length > 0) list = list.filter((p) => priceRanges.some((r) => { const [lo, hi] = PRICE_MAP[r]; return p.price >= lo && p.price < hi; }));
   if (selectedBrands.length > 0) list = list.filter((p) => selectedBrands.includes(p.brand));

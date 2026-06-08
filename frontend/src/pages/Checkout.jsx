@@ -80,7 +80,7 @@ export default function Checkout() {
 
   const applyCode = async () => {
     setCouponLoading(true);
-    const res = await coupons.validate(couponCode);
+    const res = await coupons.validate(couponCode, cartSubtotal);
     setCouponResult(res);
     setCouponLoading(false);
   };

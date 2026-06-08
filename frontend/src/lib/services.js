@@ -196,13 +196,19 @@ export const catalog = {
       return normalizeProduct(unwrap(res));
     }, mock.products.find((p) => p.id === id) || mock.products[0]),
 
-  search: (q) =>
-    withFallback(async () => {
-      const res = await api.get(`/catalog-service/product/search?q=${encodeURIComponent(q)}`);
+  search: ({ q = "", categoryId, brandId, size = 50, page = 0 } = {}) => {
+    const params = new URLSearchParams({ size, page });
+    if (q) params.set("q", q);
+    if (categoryId) params.set("categoryId", categoryId);
+    if (brandId) params.set("brandId", brandId);
+    return withFallback(async () => {
+      const res = await api.get(`/catalog-service/product/search?${params}`);
       return normalizeProducts(unwrap(res));
     }, mock.products.filter((p) =>
-      (p.title + p.brand).toLowerCase().includes((q || "").toLowerCase())
-    )),
+      (!q || (p.title + p.brand).toLowerCase().includes(q.toLowerCase())) &&
+      (!categoryId || p.cat === categoryId)
+    ));
+  },
 
   categories: () =>
     withFallback(async () => {
@@ -239,7 +245,7 @@ export const cart = {
   get: () =>
     withFallback(async () => {
       const res = await api.get("/cart-service/cart");
-      return res ?? { items: [] };
+      return unwrap(res) ?? { items: [] };
     }, { items: [] }),
 
   // Backend expects { productId, qty } — NOT { productId, quantity }

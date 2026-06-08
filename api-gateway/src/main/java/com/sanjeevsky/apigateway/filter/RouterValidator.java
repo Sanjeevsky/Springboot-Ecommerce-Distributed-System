@@ -17,8 +17,7 @@ public class RouterValidator {
             path -> path.startsWith("/catalog-service/product/getProduct/"),
             path -> path.equals("/catalog-service/getCategories"),
             path -> path.equals("/catalog-service/getBrands"),
-            path -> path.startsWith("/review-service/review/product/"),
-            path -> path.startsWith("/review-service/review/summary/")
+            path -> path.startsWith("/review-service/review/product/")
     );
 
     public Predicate<ServerHttpRequest> isSecured =
