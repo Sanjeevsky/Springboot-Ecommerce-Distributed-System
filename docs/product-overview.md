@@ -80,6 +80,26 @@ Trove lets customers browse a product catalog, manage a cart and wishlist, place
 
 ---
 
+## Observability
+
+Every request that enters the system is assigned a `correlationId` at the API gateway. That ID travels through every downstream service call — over HTTP headers (`X-Correlation-ID`) and Kafka message headers — so all log lines for a single user action can be found by filtering on one value.
+
+Log output is structured JSON (one object per line, written to stdout). Each line includes:
+
+| Field | Source | Example |
+|-------|--------|---------|
+| `@timestamp` | logback | `2026-06-08T17:42:11.340Z` |
+| `level` | logback | `INFO` |
+| `service` | `spring.application.name` | `catalog-service` |
+| `correlationId` | MDC (set by gateway filter / Kafka consumer interceptor) | `a3f7…` |
+| `userId` | MDC (set from `X-User` header) | `user@example.com` |
+| `traceId` / `spanId` | Spring Cloud Sleuth | `4bf9…` / `6c12…` |
+| `message` | logger call | `Product search returned 12 results` |
+
+Distributed traces are captured by Zipkin (`:9411`). Metrics are scraped by Prometheus (`:9090`) and visualised in Grafana (`:3000`).
+
+---
+
 ## Supported Scale (Single-Node Dev)
 
 The Docker Compose stack runs all services on a single machine. Elasticsearch is configured with 1 shard and 0 replicas (single-node). Kafka runs in KRaft mode with a single broker. This configuration is suitable for development and integration testing; production deployment would add replicas and a dedicated Kafka cluster.

@@ -40,6 +40,9 @@ to a fulfilled order. For the distributed checkout saga in depth, see [SAGA.md](
 
 ```
 client ──► api-gateway (8081)
+             CorrelationIdGatewayFilter (highest precedence):
+               • read X-Correlation-ID header; generate UUID if absent
+               • forward X-Correlation-ID downstream; echo it in the response
              AuthenticationFilter:
                • RouterValidator → is this an open path? (/auth-service/** = yes)
                • else validate JWT (Bearer token)
@@ -49,10 +52,16 @@ client ──► api-gateway (8081)
 
 - Downstream services **trust the `X-User` header** (set by the gateway) as the authenticated
   identity — they never re-validate the JWT.
+- The `X-Correlation-ID` is placed in Slf4j MDC (`correlationId`) by `MdcFilter` in each service,
+  so every log line for a single user action carries the same ID — across HTTP hops and Kafka topics.
+  Feign calls forward it automatically via `CorrelationIdFeignInterceptor`; Kafka messages carry it
+  as a message header via `KafkaMdcProducerInterceptor`/`KafkaMdcConsumerInterceptor`.
 - All responses are wrapped in `ApiResponse<T>` (`{success, message, data}`). Feign callers unwrap
   `.data` transparently via `ApiResponseFeignDecoder`.
 
-Files: `api-gateway/.../filter/AuthenticationFilter.java`, `filter/RouterValidator.java`.
+Files: `api-gateway/.../filter/AuthenticationFilter.java`, `filter/RouterValidator.java`,
+`api-gateway/.../filter/CorrelationIdGatewayFilter.java`,
+`platform-commons/.../mdc/` (MdcFilter, CorrelationIdFeignInterceptor, KafkaMdc*Interceptor).
 
 ---
 
