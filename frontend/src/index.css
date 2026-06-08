@@ -1,0 +1,19 @@
+/* Trove frontend — global stylesheet entry.
+   Imports the design-system tokens (same files as the DS project) plus the
+   webfonts. Linked once from main.jsx. */
+
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap");
+
+@import "./styles/colors.css";
+@import "./styles/typography.css";
+@import "./styles/spacing.css";
+@import "./styles/base.css";
+
+#root { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* warm scrollbars */
+::-webkit-scrollbar { width: 11px; height: 11px; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; border: 3px solid var(--bg); }
+
+/* router link reset */
+a { color: inherit; text-decoration: none; }

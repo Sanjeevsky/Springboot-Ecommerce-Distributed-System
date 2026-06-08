@@ -58,9 +58,7 @@ public class AddressServiceImpl implements AddressService {
     @Override
     public List<Address> getAddresses(String user) {
         String normalizedUser = validateUser(user);
-        List<Address> all = repository.findAllByUser(normalizedUser);
-        if (all.isEmpty()) throw new NoAddressExistsException(NO_ADDRESS_FOUND);
-        return all;
+        return repository.findAllByUser(normalizedUser);
     }
 
     @Override

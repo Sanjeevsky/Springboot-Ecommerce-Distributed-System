@@ -1,0 +1,156 @@
+/* ============================================================
+   TROVE · COLORS
+   Warm-ink neutrals · Emerald primary · Amber "treasure" accent
+   Base palette (raw values) + semantic aliases for light & dark.
+   ============================================================ */
+
+:root {
+  /* ---- Warm neutral ramp (the "ink & paper" of Trove) ---- */
+  --ink-50:  #F7F5F1;
+  --ink-100: #EFECE6;
+  --ink-200: #E2DDD4;
+  --ink-300: #CBC4B8;
+  --ink-400: #A8A092;
+  --ink-500: #847B6D;
+  --ink-600: #635B4F;
+  --ink-700: #47413A;
+  --ink-800: #2D2925;
+  --ink-900: #1A1714;
+  --ink-950: #100E0C;
+  --paper:   #FBFAF7;
+  --white:   #FFFFFF;
+
+  /* ---- Primary · Trove Emerald ---- */
+  --emerald-50:  #E8F6EE;
+  --emerald-100: #C8EAD6;
+  --emerald-200: #92D6AE;
+  --emerald-300: #57BF85;
+  --emerald-400: #2BA468;
+  --emerald-500: #0E8C52;
+  --emerald-600: #0A7344;
+  --emerald-700: #095C38;
+  --emerald-800: #0A4A2F;
+  --emerald-900: #093C28;
+
+  /* ---- Accent · Trove Amber (treasure / deals / highlights) ---- */
+  --amber-50:  #FDF4E3;
+  --amber-100: #FAE6BE;
+  --amber-200: #F3CD82;
+  --amber-300: #ECB44A;
+  --amber-400: #E29D22;
+  --amber-500: #C9831A;
+  --amber-600: #A66913;
+  --amber-700: #855213;
+
+  /* ---- Semantic raw hues ---- */
+  --green-500:  #11854E;
+  --amberw-500: #C9831A;
+  --red-500:    #D14338;
+  --red-600:    #B5342B;
+  --blue-500:   #2D6FD0;
+  --sale-500:   #E0532B;  /* vermilion — sale price / discount badges */
+  --sale-600:   #C23F1C;
+
+  /* ============================================================
+     SEMANTIC ALIASES · LIGHT (default)
+     ============================================================ */
+  --bg:             var(--paper);
+  --bg-subtle:      #F4F1EB;
+  --surface:        var(--white);
+  --surface-2:      #F7F5F1;
+  --surface-inset:  #F0EDE6;
+  --surface-raised: var(--white);
+
+  --border:         #E6E1D8;
+  --border-strong:  #CBC4B8;
+  --border-faint:   #F0ECE4;
+
+  --text:           var(--ink-900);
+  --text-secondary: var(--ink-600);
+  --text-muted:     var(--ink-500);
+  --text-faint:     var(--ink-400);
+  --text-inverse:   var(--paper);
+
+  --primary:          var(--emerald-500);
+  --primary-hover:    var(--emerald-600);
+  --primary-active:   var(--emerald-700);
+  --primary-subtle:   var(--emerald-50);
+  --primary-subtle-2: var(--emerald-100);
+  --primary-border:   var(--emerald-200);
+  --on-primary:       #FFFFFF;
+
+  --accent:         var(--amber-400);
+  --accent-hover:   var(--amber-500);
+  --accent-subtle:  var(--amber-50);
+  --on-accent:      var(--ink-900);
+
+  --success:        var(--green-500);
+  --success-subtle: #E4F4EA;
+  --warning:        var(--amber-500);
+  --warning-subtle: #FBF0D8;
+  --danger:         var(--red-500);
+  --danger-hover:   var(--red-600);
+  --danger-subtle:  #FBE7E4;
+  --info:           var(--blue-500);
+  --info-subtle:    #E5EEFA;
+  --sale:           var(--sale-500);
+  --sale-subtle:    #FCE9E1;
+  --on-sale:        #FFFFFF;
+
+  --star:           var(--amber-400);
+  --ring:           color-mix(in srgb, var(--primary) 45%, transparent);
+  --overlay:        color-mix(in srgb, var(--ink-950) 55%, transparent);
+  --backdrop-blur:  10px;
+}
+
+/* ============================================================
+   SEMANTIC ALIASES · DARK
+   ============================================================ */
+[data-theme="dark"] {
+  --bg:             var(--ink-950);
+  --bg-subtle:      #16130F;
+  --surface:        #1A1714;
+  --surface-2:      #221E18;
+  --surface-inset:  #0C0A08;
+  --surface-raised: #221E18;
+
+  --border:         #322C25;
+  --border-strong:  #463F36;
+  --border-faint:   #26221C;
+
+  --text:           #F7F5F1;
+  --text-secondary: #BEB5A7;
+  --text-muted:     #8C8270;
+  --text-faint:     #6E665B;
+  --text-inverse:   var(--ink-900);
+
+  --primary:          var(--emerald-400);
+  --primary-hover:    var(--emerald-300);
+  --primary-active:   var(--emerald-200);
+  --primary-subtle:   #0E2A1D;
+  --primary-subtle-2: #123524;
+  --primary-border:   #1C4A33;
+  --on-primary:       #06150D;
+
+  --accent:         var(--amber-300);
+  --accent-hover:   var(--amber-200);
+  --accent-subtle:  #2A2113;
+  --on-accent:      var(--ink-950);
+
+  --success:        var(--emerald-400);
+  --success-subtle: #102A1C;
+  --warning:        var(--amber-300);
+  --warning-subtle: #2A2113;
+  --danger:         #E5685E;
+  --danger-hover:   #EE7C72;
+  --danger-subtle:  #2E1714;
+  --info:           #6AA0E8;
+  --info-subtle:    #15233A;
+  --sale:           #F0744E;
+  --sale-subtle:    #2E1810;
+  --on-sale:        #1A0B05;
+
+  --star:           var(--amber-300);
+  --ring:           color-mix(in srgb, var(--primary) 55%, transparent);
+  --overlay:        color-mix(in srgb, #000 65%, transparent);
+}

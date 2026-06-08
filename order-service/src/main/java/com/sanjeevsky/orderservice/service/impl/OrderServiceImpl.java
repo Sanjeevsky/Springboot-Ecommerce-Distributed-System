@@ -376,9 +376,12 @@ public class OrderServiceImpl implements OrderService {
                 continue;
             }
 
-            Optional<InventoryStock> matchingStock = stockEntries.stream()
-                    .filter(stock -> Objects.equals(stock.getVariantId(), item.getVariantId()))
-                    .findFirst();
+            // When variantId is null the cart has no variant; accept any stock entry for the product.
+            Optional<InventoryStock> matchingStock = item.getVariantId() != null
+                    ? stockEntries.stream()
+                            .filter(stock -> Objects.equals(stock.getVariantId(), item.getVariantId()))
+                            .findFirst()
+                    : stockEntries.stream().findFirst();
 
             int available = matchingStock.map(InventoryStock::availableQuantity).orElse(0);
             if (available < item.getQty()) {

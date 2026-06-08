@@ -1,0 +1,10 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Trove">
+  <rect width="120" height="120" rx="28" fill="#0E8C52"></rect>
+  
+  <path d="M42 44 H78 L88 56 L60 92 L32 56 Z" fill="#FBFAF7"></path>
+  <path d="M42 44 L50 56 H32 Z" fill="#C8EAD6"></path>
+  <path d="M78 44 L70 56 H88 Z" fill="#C8EAD6"></path>
+  <path d="M50 56 H70 L60 92 Z" fill="#E29D22"></path>
+  <path d="M42 44 L50 56 H70 L78 44 Z" fill="#FBFAF7"></path>
+  <path d="M50 56 L60 92 L32 56 Z" fill="#EFECE6"></path>
+</svg>
