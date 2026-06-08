@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 import static com.sanjeevsky.catalogservice.utils.LoggingConstants.*;
@@ -75,5 +76,13 @@ public class ProductCatalogController {
         log.info(SEARCH_PRODUCTS_REQUEST, q, categoryId, brandId);
         Page<Product> products = productService.searchProducts(q, categoryId, brandId, page, size);
         return new ResponseEntity<>(ApiResponse.ok(products), HttpStatus.OK);
+    }
+
+    @GetMapping("/suggest")
+    public ResponseEntity<ApiResponse<List<String>>> suggestProducts(
+            @RequestParam(defaultValue = "") String q,
+            @RequestParam(defaultValue = "5") int size) {
+        List<String> suggestions = productService.suggestProducts(q, size);
+        return ResponseEntity.ok(ApiResponse.ok(suggestions));
     }
 }

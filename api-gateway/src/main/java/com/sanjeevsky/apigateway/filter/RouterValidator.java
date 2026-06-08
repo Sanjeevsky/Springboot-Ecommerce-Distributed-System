@@ -14,6 +14,7 @@ public class RouterValidator {
             path -> path.equals("/auth-service/login"),
             path -> path.equals("/catalog-service/product/list"),
             path -> path.startsWith("/catalog-service/product/search"),
+            path -> path.startsWith("/catalog-service/product/suggest"),
             path -> path.startsWith("/catalog-service/product/getProduct/"),
             path -> path.equals("/catalog-service/getCategories"),
             path -> path.equals("/catalog-service/getBrands"),

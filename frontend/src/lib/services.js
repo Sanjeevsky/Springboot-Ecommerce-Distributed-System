@@ -210,6 +210,15 @@ export const catalog = {
     ));
   },
 
+  suggest: (q, size = 5) => {
+    if (!q || q.trim().length < 2) return Promise.resolve([]);
+    return withFallback(async () => {
+      const res = await api.get(`/catalog-service/product/suggest?q=${encodeURIComponent(q.trim())}&size=${size}`);
+      const list = unwrap(res);
+      return Array.isArray(list) ? list : [];
+    }, []);
+  },
+
   categories: () =>
     withFallback(async () => {
       const res = await api.get("/catalog-service/getCategories");

@@ -4,7 +4,10 @@ services:
 
   mysql:
     image: mysql:8.0
-    command: --max-connections=60 --innodb-buffer-pool-size=64M --performance-schema=OFF --table-open-cache=200 --table-definition-cache=200
+    command: >-
+      --max-connections=60 --innodb-buffer-pool-size=64M --performance-schema=OFF
+      --table-open-cache=200 --table-definition-cache=200
+      --log-bin=mysql-bin --binlog-format=ROW --server-id=1
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-123456}
       MYSQL_DATABASE: auth-db
@@ -299,6 +302,7 @@ services:
       - SPRING_REDIS_PORT=6379
       - SPRING_CACHE_TYPE=none
       - OPENSEARCH_HOST=opensearch
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
@@ -696,6 +700,52 @@ services:
       timeout: 5s
       retries: 10
       start_period: 180s
+
+  kafka-connect:
+    image: debezium/connect:2.4
+    ports:
+      - "8093:8083"
+    depends_on:
+      kafka:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    environment:
+      BOOTSTRAP_SERVERS: kafka:29092
+      GROUP_ID: debezium-connect-group
+      CONFIG_STORAGE_TOPIC: debezium-connect-configs
+      OFFSET_STORAGE_TOPIC: debezium-connect-offsets
+      STATUS_STORAGE_TOPIC: debezium-connect-statuses
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8083/connectors"]
+      interval: 15s
+      timeout: 10s
+      retries: 15
+      start_period: 90s
+
+  connector-init:
+    image: curlimages/curl:8.4.0
+    depends_on:
+      kafka-connect:
+        condition: service_healthy
+    restart: "no"
+    environment:
+      - MYSQL_PASSWORD=${MYSQL_ROOT_PASSWORD:-123456}
+    command: >
+      sh -c "
+        curl -sf http://kafka-connect:8083/connectors/catalog-mysql-connector > /dev/null 2>&1
+        && echo 'Connector already registered'
+        || curl -sf -X POST http://kafka-connect:8083/connectors
+           -H 'Content-Type: application/json'
+           -d '{\"name\":\"catalog-mysql-connector\",\"config\":{\"connector.class\":\"io.debezium.connector.mysql.MySqlConnector\",\"database.hostname\":\"mysql\",\"database.port\":\"3306\",\"database.user\":\"root\",\"database.password\":\"'$$MYSQL_PASSWORD'\",\"database.server.id\":\"184054\",\"topic.prefix\":\"catalog\",\"database.include.list\":\"product-catalog-db\",\"table.include.list\":\"product-catalog-db.product\",\"schema.history.internal.kafka.bootstrap.servers\":\"kafka:29092\",\"schema.history.internal.kafka.topic\":\"schema-changes.catalog\",\"include.schema.changes\":\"false\",\"snapshot.mode\":\"schema_only\",\"key.converter\":\"org.apache.kafka.connect.json.JsonConverter\",\"value.converter\":\"org.apache.kafka.connect.json.JsonConverter\",\"key.converter.schemas.enabled\":\"false\",\"value.converter.schemas.enabled\":\"false\"}}'
+      "
+    networks:
+      - ecommerce-network
 
 volumes:
   mysql-data:

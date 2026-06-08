@@ -3,6 +3,7 @@ package com.sanjeevsky.catalogservice.service.impl;
 import com.sanjeevsky.catalogservice.exceptions.*;
 import com.sanjeevsky.catalogservice.model.Product;
 import com.sanjeevsky.catalogservice.repository.ProductRepository;
+import com.sanjeevsky.catalogservice.search.ProductDocumentMapper;
 import com.sanjeevsky.catalogservice.search.document.ProductDocument;
 import com.sanjeevsky.catalogservice.search.repository.ProductSearchRepository;
 import com.sanjeevsky.catalogservice.service.BrandService;
@@ -48,6 +49,7 @@ public class ProductServiceImpl implements ProductService {
     private final SubCategoryService subCategoryService;
     private final ProductSearchRepository searchRepository;
     private final ElasticsearchOperations elasticsearchOperations;
+    private final ProductDocumentMapper documentMapper;
 
     public ProductServiceImpl(
             ProductRepository productRepository,
@@ -55,13 +57,15 @@ public class ProductServiceImpl implements ProductService {
             CategoryService categoryService,
             SubCategoryService subCategoryService,
             ProductSearchRepository searchRepository,
-            ElasticsearchOperations elasticsearchOperations) {
+            ElasticsearchOperations elasticsearchOperations,
+            ProductDocumentMapper documentMapper) {
         this.productRepository = productRepository;
         this.brandService = brandService;
         this.categoryService = categoryService;
         this.subCategoryService = subCategoryService;
         this.searchRepository = searchRepository;
         this.elasticsearchOperations = elasticsearchOperations;
+        this.documentMapper = documentMapper;
     }
 
     @Override
@@ -77,7 +81,7 @@ public class ProductServiceImpl implements ProductService {
         product.setSubCategory(subCategoryService.getSubCategory(subCategoryId));
         Product saved = productRepository.save(product);
         try {
-            searchRepository.save(toDocument(saved));
+            searchRepository.save(documentMapper.toDocument(saved));
         } catch (Exception e) {
             log.warn("OpenSearch index skipped for product {}: {}", saved.getId(), e.getMessage());
         }
@@ -148,19 +152,25 @@ public class ProductServiceImpl implements ProductService {
         return new PageImpl<>(products, pageable, hits.getTotalHits());
     }
 
-    private ProductDocument toDocument(Product p) {
-        return ProductDocument.builder()
-                .id(p.getId().toString())
-                .name(p.getName() != null ? p.getName() : "")
-                .description(p.getDescription() != null ? p.getDescription() : "")
-                .brand(p.getBrand() != null ? p.getBrand().getName() : "")
-                .brandId(p.getBrand() != null ? p.getBrand().getId().toString() : "")
-                .categoryId(p.getCategory() != null ? p.getCategory().getId().toString() : "")
-                .categoryName(p.getCategory() != null ? p.getCategory().getCategoryName() : "")
-                .salePrice(p.getSalePrice())
-                .mrpPrice(p.getMrpPrice())
-                .status(p.getStatus())
-                .build();
+    @Override
+    public List<String> suggestProducts(String prefix, int size) {
+        if (prefix == null || prefix.isBlank()) return Collections.emptyList();
+        int cap = (size < 1 || size > 20) ? 5 : size;
+        try {
+            SearchHits<ProductDocument> hits = elasticsearchOperations.search(
+                    new NativeSearchQueryBuilder()
+                            .withQuery(QueryBuilders.matchPhrasePrefixQuery("name", prefix).maxExpansions(10))
+                            .withPageable(PageRequest.of(0, cap))
+                            .build(),
+                    ProductDocument.class);
+            return hits.getSearchHits().stream()
+                    .map(h -> h.getContent().getName())
+                    .distinct()
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.warn("ES suggest unavailable: {}", e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     private void validateProductRequest(Product product) {

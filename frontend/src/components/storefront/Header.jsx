@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Search, Heart, ShoppingBag, User, Moon, Sun, LayoutGrid } from "lucide-react";
 import { Input } from "../index.js";
@@ -23,10 +23,53 @@ export function Header({ onOpenCart }) {
   const { theme, toggle } = useTheme();
   const [q, setQ] = useState("");
   const [categories, setCategories] = useState([]);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSugg, setShowSugg] = useState(false);
+  const [activeSugg, setActiveSugg] = useState(-1);
+  const debounceRef = useRef(null);
 
   useEffect(() => { catalog.categories().then(setCategories).catch(() => {}); }, []);
 
-  const submit = (e) => { e.preventDefault(); navigate(`/search?q=${encodeURIComponent(q)}`); };
+  const onQueryChange = (e) => {
+    const val = e.target.value;
+    setQ(val);
+    setActiveSugg(-1);
+    clearTimeout(debounceRef.current);
+    if (val.trim().length >= 2) {
+      debounceRef.current = setTimeout(() => {
+        catalog.suggest(val.trim()).then((list) => {
+          setSuggestions(list);
+          setShowSugg(list.length > 0);
+        }).catch(() => {});
+      }, 300);
+    } else {
+      setSuggestions([]);
+      setShowSugg(false);
+    }
+  };
+
+  const submit = (e) => {
+    e.preventDefault();
+    if (activeSugg >= 0 && suggestions[activeSugg]) {
+      navigate(`/search?q=${encodeURIComponent(suggestions[activeSugg])}`);
+    } else {
+      navigate(`/search?q=${encodeURIComponent(q)}`);
+    }
+    setShowSugg(false);
+  };
+
+  const onKeyDown = (e) => {
+    if (!showSugg) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); setActiveSugg((i) => Math.min(i + 1, suggestions.length - 1)); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActiveSugg((i) => Math.max(i - 1, -1)); }
+    else if (e.key === "Escape") { setShowSugg(false); setActiveSugg(-1); }
+  };
+
+  const pickSuggestion = (s) => {
+    setQ(s);
+    setShowSugg(false);
+    navigate(`/search?q=${encodeURIComponent(s)}`);
+  };
 
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 100, background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
@@ -36,9 +79,40 @@ export function Header({ onOpenCart }) {
 
       <div style={{ maxWidth: 1320, margin: "0 auto", padding: "0 24px", height: 72, display: "flex", alignItems: "center", gap: 22 }}>
         <Logo size={30} />
-        <form onSubmit={submit} style={{ flex: 1, maxWidth: 560, marginLeft: 8 }}>
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search for anything…"
-            iconLeft={<Search size={18} />} wrapStyle={{ background: "var(--surface-2)", border: "1px solid var(--border)" }} />
+        <form onSubmit={submit} style={{ flex: 1, maxWidth: 560, marginLeft: 8, position: "relative" }}>
+          <Input
+            value={q}
+            onChange={onQueryChange}
+            onKeyDown={onKeyDown}
+            onFocus={() => suggestions.length > 0 && setShowSugg(true)}
+            onBlur={() => setTimeout(() => setShowSugg(false), 150)}
+            placeholder="Search for anything…"
+            iconLeft={<Search size={18} />}
+            wrapStyle={{ background: "var(--surface-2)", border: "1px solid var(--border)" }}
+          />
+          {showSugg && (
+            <ul style={{
+              position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 200,
+              background: "var(--surface)", border: "1px solid var(--border)", borderRadius: "var(--radius-md)",
+              boxShadow: "0 8px 24px rgba(0,0,0,.12)", listStyle: "none", margin: 0, padding: "4px 0",
+            }}>
+              {suggestions.map((s, i) => (
+                <li
+                  key={s}
+                  onMouseDown={() => pickSuggestion(s)}
+                  style={{
+                    padding: "9px 14px", cursor: "pointer", fontSize: 14,
+                    display: "flex", alignItems: "center", gap: 8,
+                    background: i === activeSugg ? "var(--surface-2)" : "transparent",
+                    color: "var(--text)",
+                  }}
+                >
+                  <Search size={13} style={{ color: "var(--text-secondary)", flexShrink: 0 }} />
+                  {s}
+                </li>
+              ))}
+            </ul>
+          )}
         </form>
 
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: "auto" }}>

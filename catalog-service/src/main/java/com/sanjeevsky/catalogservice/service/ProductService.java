@@ -4,6 +4,7 @@ import com.sanjeevsky.catalogservice.model.Product;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -15,4 +16,6 @@ public interface ProductService {
     Page<Product> listProducts(int page, int size, String sort);
 
     Page<Product> searchProducts(String keyword, UUID categoryId, UUID brandId, int page, int size);
+
+    List<String> suggestProducts(String prefix, int size);
 }
