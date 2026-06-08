@@ -21,6 +21,25 @@ services:
     networks:
       - ecommerce-network
 
+  opensearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.13.4
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms256m -Xmx512m
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+    volumes:
+      - opensearch-data:/usr/share/elasticsearch/data
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
   redis:
     image: redis:7.2-alpine
     ports:
@@ -260,6 +279,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      opensearch:
+        condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://service-discovery:8761/eureka/
       - EUREKA_CLIENT_SERVICE_URL_DEFAULT_ZONE=http://service-discovery:8761/eureka/
@@ -272,11 +293,12 @@ services:
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
       - SPRING_BOOT_ADMIN_CLIENT_USERNAME=${SPRING_BOOT_ADMIN_CLIENT_USERNAME:-client}
-      - SPRING_BOOT_ADMIN_CLIENT_PASSWORD=${SPRING_BOOT_ADMIN_CLIENT_PASSWORD:-client}
+      - SPRING_BOOT_ADMIN_CLIENT_PASSWORD=${SPRING_BOOT_ADMIN_CLIENT_PASSWORD:-false}
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
       - SPRING_CACHE_TYPE=none
+      - OPENSEARCH_HOST=opensearch
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
       - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
     networks:
@@ -679,6 +701,7 @@ volumes:
   mysql-data:
   redis-data:
   grafana-data:
+  opensearch-data:
 
 networks:
   ecommerce-network:
