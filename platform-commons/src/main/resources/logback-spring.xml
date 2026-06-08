@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+
+    <springProperty scope="context" name="service_name"
+                    source="spring.application.name" defaultValue="unknown-service"/>
+
+    <!--
+        JSON structured logging via logstash-logback-encoder.
+        LogstashEncoder automatically includes every MDC key as a top-level JSON field:
+          traceId, spanId  — set by Spring Cloud Sleuth
+          correlationId    — set by MdcFilter / KafkaMdcConsumerInterceptor
+          userId           — set by MdcFilter / KafkaMdcConsumerInterceptor
+    -->
+    <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"service":"${service_name}"}</customFields>
+            <fieldNames>
+                <timestamp>@timestamp</timestamp>
+                <message>message</message>
+                <logger>logger</logger>
+                <thread>thread</thread>
+                <levelValue>[ignore]</levelValue>
+            </fieldNames>
+            <throwableConverter class="net.logstash.logback.stacktrace.ShortenedThrowableConverter">
+                <rootCauseFirst>true</rootCauseFirst>
+            </throwableConverter>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="JSON"/>
+    </root>
+
+    <!-- Keep Spring Boot infrastructure at WARN to reduce noise -->
+    <logger name="org.springframework.cloud.gateway" level="WARN"/>
+    <logger name="org.springframework.web.servlet.mvc" level="WARN"/>
+    <logger name="org.hibernate.SQL" level="WARN"/>
+    <logger name="com.netflix.eureka" level="WARN"/>
+    <logger name="com.netflix.discovery" level="WARN"/>
+</configuration>
