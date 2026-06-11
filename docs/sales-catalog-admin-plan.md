@@ -4,6 +4,13 @@ A seller/admin console for managing the catalog (products, variants, stock) with
 in-app business-analytics dashboard. Lives in the existing `frontend/` app under
 `/studio`, talking to the existing services through the gateway.
 
+## Implementation status
+
+Phases 0 through 5 are implemented. The admin role is signed into JWTs and propagated
+by the gateway, catalog and inventory writes are admin-gated, the Studio management
+surface is live, order analytics power the overview dashboard, and coupon creation,
+listing, activation, and deactivation are available from the Studio.
+
 ## Current gaps this plan closes
 
 | Gap | Where |
@@ -69,9 +76,23 @@ below threshold). Chart library: recharts (small, fits React 18).
 If event-sourced analytics is ever wanted, a dedicated consumer on `order-events` /
 `payment-events` can replace the JPA queries without touching the UI contract.
 
-## Phase 4 — Later
+## Phase 4 — Coupon management
 
-Image upload (object storage), price/stock audit log, CSV export, coupon management page.
+- `POST /coupon-service/coupon` is admin-gated.
+- `GET /coupon-service/admin/coupons` lists active and inactive coupons.
+- `PUT /coupon-service/coupon/{couponId}/active?active=` controls redemption availability.
+- `/studio/coupons` creates, searches, filters, activates, and deactivates offers.
+- Coupon application rechecks expiry, active state, and usage limits at redemption time.
+
+## Phase 5 — CSV exports
+
+- The overview exports daily revenue and order counts.
+- Product, inventory, and coupon screens export the current filtered view.
+- A shared serializer handles quoting, UTF-8 output, and spreadsheet formula injection.
+
+## Later
+
+Image upload (object storage) and price/stock audit log.
 
 ## Suggested PR sequence
 
@@ -79,5 +100,7 @@ Image upload (object storage), price/stock audit log, CSV export, coupon managem
 2. **PR B** — Phase 1 (catalog/inventory write APIs + tests + Postman).
 3. **PR C** — Phase 2 (Studio shell, product table/form, inventory grid).
 4. **PR D** — Phase 3 (analytics endpoints + dashboard).
+5. **PR E** — Phase 4 (coupon lifecycle APIs + Studio management page).
+6. **PR F** — Phase 5 (shared CSV serializer + Studio exports).
 
 Each PR is independently shippable; B unblocks C, A unblocks everything.

@@ -37,7 +37,7 @@ A production-grade ecommerce platform built as a microservices architecture usin
 
 | Service | Port | Description |
 |---------|------|-------------|
-| frontend | 4173 | Trove storefront — React (Vite) SPA served by nginx, proxies `/api/*` to the gateway |
+| frontend | 4173 | Trove storefront and admin Studio — React (Vite) SPA served by nginx, proxies `/api/*` to the gateway |
 | service-discovery | 8761 | Eureka server — service registry |
 | cloud-config | 8071 | Spring Cloud Config Server |
 | spring-server | 9000 | Spring Boot Admin UI |
@@ -137,6 +137,7 @@ docker compose up -d
 | UI | URL |
 |----|-----|
 | Trove Storefront | http://localhost:4173 |
+| Trove Studio | http://localhost:4173/studio |
 | Eureka Dashboard | http://localhost:8761 |
 | Spring Boot Admin | http://localhost:9000 (client / client; optional `platform-tools` profile) |
 | Kafka UI | http://localhost:8080 |
@@ -154,6 +155,7 @@ SPRING_BOOT_ADMIN_CLIENT_ENABLED=true docker compose --profile platform-tools up
 Zipkin runs in the Docker stack, but service tracing is disabled by default to keep full-stack local verification within typical Docker Desktop memory limits. Set `SPRING_ZIPKIN_ENABLED=true` before `docker compose up` to emit spans.
 
 Auth tokens are signed by `auth-server` and verified by `api-gateway`; both read the same `JWT_SECRET` value. Docker Compose defaults it to `local-dev-secret` for local runs, and you can override it before starting the stack.
+Docker Compose also enables an idempotent local Studio administrator by default: `admin@trove.local` / `admin123`. Override these with `ADMIN_SEED_EMAIL` and `ADMIN_SEED_PASSWORD`, or set `ADMIN_SEED_ENABLED=false` on `auth-server` to disable seeding. Change the default password outside disposable local environments.
 Local infrastructure credentials keep development defaults but are overridable: `MYSQL_ROOT_PASSWORD` controls Docker MySQL and service datasource passwords, `MYSQL_PASSWORD` controls direct local service properties, and Spring Boot Admin uses `SPRING_SECURITY_USER_NAME` / `SPRING_SECURITY_USER_PASSWORD` for the server login plus `SPRING_BOOT_ADMIN_CLIENT_USERNAME` / `SPRING_BOOT_ADMIN_CLIENT_PASSWORD` for service registration. When overriding Spring Boot Admin in Docker, set the server and client username variables to the same value, and set the server and client password variables to the same value, so service registration continues to authenticate.
 Docker Compose disables the Spring Cloud Config client for app containers so the local stack uses packaged service properties and does not try to resolve `localhost:8071` from inside containers. The `cloud-config` service still runs for manual config-server checks in native local mode, without cloning the remote config repository.
 Application containers wait for `service-discovery` and `cloud-config` health before startup so Eureka registration is less race-prone during cold starts.
@@ -210,10 +212,10 @@ This is the authoritative end-to-end check. It waits for readiness (per-service 
 | Phase | Expected result |
 |-------|-----------------|
 | Health + Eureka + gateway checks | all pass, no timeouts |
-| API reference flow | 75 requests · 144 assertions · **0 failed** |
-| Data seed flow | 25 requests · 58 assertions · **0 failed** |
-| Complete E2E flow | 75 requests · 135 assertions · **0 failed** |
-| Maven module tests | ~479 tests · **0 failures** |
+| API reference flow | 99 requests · **0 failed assertions** |
+| Data seed flow | 35 requests · **0 failed assertions** |
+| Complete E2E flow | 97 requests · **0 failed assertions** |
+| Maven module tests | ~544 tests · **0 failures** |
 | Exit code | `0` |
 
 To run the live flows **without** re-running the unit tests (much faster — the live Postman flows are what actually exercise the running stack):
@@ -228,14 +230,14 @@ The complete E2E collection walks the real cross-service path through the gatewa
 
 | # | Flow | What it verifies |
 |---|------|------------------|
-| 00 | **Auth** | Signup → login (JWT issued) → password update |
-| 01 | **Catalog** | Create brand / category / subcategory / product / variant; list, search, get-by-id (Redis-cached) |
-| 02 | **Inventory** | Set stock, read stock per product + variant, availability check |
+| 00 | **Auth** | Signup → customer login → password update → admin login |
+| 01 | **Catalog** | Admin create/update/list brand, category, subcategory, product, and variant; public list/search/get-by-id |
+| 02 | **Inventory** | Admin seed and set product + variant stock, list inventory, read availability |
 | 03 | **Customer** | Address create / read / list / update / delete |
 | 04 | **Cart** | Add items, update qty, checkout snapshot, remove, clear |
 | 05 | **Wishlist** | Add, list, **move-to-cart** (cross-service Feign call), remove |
 | 06 | **Coupon** | Create, list, validate, apply discount |
-| 07 | **Order** | Create from cart, coupon discount applied, confirm, cancel, **insufficient-stock rejection (400)**, idempotency |
+| 07 | **Order** | Create from cart, coupon discount applied, confirm, cancel, **insufficient-stock rejection (400)**, idempotency, admin analytics |
 | 08 | **Payment** | Initiate, confirm, status, refund, **fail lifecycle**, idempotency |
 | 09 | **Review** | Submit (purchase-gated), moderate → APPROVED, read approved reviews |
 
@@ -303,13 +305,13 @@ Postman collections:
 | `Ecommerce-E2E-Complete.postman_collection.json` | Runner-safe application E2E flow |
 | `Ecommerce-Local.postman_environment.json` | Local gateway environment with only `baseUrl` |
 
-The collections use collection-level scripts to generate and save run values such as token, IDs, coupon code, and idempotency keys into collection variables and the active runner environment. The local environment file intentionally provides only the gateway `baseUrl`; runtime state belongs to the collection scripts so Collection Runner and Newman can execute from a clean environment. Kafka-backed review eligibility and notification requests include runner retries so asynchronous consumers can catch up before later requests use `reviewId` or `notificationId`. The DataSeed collection moderates and verifies an approved review, and the application collections fail unexpected non-2xx responses while asserting key semantics such as coupon discounts, cancelled-order refunds, insufficient-inventory checkout rejection, and review moderation before approved-review reads.
+The collections use collection-level scripts to generate and save run values such as token, IDs, coupon code, admin credentials, and idempotency keys into collection variables and the active runner environment. The local environment file intentionally provides only the gateway `baseUrl`; runtime state belongs to the collection scripts so Collection Runner and Newman can execute from a clean environment. Each full runner logs in as the seeded admin for catalog/inventory setup, seeds both product-level and variant-level stock, then restores the generated customer login before cart, address, order, review, and wishlist flows. Kafka-backed review eligibility and notification requests include runner retries so asynchronous consumers can catch up before later requests use `reviewId` or `notificationId`. The DataSeed collection moderates and verifies an approved review, and the application collections fail unexpected non-2xx responses while asserting key semantics such as coupon discounts, cancelled-order refunds, insufficient-inventory checkout rejection, and review moderation before approved-review reads.
 
 ### Authentication
 
 ```
 POST /auth-service/signup
-POST /auth-service/login         → returns JWT token
+POST /auth-service/login         → returns JWT token and CUSTOMER/ADMIN role
 ```
 
 Signup, login, and catalog product browsing routes are public:
@@ -321,6 +323,34 @@ GET /catalog-service/product/getProduct/{id}
 ```
 
 All other standard gateway routes, including `/auth-service/updatePassword`, require `Authorization: Bearer <token>`.
+
+The gateway derives `X-User` and `X-User-Role` from the signed JWT and removes client-supplied identity headers. Catalog writes and inventory management require an `ADMIN` token:
+
+```
+GET    /catalog-service/product/admin/list
+PUT    /catalog-service/product/{id}
+DELETE /catalog-service/product/{id}
+PUT    /catalog-service/variant/{variantId}
+DELETE /catalog-service/variant/{variantId}
+GET    /inventory-service/stock
+PUT    /inventory-service/stock/{productId}
+PUT    /inventory-service/stock/{productId}/variant/{variantId}
+POST   /coupon-service/coupon
+GET    /coupon-service/admin/coupons
+PUT    /coupon-service/coupon/{couponId}/active?active=true|false
+```
+
+The Studio at `http://localhost:4173/studio` uses these routes for catalog editing, variant management, product retirement, absolute stock updates, and coupon lifecycle management. Analytics, product, inventory, and coupon views can export their current data as formula-safe CSV files.
+
+Admin analytics are exposed through the same standard gateway prefix:
+
+```
+GET /order-service/analytics/summary?from=yyyy-MM-dd&to=yyyy-MM-dd
+GET /order-service/analytics/daily?days=30
+GET /order-service/analytics/top-products?limit=10
+```
+
+The summary range is inclusive. Revenue and top-product sales include `CONFIRMED`, `SHIPPED`, and `DELIVERED` orders; pending and cancelled orders remain visible in order counts and the status breakdown without inflating recognized revenue. Top-product revenue allocates each order's net total across its line items, so discounts reconcile with summary revenue. The Studio overview provides Today, 7 days, and 30 days ranges plus daily revenue, status mix, top products, and low-stock alerts.
 
 ### Order flow
 
@@ -441,16 +471,16 @@ GitHub Actions runs static validation and Java 11 module tests on pushes and pul
 
 | Service | Unit Tests | Integration Tests |
 |---------|-----------|-------------------|
-| api-gateway | 16 | — |
-| auth-server | 25 | 8 |
-| catalog-service | 72 | — |
+| api-gateway | 19 | — |
+| auth-server | 27 | 10 |
+| catalog-service | 97 | — |
 | customer-service | 27 | — |
-| order-service | 59 | — |
+| order-service | 72 | — |
 | payment-service | 42 | 15 |
 | shopping-cart-service | 31 | 8 |
-| coupon-service | 24 | 11 |
+| coupon-service | 37 | 12 |
 | review-service | 36 | 10 |
 | wishlist-service | 17 | 10 |
-| inventory-service | 32 | 8 |
+| inventory-service | 42 | 8 |
 | notification-service | 16 | 8 |
-| **Total** | **397** | **78** |
+| **Total** | **463** | **81** |

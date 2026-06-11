@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
-import { Package, Heart, MapPin, Bell, CreditCard, Settings } from "lucide-react";
+import { Package, Heart, MapPin, Bell, CreditCard, Settings, LogOut } from "lucide-react";
 import { Avatar, Badge } from "../../components/index.js";
 import { useStore } from "../../store/StoreContext.jsx";
 import { Logo } from "../../components/storefront/Logo.jsx";
 import { notifications as notificationsApi } from "../../lib/services.js";
+import { logout } from "../../lib/auth.js";
 
 const NAV = [
   { to: "orders",        label: "Orders",           Icon: Package },
@@ -32,6 +33,19 @@ export default function AccountLayout() {
     notificationsApi.unread().then((list) => setUnread(list.length)).catch(() => {});
   }, []);
 
+  const signOut = () => {
+    logout();
+    navigate("/login");
+  };
+
+  const navItemStyle = {
+    display: "flex", alignItems: "center", gap: 12, padding: "11px 14px",
+    border: "none", borderRadius: "var(--radius-md)", cursor: "pointer", textAlign: "left",
+    textDecoration: "none",
+    fontFamily: "var(--font-text)", fontSize: 14.5,
+    transition: "background var(--dur-fast)",
+  };
+
   return (
     <div style={{ minHeight: "100vh", background: "var(--bg)" }}>
       <div style={{ maxWidth: 1200, margin: "0 auto", padding: "32px 24px 64px", display: "grid", gridTemplateColumns: "248px 1fr", gap: 36, alignItems: "start" }}>
@@ -48,13 +62,10 @@ export default function AccountLayout() {
             {NAV.map(({ to, label, Icon }) => (
               <NavLink key={to} to={to}
                 style={({ isActive }) => ({
-                  display: "flex", alignItems: "center", gap: 12, padding: "11px 14px",
-                  border: "none", borderRadius: "var(--radius-md)", cursor: "pointer", textAlign: "left",
-                  textDecoration: "none",
+                  ...navItemStyle,
                   background: isActive ? "var(--primary-subtle)" : "transparent",
                   color: isActive ? "var(--primary)" : "var(--text-secondary)",
-                  fontFamily: "var(--font-text)", fontSize: 14.5, fontWeight: isActive ? 700 : 500,
-                  transition: "background var(--dur-fast)",
+                  fontWeight: isActive ? 700 : 500,
                 })}>
                 <Icon size={18} />
                 <span style={{ flex: 1 }}>{label}</span>
@@ -63,6 +74,21 @@ export default function AccountLayout() {
                 )}
               </NavLink>
             ))}
+            <button
+              type="button"
+              onClick={signOut}
+              style={{
+                ...navItemStyle,
+                width: "100%",
+                marginTop: 6,
+                background: "transparent",
+                color: "var(--text-secondary)",
+                fontWeight: 600,
+              }}
+            >
+              <LogOut size={18} />
+              <span style={{ flex: 1 }}>Logout</span>
+            </button>
           </nav>
         </aside>
 

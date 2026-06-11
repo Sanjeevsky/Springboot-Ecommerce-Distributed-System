@@ -26,6 +26,7 @@ const bannedMarkers = [
   { pattern: /2026-12-31T23:59:59/, reason: "coupon expiryDate expects yyyy-MM-dd" },
   { pattern: /"expiryDate"\s*:\s*"2026-12-31"/, reason: "coupon fixtures should not expire during normal runner use" },
   { pattern: /"expiryDate"\s*:\s*"2027-12-31"/, reason: "coupon fixtures should not expire during normal runner use" },
+  { pattern: /\\"role\\"\s*:\s*\\"(?:USER|CUSTOMER|ADMIN)\\"/, reason: "signup fixtures must not submit a client-controlled role" },
 ];
 
 let failed = false;
@@ -366,6 +367,13 @@ function validateGatewayRoutedRequests(relativePath, collection) {
     const url = requestUrl(item);
     if (url && !url.startsWith("{{baseUrl}}/")) {
       fail(`${relativePath}: ${requestPath}: request URL must route through {{baseUrl}} instead of ${url}`);
+    }
+    const urlObject = item && item.request && item.request.url;
+    if (url && (!Array.isArray(urlObject.host)
+        || urlObject.host[0] !== "{{baseUrl}}"
+        || !Array.isArray(urlObject.path)
+        || urlObject.path.length === 0)) {
+      fail(`${relativePath}: ${requestPath}: request URL must include structured Postman host and path fields`);
     }
   }
 }

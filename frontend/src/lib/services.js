@@ -43,17 +43,25 @@ function normalizeProduct(p) {
   const rawImg = (p.images && p.images[0]) || p.image || "";
   return {
     id: p.id,
+    name: p.name || p.title || "Product",
     title: p.name || p.title || "Product",
     brand: typeof p.brand === "object" ? (p.brand?.name ?? "") : (p.brand ?? ""),
+    brandId: typeof p.brand === "object" ? p.brand?.id : p.brandId,
     price,
+    salePrice: price,
+    mrpPrice: mrp ?? price,
     compareAt: hasDiscount ? mrp : undefined,
     cat: typeof p.category === "object"
       ? (p.category?.id ?? p.category?.categoryName ?? "general")
       : (p.category || p.cat || "general"),
+    categoryId: typeof p.category === "object" ? p.category?.id : p.categoryId,
     catLabel: typeof p.category === "object"
       ? (p.category?.categoryName ?? "")
       : "",
+    subCategoryId: typeof p.subCategory === "object" ? p.subCategory?.id : p.subCategoryId,
+    subCategoryLabel: typeof p.subCategory === "object" ? p.subCategory?.subcategoryName : "",
     image: isPlaceholder(rawImg) ? nextImg() : rawImg,
+    images: Array.isArray(p.images) ? p.images : (rawImg ? [rawImg] : []),
     rating: p.rating ?? 4.3,
     reviews: p.reviews ?? 0,
     stock: p.stock ?? 10,
@@ -62,7 +70,14 @@ function normalizeProduct(p) {
       ? { tone: "sale", label: `−${Math.round((1 - price / mrp) * 100)}%` }
       : undefined),
     description: p.description ?? "",
-    variants: p.variants,
+    model: p.model ?? "",
+    gstValue: p.gstValue ?? 0,
+    discount: p.discount ?? 0,
+    status: p.status ?? 1,
+    active: (p.status ?? 1) === 1,
+    hasVariant: p.hasVariant ?? false,
+    modifiedAt: p.modifiedAt,
+    variants: Array.isArray(p.variants) ? p.variants : [],
   };
 }
 
@@ -233,6 +248,74 @@ export const catalog = {
       const brands = unwrap(res);
       return Array.isArray(brands) ? brands.map((b) => (typeof b === "string" ? b : b.name)) : [];
     }, [...new Set(mock.products.map((p) => p.brand))]),
+
+  categoryOptions: () =>
+    withFallback(async () => {
+      const res = await api.get("/catalog-service/getCategories");
+      const cats = unwrap(res);
+      return Array.isArray(cats) ? cats.map((c) => ({
+        id: c.id,
+        label: c.categoryName,
+        subCategories: (c.subCategories || []).map((s) => ({ id: s.id, label: s.subcategoryName })),
+      })) : [];
+    }, mock.categories.map((c) => ({ ...c, subCategories: [] }))),
+
+  brandOptions: () =>
+    withFallback(async () => {
+      const res = await api.get("/catalog-service/getBrands");
+      const brands = unwrap(res);
+      return Array.isArray(brands)
+        ? brands.map((b) => (typeof b === "string" ? { id: b, label: b } : { id: b.id, label: b.name }))
+        : [];
+    }, [...new Set(mock.products.map((p) => p.brand))].map((name) => ({ id: name, label: name }))),
+
+  adminList: ({ q = "", status, page = 0, size = 50, sort = "modifiedAt" } = {}) =>
+    withFallback(async () => {
+      const params = new URLSearchParams({ q, page, size, sort });
+      if (status !== undefined && status !== null && status !== "") params.set("status", status);
+      const res = await api.get(`/catalog-service/product/admin/list?${params}`);
+      const data = unwrap(res) || {};
+      return {
+        items: normalizeProducts(data),
+        page: data.number ?? page,
+        totalPages: data.totalPages ?? 1,
+        totalElements: data.totalElements ?? 0,
+      };
+    }, { items: mock.products.map(normalizeProduct), page: 0, totalPages: 1, totalElements: mock.products.length }),
+
+  create: ({ brandId, categoryId, subCategoryId, ...payload }) =>
+    withFallback(async () => {
+      const params = new URLSearchParams({ brandId, categoryId, subCategoryId });
+      const res = await api.post(`/catalog-service/product/addProduct?${params}`, payload);
+      return normalizeProduct(unwrap(res));
+    }, normalizeProduct({ id: `mock-${Date.now()}`, brandId, categoryId, subCategoryId, ...payload })),
+
+  update: (id, payload) =>
+    withFallback(async () => {
+      const res = await api.put(`/catalog-service/product/${id}`, payload);
+      return normalizeProduct(unwrap(res));
+    }, normalizeProduct({ id, ...payload })),
+
+  retire: (id) =>
+    withFallback(async () => {
+      const res = await api.del(`/catalog-service/product/${id}`);
+      return normalizeProduct(unwrap(res));
+    }, { id, status: 0 }),
+
+  addVariant: (productId, payload) =>
+    withFallback(async () => unwrap(await api.post(`/catalog-service/variant/add/${productId}`, payload)), {
+      id: `mock-variant-${Date.now()}`,
+      ...payload,
+    }),
+
+  updateVariant: (variantId, payload) =>
+    withFallback(async () => unwrap(await api.put(`/catalog-service/variant/${variantId}`, payload)), {
+      id: variantId,
+      ...payload,
+    }),
+
+  deleteVariant: (variantId) =>
+    withFallback(() => api.del(`/catalog-service/variant/${variantId}`), { id: variantId }),
 };
 
 /* =========================================================================
@@ -245,6 +328,21 @@ export const inventory = {
       const qty = unwrap(res);
       return { available: Number(qty) > 0, quantity: Number(qty) };
     }, { available: true, quantity: 12 }),
+
+  list: () =>
+    withFallback(async () => {
+      const res = await api.get("/inventory-service/stock");
+      const list = unwrap(res);
+      return Array.isArray(list) ? list : [];
+    }, []),
+
+  set: (productId, variantId, totalQty) => {
+    const suffix = variantId ? `/variant/${variantId}` : "";
+    return withFallback(async () => unwrap(await api.put(
+      `/inventory-service/stock/${productId}${suffix}`,
+      { totalQty: Number(totalQty) }
+    )), { productId, variantId, totalQty: Number(totalQty), reservedQty: 0, availableQty: Number(totalQty) });
+  },
 };
 
 /* =========================================================================
@@ -298,6 +396,38 @@ export const orders = {
 };
 
 /* =========================================================================
+   Studio analytics
+   ========================================================================= */
+export const analytics = {
+  summary: ({ from, to } = {}) =>
+    withFallback(async () => {
+      const params = new URLSearchParams();
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      return unwrap(await api.get(`/order-service/analytics/summary${params.size ? `?${params}` : ""}`));
+    }, {
+      from,
+      to,
+      revenue: 0,
+      orderCount: 0,
+      averageOrderValue: 0,
+      statusBreakdown: {},
+    }),
+
+  daily: (days = 30) =>
+    withFallback(async () => {
+      const result = unwrap(await api.get(`/order-service/analytics/daily?days=${days}`));
+      return Array.isArray(result) ? result : [];
+    }, []),
+
+  topProducts: (limit = 10) =>
+    withFallback(async () => {
+      const result = unwrap(await api.get(`/order-service/analytics/top-products?limit=${limit}`));
+      return Array.isArray(result) ? result : [];
+    }, []),
+};
+
+/* =========================================================================
    Payment
    ========================================================================= */
 export const payment = {
@@ -318,6 +448,27 @@ export const payment = {
    Coupons
    ========================================================================= */
 export const coupons = {
+  adminList: () =>
+    withFallback(async () => {
+      const res = await api.get("/coupon-service/admin/coupons");
+      const list = unwrap(res);
+      return Array.isArray(list) ? list : [];
+    }, []),
+
+  create: (payload) =>
+    withFallback(async () => unwrap(await api.post("/coupon-service/coupon", payload)), {
+      id: `mock-coupon-${Date.now()}`,
+      active: true,
+      usedCount: 0,
+      ...payload,
+    }),
+
+  setActive: (couponId, active) =>
+    withFallback(async () => unwrap(await api.put(
+      `/coupon-service/coupon/${couponId}/active?active=${active}`,
+      {}
+    )), { id: couponId, active }),
+
   validate: (code, amount) => {
     const qs = `code=${encodeURIComponent(code)}${amount != null ? `&amount=${amount}` : ""}`;
     return withFallback(async () => {
@@ -458,7 +609,7 @@ export const auth = {
     withFallback(async () => {
       const res = await api.post("/auth-service/login", { email, password });
       const d = unwrap(res);
-      return { token: d?.token, user: { email, name: email.split("@")[0] } };
+      return { token: d?.token, user: { email, name: email.split("@")[0], role: d?.role || "CUSTOMER" } };
     }, { token: "mock-jwt", user: mock.user }),
 
   updatePassword: (email, oldPassword, newPassword) =>
@@ -475,6 +626,6 @@ export const auth = {
       password: payload.password,
     });
     const d = unwrap(loginRes);
-    return { token: d?.token, user: { email: payload.email, name: payload.name } };
+    return { token: d?.token, user: { email: payload.email, name: payload.name, role: d?.role || "CUSTOMER" } };
   },
 };
