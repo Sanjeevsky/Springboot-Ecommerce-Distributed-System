@@ -6,7 +6,7 @@ in-app business-analytics dashboard. Lives in the existing `frontend/` app under
 
 ## Implementation status
 
-Phases 0 through 6 are implemented. The admin role is signed into JWTs and propagated
+Phases 0 through 7 are implemented. The admin role is signed into JWTs and propagated
 by the gateway, catalog and inventory writes are admin-gated, the Studio management
 surface is live, order analytics power the overview dashboard, coupon creation,
 listing, activation, and deactivation are available from the Studio, and every admin
@@ -103,10 +103,23 @@ If event-sourced analytics is ever wanted, a dedicated consumer on `order-events
   optional `entityId` filter).
 - `/studio/activity` merges both sources newest-first with a source filter and CSV export.
 
+## Phase 7 — Product image upload
+
+- A **MinIO** container (S3-compatible object storage) holds a public-read
+  `product-images` bucket; the bucket is created and its read policy applied on
+  catalog-service startup.
+- `@AdminOnly POST /catalog-service/media/upload` accepts a base64 JSON body
+  (`filename`, `contentType`, `dataBase64`), validates type/size (≤ 5 MB), stores the
+  object, and returns its public URL. Base64 (not multipart) keeps the existing JSON
+  API client and the Postman/newman flow simple.
+- The Studio product editor adds an **Upload image** button (with thumbnails) that
+  appends the returned URL to the product's image list; pasting URLs still works.
+- Stored URLs use `MEDIA_PUBLIC_BASE_URL` (browser-reachable `localhost:9000`), while
+  the service uploads over the internal `minio:9000` endpoint.
+
 ## Later
 
-Product image upload to object storage (MinIO/S3) with presigned URLs, replacing the
-current image-URL list in the product editor.
+Image deletion/garbage-collection and presigned direct-to-storage uploads for large files.
 
 ## Suggested PR sequence
 
@@ -117,5 +130,6 @@ current image-URL list in the product editor.
 5. **PR E** — Phase 4 (coupon lifecycle APIs + Studio management page).
 6. **PR F** — Phase 5 (shared CSV serializer + Studio exports).
 7. **PR G** — Phase 6 (catalog/inventory audit log + Studio activity page).
+8. **PR H** — Phase 7 (MinIO object storage + product image upload).
 
 Each PR is independently shippable; B unblocks C, A unblocks everything.

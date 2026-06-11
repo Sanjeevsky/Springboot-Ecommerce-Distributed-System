@@ -812,6 +812,55 @@
      }
     },
     {
+     "name": "Upload Product Image",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('Upload Product Image: status 201', function () { pm.response.to.have.status(201); });",
+         "var json = pm.response.json();",
+         "pm.test('Upload Product Image returns url', function () { pm.expect(json.data && json.data.url).to.be.a('string'); });"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       },
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "body": {
+       "mode": "raw",
+       "raw": "{\"filename\": \"smoke.png\", \"contentType\": \"image/png\", \"dataBase64\": \"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==\"}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "url": {
+       "raw": "{{baseUrl}}/catalog-service/media/upload",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "catalog-service",
+        "media",
+        "upload"
+       ]
+      }
+     }
+    },
+    {
      "name": "Update Product",
      "event": [
       {

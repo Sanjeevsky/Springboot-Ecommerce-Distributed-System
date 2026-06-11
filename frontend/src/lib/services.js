@@ -448,6 +448,33 @@ export const audit = {
 };
 
 /* =========================================================================
+   Media  (admin product image upload to object storage)
+   ========================================================================= */
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    // readAsDataURL yields "data:<type>;base64,<payload>" — keep just the payload.
+    reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+    reader.onerror = () => reject(new Error("Could not read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
+export const media = {
+  // Uploads an image File and returns its public URL.
+  upload: (file) =>
+    withFallback(async () => {
+      const dataBase64 = await fileToBase64(file);
+      const res = unwrap(await api.post("/catalog-service/media/upload", {
+        filename: file.name,
+        contentType: file.type,
+        dataBase64,
+      }));
+      return res?.url;
+    }, "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=600&q=72"),
+};
+
+/* =========================================================================
    Payment
    ========================================================================= */
 export const payment = {
