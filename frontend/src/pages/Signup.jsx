@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff, User, CheckCircle2 } from "lucide-react";
 import { Button, Input } from "../components/index.js";
 import { Logo } from "../components/storefront/Logo.jsx";
@@ -13,6 +13,8 @@ const PERKS = [
 
 export default function Signup() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.from || "/account/orders";
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,7 +39,7 @@ export default function Signup() {
         localStorage.setItem("trove_token", res.token);
         localStorage.setItem("trove_user", JSON.stringify(res.user));
       }
-      navigate("/account/orders");
+      navigate(returnTo);
     } catch (err) {
       const msg = err?.message || "";
       if (msg.includes("already") || msg.includes("exists")) {
@@ -69,7 +71,7 @@ export default function Signup() {
           </h1>
           <p style={{ color: "var(--text-muted)", fontSize: 15 }}>
             Already have one?{" "}
-            <Link to="/login" style={{ color: "var(--primary)", fontWeight: 700, textDecoration: "none" }}>Sign in</Link>
+            <Link to="/login" state={location.state} style={{ color: "var(--primary)", fontWeight: 700, textDecoration: "none" }}>Sign in</Link>
           </p>
         </div>
 

@@ -461,6 +461,12 @@ export const auth = {
       return { token: d?.token, user: { email, name: email.split("@")[0] } };
     }, { token: "mock-jwt", user: mock.user }),
 
+  updatePassword: (email, oldPassword, newPassword) =>
+    withFallback(async () => {
+      const res = await api.put("/auth-service/updatePassword", { email, oldPassword, newPassword });
+      return unwrap(res);
+    }, { ok: true }),
+
   signup: async (payload) => {
     if (USE_MOCKS) return { token: "mock-jwt", user: mock.user };
     await api.post("/auth-service/signup", payload);

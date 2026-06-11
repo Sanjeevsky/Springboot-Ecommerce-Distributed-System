@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { Button, Input } from "../components/index.js";
 import { Logo } from "../components/storefront/Logo.jsx";
@@ -7,6 +7,8 @@ import { auth } from "../lib/services.js";
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const returnTo = location.state?.from || "/account/orders";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
@@ -23,7 +25,7 @@ export default function Login() {
         localStorage.setItem("trove_token", res.token);
         localStorage.setItem("trove_user", JSON.stringify(res.user));
       }
-      navigate("/account/orders");
+      navigate(returnTo);
     } catch {
       setError("Your email or password is incorrect. Please try again.");
     } finally {
@@ -40,7 +42,7 @@ export default function Login() {
         </h1>
         <p style={{ color: "var(--text-muted)", fontSize: 15, marginTop: 6 }}>
           New to Trove?{" "}
-          <Link to="/signup" style={{ color: "var(--primary)", fontWeight: 700, textDecoration: "none" }}>Create an account</Link>
+          <Link to="/signup" state={location.state} style={{ color: "var(--primary)", fontWeight: 700, textDecoration: "none" }}>Create an account</Link>
         </p>
       </div>
 
