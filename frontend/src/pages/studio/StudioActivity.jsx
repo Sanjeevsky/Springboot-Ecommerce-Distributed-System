@@ -16,6 +16,7 @@ const ACTION_TONE = {
   RETIRE: "danger",
   STOCK_SET: "info",
   RESTOCK: "success",
+  UPLOAD: "accent",
 };
 
 function toDate(value) {

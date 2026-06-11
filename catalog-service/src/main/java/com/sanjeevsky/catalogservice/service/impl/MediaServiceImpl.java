@@ -2,6 +2,7 @@ package com.sanjeevsky.catalogservice.service.impl;
 
 import com.sanjeevsky.catalogservice.exceptions.InvalidProductRequestException;
 import com.sanjeevsky.catalogservice.model.dto.ImageUploadRequest;
+import com.sanjeevsky.catalogservice.service.AuditService;
 import com.sanjeevsky.catalogservice.service.MediaService;
 import io.minio.BucketExistsArgs;
 import io.minio.MakeBucketArgs;
@@ -31,14 +32,17 @@ public class MediaServiceImpl implements MediaService {
             "image/gif", "gif");
 
     private final MinioClient minioClient;
+    private final AuditService auditService;
     private final String bucket;
     private final String publicBaseUrl;
 
     public MediaServiceImpl(
             MinioClient minioClient,
+            AuditService auditService,
             @Value("${minio.bucket:product-images}") String bucket,
             @Value("${media.public-base-url:http://localhost:9000/product-images}") String publicBaseUrl) {
         this.minioClient = minioClient;
+        this.auditService = auditService;
         this.bucket = bucket;
         // Trim a trailing slash so URL joining stays clean.
         this.publicBaseUrl = publicBaseUrl.endsWith("/")
@@ -96,7 +100,11 @@ public class MediaServiceImpl implements MediaService {
             log.error("Failed to upload product image {}: {}", key, e.getMessage());
             throw new RuntimeException("Failed to store image", e);
         }
-        return publicBaseUrl + "/" + key;
+        String url = publicBaseUrl + "/" + key;
+        String label = request.getFilename() == null || request.getFilename().isBlank()
+                ? "image" : request.getFilename().trim();
+        auditService.record("IMAGE", null, "UPLOAD", "Uploaded image '" + label + "' (" + url + ")");
+        return url;
     }
 
     private String normalizeContentType(String contentType) {
