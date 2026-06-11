@@ -6,10 +6,12 @@ in-app business-analytics dashboard. Lives in the existing `frontend/` app under
 
 ## Implementation status
 
-Phases 0 through 5 are implemented. The admin role is signed into JWTs and propagated
+Phases 0 through 6 are implemented. The admin role is signed into JWTs and propagated
 by the gateway, catalog and inventory writes are admin-gated, the Studio management
-surface is live, order analytics power the overview dashboard, and coupon creation,
-listing, activation, and deactivation are available from the Studio.
+surface is live, order analytics power the overview dashboard, coupon creation,
+listing, activation, and deactivation are available from the Studio, and every admin
+mutation to the sales catalog (product price/status) and inventory (stock) is recorded
+in an audit log surfaced on the Studio Activity page.
 
 ## Current gaps this plan closes
 
@@ -90,9 +92,21 @@ If event-sourced analytics is ever wanted, a dedicated consumer on `order-events
 - Product, inventory, and coupon screens export the current filtered view.
 - A shared serializer handles quoting, UTF-8 output, and spreadsheet formula injection.
 
+## Phase 6 — Price/stock audit log
+
+- catalog-service and inventory-service each persist an append-only `AuditLog`
+  (`catalog_audit_log`, `inventory_audit_log`): entity type, id, action, actor, summary.
+- Product create/update/retire records price and status changes; stock set/restock
+  records the old → new quantity. The actor is the admin email resolved from the
+  request MDC (`X-User`); unattributed changes record `system`.
+- `@AdminOnly GET /catalog-service/audit` and `GET /inventory-service/audit` (paged,
+  optional `entityId` filter).
+- `/studio/activity` merges both sources newest-first with a source filter and CSV export.
+
 ## Later
 
-Image upload (object storage) and price/stock audit log.
+Product image upload to object storage (MinIO/S3) with presigned URLs, replacing the
+current image-URL list in the product editor.
 
 ## Suggested PR sequence
 
@@ -102,5 +116,6 @@ Image upload (object storage) and price/stock audit log.
 4. **PR D** — Phase 3 (analytics endpoints + dashboard).
 5. **PR E** — Phase 4 (coupon lifecycle APIs + Studio management page).
 6. **PR F** — Phase 5 (shared CSV serializer + Studio exports).
+7. **PR G** — Phase 6 (catalog/inventory audit log + Studio activity page).
 
 Each PR is independently shippable; B unblocks C, A unblocks everything.

@@ -4328,6 +4328,96 @@
      }
     },
     {
+     "name": "60e — List Catalog Audit Log",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('Catalog Audit: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "pm.test('Catalog Audit page returned', function () { pm.expect(json.data && json.data.content).to.be.an('array'); });"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/catalog-service/audit?page=0&size=20",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "catalog-service",
+        "audit"
+       ],
+       "query": [
+        {
+         "key": "page",
+         "value": "0"
+        },
+        {
+         "key": "size",
+         "value": "20"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "60f — List Inventory Audit Log",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('Inventory Audit: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "pm.test('Inventory Audit page returned', function () { pm.expect(json.data && json.data.content).to.be.an('array'); });"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/inventory-service/audit?page=0&size=20",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "inventory-service",
+        "audit"
+       ],
+       "query": [
+        {
+         "key": "page",
+         "value": "0"
+        },
+        {
+         "key": "size",
+         "value": "20"
+        }
+       ]
+      }
+     }
+    },
+    {
      "name": "61 — Delete Variant",
      "event": [
       {

@@ -7,6 +7,7 @@ import com.sanjeevsky.inventoryservice.model.Inventory;
 import com.sanjeevsky.inventoryservice.model.InventoryTransaction;
 import com.sanjeevsky.inventoryservice.repository.InventoryRepository;
 import com.sanjeevsky.inventoryservice.repository.InventoryTransactionRepository;
+import com.sanjeevsky.inventoryservice.service.AuditService;
 import com.sanjeevsky.inventoryservice.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ public class InventoryServiceImpl implements InventoryService {
 
     private final InventoryRepository inventoryRepository;
     private final InventoryTransactionRepository transactionRepository;
+    private final AuditService auditService;
 
     @Override
     @Transactional
@@ -51,6 +53,9 @@ public class InventoryServiceImpl implements InventoryService {
                 .build();
         transactionRepository.save(tx);
 
+        auditService.record("STOCK", productId, "RESTOCK",
+                "Restocked +" + quantity + " → " + inventory.getTotalQty() + variantSuffix(variantId));
+
         log.info("Stock added for productId={}, variantId={}, newTotal={}", productId, variantId, inventory.getTotalQty());
         return inventory;
     }
@@ -76,7 +81,8 @@ public class InventoryServiceImpl implements InventoryService {
                     "Stock total quantity cannot be below reserved quantity " + inventory.getReservedQty());
         }
 
-        int delta = totalQty - inventory.getTotalQty();
+        int oldTotal = inventory.getTotalQty();
+        int delta = totalQty - oldTotal;
         inventory.setTotalQty(totalQty);
         inventory = inventoryRepository.save(inventory);
 
@@ -85,7 +91,14 @@ public class InventoryServiceImpl implements InventoryService {
                 .type("ADJUST")
                 .quantity(delta)
                 .build());
+
+        auditService.record("STOCK", productId, "STOCK_SET",
+                "Stock set " + oldTotal + " → " + totalQty + variantSuffix(variantId));
         return inventory;
+    }
+
+    private String variantSuffix(UUID variantId) {
+        return variantId == null ? "" : " (variant " + variantId + ")";
     }
 
     @Override

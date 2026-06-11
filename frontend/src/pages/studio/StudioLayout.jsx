@@ -1,6 +1,6 @@
 import React from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
-import { BarChart3, Boxes, LogOut, Package, ShoppingBag, TicketPercent } from "lucide-react";
+import { Activity, BarChart3, Boxes, LogOut, Package, ShoppingBag, TicketPercent } from "lucide-react";
 import { Logo } from "../../components/storefront/Logo.jsx";
 import { currentUser, logout } from "../../lib/auth.js";
 import "./studio.css";
@@ -10,6 +10,7 @@ const NAV = [
   { to: "/studio/products", label: "Products", Icon: Package },
   { to: "/studio/inventory", label: "Inventory", Icon: Boxes },
   { to: "/studio/coupons", label: "Coupons", Icon: TicketPercent },
+  { to: "/studio/activity", label: "Activity", Icon: Activity },
 ];
 
 export default function StudioLayout() {

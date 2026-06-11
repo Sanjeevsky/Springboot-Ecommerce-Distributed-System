@@ -7,6 +7,7 @@ import com.sanjeevsky.catalogservice.repository.ProductRepository;
 import com.sanjeevsky.catalogservice.search.ProductDocumentMapper;
 import com.sanjeevsky.catalogservice.search.document.ProductDocument;
 import com.sanjeevsky.catalogservice.search.repository.ProductSearchRepository;
+import com.sanjeevsky.catalogservice.service.AuditService;
 import com.sanjeevsky.catalogservice.service.BrandService;
 import com.sanjeevsky.catalogservice.service.CategoryService;
 import com.sanjeevsky.catalogservice.service.ProductService;
@@ -51,6 +52,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductSearchRepository searchRepository;
     private final ElasticsearchOperations elasticsearchOperations;
     private final ProductDocumentMapper documentMapper;
+    private final AuditService auditService;
 
     public ProductServiceImpl(
             ProductRepository productRepository,
@@ -59,7 +61,8 @@ public class ProductServiceImpl implements ProductService {
             SubCategoryService subCategoryService,
             ProductSearchRepository searchRepository,
             ElasticsearchOperations elasticsearchOperations,
-            ProductDocumentMapper documentMapper) {
+            ProductDocumentMapper documentMapper,
+            AuditService auditService) {
         this.productRepository = productRepository;
         this.brandService = brandService;
         this.categoryService = categoryService;
@@ -67,6 +70,7 @@ public class ProductServiceImpl implements ProductService {
         this.searchRepository = searchRepository;
         this.elasticsearchOperations = elasticsearchOperations;
         this.documentMapper = documentMapper;
+        this.auditService = auditService;
     }
 
     @Override
@@ -82,6 +86,9 @@ public class ProductServiceImpl implements ProductService {
         product.setSubCategory(subCategoryService.getSubCategory(subCategoryId));
         Product saved = productRepository.save(product);
         indexProduct(saved);
+        auditService.record("PRODUCT", saved.getId(), "CREATE",
+                "Created '" + saved.getName() + "' (sale " + saved.getSalePrice()
+                        + ", MRP " + saved.getMrpPrice() + ")");
         return saved;
     }
 
@@ -198,6 +205,10 @@ public class ProductServiceImpl implements ProductService {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new NoSuchProductExistsException(NO_PRODUCT_FOUND_WITH_GIVEN_UUID));
 
+        double oldSalePrice = product.getSalePrice();
+        double oldMrpPrice = product.getMrpPrice();
+        int oldStatus = product.getStatus();
+
         if (request.getName() != null) product.setName(request.getName());
         if (request.getDescription() != null) product.setDescription(request.getDescription().trim());
         if (request.getModel() != null) product.setModel(request.getModel());
@@ -226,7 +237,24 @@ public class ProductServiceImpl implements ProductService {
 
         Product saved = productRepository.save(product);
         indexProduct(saved);
+        auditService.record("PRODUCT", saved.getId(), "UPDATE",
+                describeChanges(saved, oldSalePrice, oldMrpPrice, oldStatus));
         return saved;
+    }
+
+    private String describeChanges(Product saved, double oldSalePrice, double oldMrpPrice, int oldStatus) {
+        StringBuilder changes = new StringBuilder();
+        if (saved.getSalePrice() != oldSalePrice) {
+            changes.append("sale ").append(oldSalePrice).append(" → ").append(saved.getSalePrice()).append("; ");
+        }
+        if (saved.getMrpPrice() != oldMrpPrice) {
+            changes.append("MRP ").append(oldMrpPrice).append(" → ").append(saved.getMrpPrice()).append("; ");
+        }
+        if (saved.getStatus() != oldStatus) {
+            changes.append("status ").append(oldStatus).append(" → ").append(saved.getStatus()).append("; ");
+        }
+        String detail = changes.length() == 0 ? "details updated" : changes.toString().trim();
+        return "Updated '" + saved.getName() + "': " + detail;
     }
 
     @Override
@@ -240,6 +268,7 @@ public class ProductServiceImpl implements ProductService {
         product.setStatus(0);
         Product saved = productRepository.save(product);
         indexProduct(saved);
+        auditService.record("PRODUCT", saved.getId(), "RETIRE", "Retired '" + saved.getName() + "'");
         return saved;
     }
 

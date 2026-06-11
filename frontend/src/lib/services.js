@@ -428,6 +428,26 @@ export const analytics = {
 };
 
 /* =========================================================================
+   Studio audit log  (admin activity: catalog price/status + inventory stock)
+   ========================================================================= */
+const AUDIT_ENDPOINTS = {
+  catalog: "/catalog-service/audit",
+  inventory: "/inventory-service/audit",
+};
+
+export const audit = {
+  // Returns audit rows for one source, newest first, each tagged with its source.
+  list: ({ source = "catalog", entityId, page = 0, size = 50 } = {}) =>
+    withFallback(async () => {
+      const params = new URLSearchParams({ page, size });
+      if (entityId) params.set("entityId", entityId);
+      const res = unwrap(await api.get(`${AUDIT_ENDPOINTS[source]}?${params}`));
+      const rows = Array.isArray(res?.content) ? res.content : (Array.isArray(res) ? res : []);
+      return rows.map((r) => ({ ...r, source }));
+    }, []),
+};
+
+/* =========================================================================
    Payment
    ========================================================================= */
 export const payment = {
