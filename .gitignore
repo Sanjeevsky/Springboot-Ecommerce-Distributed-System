@@ -27,6 +27,9 @@ replay_pid*
 *.env
 application-local.properties
 
+# Claude Code local overrides (shared settings.json is committed)
+.claude/settings.local.json
+
 # Local test and load-test output
 .newman/
 newman/

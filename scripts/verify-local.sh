@@ -96,7 +96,7 @@ GATEWAY_ROUTE_CHECKS=(
 
 GATEWAY_AUTH_GUARD_CHECKS=(
   "auth-service protected route|$BASE_URL/auth-service/updatePassword"
-  "catalog-service protected route|$BASE_URL/catalog-service/getBrands"
+  "catalog-service protected route|$BASE_URL/catalog-service/getBrand/00000000-0000-0000-0000-000000000000"
   "cart-service protected route|$BASE_URL/cart-service/cart"
   "customer-service protected route|$BASE_URL/customer-service/address"
   "payment-service protected route|$BASE_URL/payment-service/initiate"
