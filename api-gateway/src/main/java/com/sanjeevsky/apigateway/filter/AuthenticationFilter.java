@@ -35,15 +35,27 @@ public class AuthenticationFilter implements GatewayFilter {
 
             try {
                 Claims claims = jwtUtil.getAllClaimsFromToken(token);
+                String role = claims.get("role", String.class);
                 ServerHttpRequest mutated = request.mutate()
-                        .headers(headers -> headers.set("X-User", claims.getSubject()))
+                        .headers(headers -> {
+                            headers.set("X-User", claims.getSubject());
+                            // Tokens issued before roles existed carry no claim — treat as customer.
+                            headers.set("X-User-Role", role == null || role.isEmpty() ? "CUSTOMER" : role);
+                        })
                         .build();
                 return chain.filter(exchange.mutate().request(mutated).build());
             } catch (Exception e) {
                 return this.onError(exchange, HttpStatus.UNAUTHORIZED);
             }
         }
-        return chain.filter(exchange);
+        // Open routes skip JWT validation, so identity headers must never pass through as-is.
+        ServerHttpRequest cleaned = request.mutate()
+                .headers(headers -> {
+                    headers.remove("X-User");
+                    headers.remove("X-User-Role");
+                })
+                .build();
+        return chain.filter(exchange.mutate().request(cleaned).build());
     }
 
     private Mono<Void> onError(ServerWebExchange exchange, HttpStatus httpStatus) {

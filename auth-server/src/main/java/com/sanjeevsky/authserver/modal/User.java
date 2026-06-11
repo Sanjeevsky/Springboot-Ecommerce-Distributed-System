@@ -8,6 +8,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import java.time.LocalDateTime;
 
@@ -20,6 +22,8 @@ public class User {
     @Id
     private String email;
     private String password;
+    @Enumerated(EnumType.STRING)
+    private Role role = Role.CUSTOMER;
     @CreationTimestamp
     private LocalDateTime createdAt;
     @UpdateTimestamp

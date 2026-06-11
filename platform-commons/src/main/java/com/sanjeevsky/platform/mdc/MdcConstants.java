@@ -7,6 +7,7 @@ public final class MdcConstants {
 
     public static final String HEADER_CORRELATION_ID = "X-Correlation-ID";
     public static final String HEADER_USER           = "X-User";
+    public static final String HEADER_USER_ROLE      = "X-User-Role";
 
     private MdcConstants() {}
 }
