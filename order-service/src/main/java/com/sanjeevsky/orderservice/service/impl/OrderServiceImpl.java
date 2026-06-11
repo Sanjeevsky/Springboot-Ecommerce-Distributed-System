@@ -33,6 +33,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -376,12 +377,16 @@ public class OrderServiceImpl implements OrderService {
                 continue;
             }
 
-            // When variantId is null the cart has no variant; accept any stock entry for the product.
-            Optional<InventoryStock> matchingStock = item.getVariantId() != null
-                    ? stockEntries.stream()
-                            .filter(stock -> Objects.equals(stock.getVariantId(), item.getVariantId()))
-                            .findFirst()
-                    : stockEntries.stream().findFirst();
+            // Prefer the stock entry matching the item's variant (null matches the variant-less
+            // product-level entry). Variant-less cart items fall back to the entry with the most
+            // availability so an arbitrary zero-stock variant row cannot block the order.
+            Optional<InventoryStock> matchingStock = stockEntries.stream()
+                    .filter(stock -> Objects.equals(stock.getVariantId(), item.getVariantId()))
+                    .findFirst();
+            if (!matchingStock.isPresent() && item.getVariantId() == null) {
+                matchingStock = stockEntries.stream()
+                        .max(Comparator.comparingInt(InventoryStock::availableQuantity));
+            }
 
             int available = matchingStock.map(InventoryStock::availableQuantity).orElse(0);
             if (available < item.getQty()) {

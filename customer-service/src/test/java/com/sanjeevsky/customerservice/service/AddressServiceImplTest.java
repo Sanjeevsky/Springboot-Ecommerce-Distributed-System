@@ -3,7 +3,6 @@ package com.sanjeevsky.customerservice.service;
 import com.sanjeevsky.customerservice.exceptions.AddressDoesnotExistsException;
 import com.sanjeevsky.customerservice.exceptions.InvalidRequestException;
 import com.sanjeevsky.customerservice.exceptions.MandatoryFieldException;
-import com.sanjeevsky.customerservice.exceptions.NoAddressExistsException;
 import com.sanjeevsky.customerservice.model.Address;
 import com.sanjeevsky.customerservice.repository.AddressRepository;
 import com.sanjeevsky.customerservice.service.impl.AddressServiceImpl;
@@ -180,11 +179,10 @@ class AddressServiceImplTest {
     }
 
     @Test
-    void getAddresses_noAddresses_throwsNoAddressExistsException() {
+    void getAddresses_noAddresses_returnsEmptyList() {
         when(repository.findAllByUser(USER)).thenReturn(Collections.emptyList());
 
-        assertThatThrownBy(() -> addressService.getAddresses(USER))
-                .isInstanceOf(NoAddressExistsException.class);
+        assertThat(addressService.getAddresses(USER)).isEmpty();
     }
 
     @Test
