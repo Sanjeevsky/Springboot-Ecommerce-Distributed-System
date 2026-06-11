@@ -8,6 +8,7 @@ import { Button } from "../components/index.js";
 import { NavCard } from "../components/storefront/NavCard.jsx";
 import { useStore } from "../store/StoreContext.jsx";
 import { catalog } from "../lib/services.js";
+import { isLoggedIn } from "../lib/auth.js";
 
 const CAT_ICONS = {
   Smartphone, Laptop, Headphones, Watch, Footprints, Shirt,
@@ -84,6 +85,23 @@ export default function Home() {
   return (
     <div style={{ maxWidth: 1320, margin: "0 auto", padding: "28px 24px 0" }}>
       <Hero />
+
+      {!isLoggedIn() && (
+        <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", marginTop: 28, padding: "20px 24px", border: "1px solid var(--primary-border)", borderRadius: "var(--radius-xl)", background: "var(--primary-subtle)" }}>
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 700, letterSpacing: "-0.02em", color: "var(--text)" }}>
+              Sign in for the full Trove experience
+            </div>
+            <div style={{ fontSize: 14, color: "var(--text-secondary)", marginTop: 4 }}>
+              Track orders, save addresses, build a wishlist, and check out faster.
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <Button variant="primary" onClick={() => navigate("/login")}>Sign in</Button>
+            <Button variant="secondary" onClick={() => navigate("/signup")}>Create account</Button>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 12, marginTop: 40 }}>
         {categories.map((c) => {

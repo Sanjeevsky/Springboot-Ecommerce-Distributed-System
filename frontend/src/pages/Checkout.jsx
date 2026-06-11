@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Lock, ShieldCheck, Check } from "lucide-react";
+import { ArrowLeft, Lock, ShieldCheck, Check, LogIn } from "lucide-react";
 import { Button, Input, Select, Badge } from "../components/index.js";
 import { useStore } from "../store/StoreContext.jsx";
 import { money } from "../lib/format.js";
 import { coupons, orders as ordersApi, customer, cart as cartApi } from "../lib/services.js";
+import { isLoggedIn, currentUser } from "../lib/auth.js";
 
 function Field({ label, half, children }) {
   return (
@@ -66,12 +67,15 @@ export default function Checkout() {
   const [savingAddr, setSavingAddr] = useState(false);
   const [addrError, setAddrError] = useState("");
 
+  const loggedIn = isLoggedIn();
+
   useEffect(() => {
+    if (!loggedIn) return;
     customer.addresses().then((list) => {
       setAddresses(list);
       if (list.length > 0) setSelectedId(list[0].id);
     }).catch(() => {});
-  }, []);
+  }, [loggedIn]);
 
   const shippingCost = SHIPPING_OPTIONS.find((o) => o.id === ship)?.price ?? 0;
   const discount = couponResult?.valid ? couponResult.amount : 0;
@@ -141,15 +145,32 @@ export default function Checkout() {
       <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr", gap: 40, alignItems: "start" }}>
         <div>
           {/* step 1 — contact (pre-filled from localStorage, marked done) */}
-          <Step n="1" title="Contact" done>
-            <div />
+          <Step n="1" title="Contact" done={loggedIn} active={!loggedIn}>
+            <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", padding: "14px 16px", borderRadius: "var(--radius-md)", border: "1px solid var(--border-strong)", background: "var(--surface)" }}>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ fontSize: 14.5, fontWeight: 700, color: "var(--text)" }}>Checking out as a guest</div>
+                <div style={{ fontSize: 13.5, color: "var(--text-muted)", marginTop: 2 }}>Sign in to use your saved addresses and track this order in your account.</div>
+              </div>
+              <Button variant="primary" iconLeft={<LogIn size={16} />} onClick={() => navigate("/login", { state: { from: "/checkout" } })}>
+                Sign in
+              </Button>
+            </div>
           </Step>
-          <div style={{ marginTop: -36, marginBottom: 24, marginLeft: 40, fontSize: 14, color: "var(--text-secondary)" }}>
-            {(() => { try { return JSON.parse(localStorage.getItem("trove_user") || "{}").email || "Guest"; } catch { return "Guest"; } })()}
-          </div>
+          {loggedIn && (
+            <div style={{ marginTop: -36, marginBottom: 24, marginLeft: 40, fontSize: 14, color: "var(--text-secondary)" }}>
+              {currentUser().email || "Guest"}
+            </div>
+          )}
 
           {/* step 2 — shipping */}
           <Step n="2" title="Shipping address" active>
+            {!loggedIn && (
+              <div style={{ marginBottom: 16, fontSize: 13.5, color: "var(--text-secondary)", background: "var(--primary-subtle)", padding: "10px 14px", borderRadius: "var(--radius-md)" }}>
+                Have an account?{" "}
+                <Link to="/login" state={{ from: "/checkout" }} style={{ color: "var(--primary)", fontWeight: 700, textDecoration: "none" }}>Sign in</Link>
+                {" "}and we'll fill this in from your saved addresses.
+              </div>
+            )}
             {addresses.length > 0 ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {addresses.map((a) => (

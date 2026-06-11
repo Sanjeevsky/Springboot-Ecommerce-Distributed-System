@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { Routes, Route, Outlet, useLocation } from "react-router-dom";
+import { Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
+import { isLoggedIn } from "./lib/auth.js";
 import { Header } from "./components/storefront/Header.jsx";
 import { Footer } from "./components/storefront/Footer.jsx";
 import { CartDrawer } from "./components/storefront/CartDrawer.jsx";
@@ -20,6 +21,17 @@ import Orders from "./pages/account/Orders.jsx";
 import Wishlist from "./pages/account/Wishlist.jsx";
 import Addresses from "./pages/account/Addresses.jsx";
 import Notifications from "./pages/account/Notifications.jsx";
+import Payments from "./pages/account/Payments.jsx";
+import Settings from "./pages/account/Settings.jsx";
+
+// Redirects logged-out visitors to /login, remembering where they wanted to go.
+function RequireAuth({ children }) {
+  const location = useLocation();
+  if (!isLoggedIn()) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+  return children;
+}
 
 // Storefront chrome wrapper (header, footer, cart drawer, toast).
 function StorefrontLayout() {
@@ -67,11 +79,14 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
 
-        <Route path="/account" element={<AccountLayout />}>
+        <Route path="/account" element={<RequireAuth><AccountLayout /></RequireAuth>}>
+          <Route index element={<Navigate to="orders" replace />} />
           <Route path="orders" element={<Orders />} />
           <Route path="wishlist" element={<Wishlist />} />
           <Route path="addresses" element={<Addresses />} />
           <Route path="notifications" element={<Notifications />} />
+          <Route path="payments" element={<Payments />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Route>
     </Routes>
