@@ -61,6 +61,7 @@ class InventoryIntegrationTest {
     @Test
     void addStock_newEntry_createsInventory() throws Exception {
         mockMvc.perform(post("/inventory-service/stock")
+                        .header("X-User-Role", "ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(stockBody(PRODUCT_A, null, 50)))
                 .andExpect(status().isOk())
@@ -72,12 +73,14 @@ class InventoryIntegrationTest {
     @Test
     void addStock_existingEntry_incrementsTotalQty() throws Exception {
         mockMvc.perform(post("/inventory-service/stock")
+                        .header("X-User-Role", "ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(stockBody(PRODUCT_B, null, 30)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.totalQty").value(30));
 
         mockMvc.perform(post("/inventory-service/stock")
+                        .header("X-User-Role", "ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(stockBody(PRODUCT_B, null, 20)))
                 .andExpect(status().isOk())
@@ -87,6 +90,7 @@ class InventoryIntegrationTest {
     @Test
     void addStock_zeroQuantity_returns400() throws Exception {
         mockMvc.perform(post("/inventory-service/stock")
+                        .header("X-User-Role", "ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(stockBody(PRODUCT_A, null, 0)))
                 .andExpect(status().isBadRequest());
@@ -98,6 +102,7 @@ class InventoryIntegrationTest {
     void getStockByProduct_returnsInventoryList() throws Exception {
         UUID prod = UUID.fromString("33333333-3333-3333-3333-333333333333");
         mockMvc.perform(post("/inventory-service/stock")
+                        .header("X-User-Role", "ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(stockBody(prod, VARIANT_V1, 15)))
                 .andExpect(status().isOk());
@@ -122,6 +127,7 @@ class InventoryIntegrationTest {
     void getVariantStock_returnsCorrectEntry() throws Exception {
         UUID prod = UUID.fromString("44444444-4444-4444-4444-444444444444");
         mockMvc.perform(post("/inventory-service/stock")
+                        .header("X-User-Role", "ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(stockBody(prod, VARIANT_V1, 25)))
                 .andExpect(status().isOk());
@@ -146,6 +152,7 @@ class InventoryIntegrationTest {
     void getAvailableQty_returnsAvailableStock() throws Exception {
         UUID prod = UUID.fromString("55555555-5555-5555-5555-555555555555");
         mockMvc.perform(post("/inventory-service/stock")
+                        .header("X-User-Role", "ADMIN")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(stockBody(prod, null, 40)))
                 .andExpect(status().isOk());

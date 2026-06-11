@@ -20,6 +20,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -107,6 +108,58 @@ class InventoryControllerTest {
                 .andExpect(jsonPath("$.data").value(45));
 
         verify(inventoryService).getStock(PRODUCT_ID, null);
+    }
+
+    @Test
+    void listStock_returnsAllInventory() throws Exception {
+        when(inventoryService.listStock()).thenReturn(List.of(inventory(50, 5)));
+
+        mockMvc.perform(get("/inventory-service/stock"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1));
+
+        verify(inventoryService).listStock();
+    }
+
+    @Test
+    void setVariantStock_forwardsAbsoluteQuantity() throws Exception {
+        when(inventoryService.setStock(PRODUCT_ID, VARIANT_ID, 40)).thenReturn(inventory(40, 5));
+
+        mockMvc.perform(put("/inventory-service/stock/{productId}/variant/{variantId}", PRODUCT_ID, VARIANT_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"totalQty\":40}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Stock quantity set successfully"))
+                .andExpect(jsonPath("$.data.totalQty").value(40));
+
+        verify(inventoryService).setStock(PRODUCT_ID, VARIANT_ID, 40);
+    }
+
+    @Test
+    void setProductStock_forwardsAbsoluteQuantityWithoutVariant() throws Exception {
+        Inventory productStock = inventory(40, 5);
+        productStock.setVariantId(null);
+        when(inventoryService.setStock(PRODUCT_ID, null, 40)).thenReturn(productStock);
+
+        mockMvc.perform(put("/inventory-service/stock/{productId}", PRODUCT_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"totalQty\":40}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Stock quantity set successfully"))
+                .andExpect(jsonPath("$.data.variantId").doesNotExist());
+
+        verify(inventoryService).setStock(PRODUCT_ID, null, 40);
+    }
+
+    @Test
+    void setProductStock_negativeQuantity_returns400BeforeServiceCall() throws Exception {
+        mockMvc.perform(put("/inventory-service/stock/{productId}", PRODUCT_ID)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"totalQty\":-1}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("must not be negative")));
+
+        verifyNoInteractions(inventoryService);
     }
 
     private Inventory inventory(int totalQty, int reservedQty) {

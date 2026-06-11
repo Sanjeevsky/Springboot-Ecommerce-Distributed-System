@@ -3,6 +3,7 @@ package com.sanjeevsky.catalogservice.controller;
 import com.sanjeevsky.catalogservice.exceptions.GlobalExceptionHandler;
 import com.sanjeevsky.catalogservice.exceptions.InvalidVariantRequestException;
 import com.sanjeevsky.catalogservice.model.Variant;
+import com.sanjeevsky.catalogservice.model.dto.VariantUpdateRequest;
 import com.sanjeevsky.catalogservice.service.VariantService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -74,5 +77,37 @@ class VariantControllerTest {
                 .andExpect(jsonPath("$.message").value("Sale price cannot exceed MRP price"));
 
         verify(variantService).addVariant(eq(PRODUCT_ID), any(Variant.class));
+    }
+
+    @Test
+    void updateVariant_forwardsPatchAndReturns200() throws Exception {
+        UUID variantId = UUID.randomUUID();
+        Variant updated = new Variant();
+        updated.setId(variantId);
+        updated.setCondition1Name("Storage");
+        updated.setCondition1Value("512GB");
+        updated.setMrpPrice(100.0);
+        updated.setSalePrice(85.0);
+        when(variantService.updateVariant(eq(variantId), any(VariantUpdateRequest.class))).thenReturn(updated);
+
+        mockMvc.perform(put("/catalog-service/variant/{variantId}", variantId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"condition1Value\":\"512GB\",\"salePrice\":85.0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Variant updated successfully"))
+                .andExpect(jsonPath("$.data.condition1Value").value("512GB"));
+
+        verify(variantService).updateVariant(eq(variantId), any(VariantUpdateRequest.class));
+    }
+
+    @Test
+    void deleteVariant_forwardsIdAndReturns200() throws Exception {
+        UUID variantId = UUID.randomUUID();
+
+        mockMvc.perform(delete("/catalog-service/variant/{variantId}", variantId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Variant deleted successfully"));
+
+        verify(variantService).deleteVariant(variantId);
     }
 }

@@ -3,6 +3,7 @@ package com.sanjeevsky.catalogservice.controller;
 import com.sanjeevsky.catalogservice.model.Category;
 import com.sanjeevsky.catalogservice.service.CategoryService;
 import com.sanjeevsky.platform.response.ApiResponse;
+import com.sanjeevsky.platform.security.AdminOnly;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,6 +43,7 @@ public class CategoryController {
         return ResponseEntity.ok(ApiResponse.ok(categoryService.getAllCategory()));
     }
 
+    @AdminOnly
     @PostMapping("/addCategory")
     public ResponseEntity<ApiResponse<Category>> addCategory(@RequestParam("categoryName") String categoryName) {
         log.info(ADD_CATEGORY_REQUEST_WITH_CATEGORY_NAME, categoryName);

@@ -5,6 +5,7 @@ import com.sanjeevsky.catalogservice.exceptions.InvalidVariantRequestException;
 import com.sanjeevsky.catalogservice.exceptions.VariantNotExistsException;
 import com.sanjeevsky.catalogservice.model.Product;
 import com.sanjeevsky.catalogservice.model.Variant;
+import com.sanjeevsky.catalogservice.model.dto.VariantUpdateRequest;
 import com.sanjeevsky.catalogservice.repository.ProductRepository;
 import com.sanjeevsky.catalogservice.repository.VariantRepository;
 import com.sanjeevsky.catalogservice.service.impl.VariantServiceImpl;
@@ -63,7 +64,9 @@ class VariantServiceImplTest {
 
         assertThat(result).isSameAs(v);
         assertThat(v.getProduct()).isSameAs(p);
+        assertThat(p.isHasVariant()).isTrue();
         verify(variantRepository).save(v);
+        verify(productRepository).save(p);
     }
 
     @Test
@@ -148,5 +151,50 @@ class VariantServiceImplTest {
                 .hasMessage("Variant id is required");
 
         verifyNoInteractions(variantRepository);
+    }
+
+    @Test
+    void updateVariant_partialRequest_mergesAndSaves() {
+        Variant stored = variant();
+        VariantUpdateRequest request = new VariantUpdateRequest();
+        request.setCondition1Value(" 512GB ");
+        request.setSalePrice(85.0);
+        when(variantRepository.findById(VARIANT_ID)).thenReturn(Optional.of(stored));
+        when(variantRepository.save(stored)).thenReturn(stored);
+
+        Variant result = variantService.updateVariant(VARIANT_ID, request);
+
+        assertThat(result.getCondition1Value()).isEqualTo("512GB");
+        assertThat(result.getSalePrice()).isEqualTo(85.0);
+    }
+
+    @Test
+    void updateVariant_salePriceAboveMrp_throwsInvalidVariantRequestException() {
+        Variant stored = variant();
+        VariantUpdateRequest request = new VariantUpdateRequest();
+        request.setSalePrice(101.0);
+        when(variantRepository.findById(VARIANT_ID)).thenReturn(Optional.of(stored));
+
+        assertThatThrownBy(() -> variantService.updateVariant(VARIANT_ID, request))
+                .isInstanceOf(InvalidVariantRequestException.class)
+                .hasMessageContaining("Sale price cannot exceed MRP price");
+
+        verify(variantRepository, never()).save(any());
+    }
+
+    @Test
+    void deleteVariant_lastVariant_marksProductWithoutVariants() {
+        Product product = product();
+        Variant stored = variant();
+        stored.setProduct(product);
+        when(variantRepository.findById(VARIANT_ID)).thenReturn(Optional.of(stored));
+        when(variantRepository.countByProductId(PRODUCT_ID)).thenReturn(0L);
+
+        variantService.deleteVariant(VARIANT_ID);
+
+        verify(variantRepository).delete(stored);
+        verify(variantRepository).flush();
+        verify(productRepository, never()).save(any());
+        assertThat(product.isHasVariant()).isFalse();
     }
 }

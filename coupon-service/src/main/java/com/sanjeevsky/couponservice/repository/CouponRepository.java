@@ -14,4 +14,6 @@ public interface CouponRepository extends JpaRepository<Coupon, UUID> {
     Optional<Coupon> findByCode(String code);
 
     List<Coupon> findByActiveTrue();
+
+    List<Coupon> findAllByOrderByCreatedAtDesc();
 }

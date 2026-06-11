@@ -3,8 +3,10 @@ package com.sanjeevsky.catalogservice.controller;
 import com.sanjeevsky.catalogservice.exceptions.*;
 import com.sanjeevsky.catalogservice.model.Product;
 import com.sanjeevsky.catalogservice.model.dto.ProductDTO;
+import com.sanjeevsky.catalogservice.model.dto.ProductUpdateRequest;
 import com.sanjeevsky.catalogservice.service.ProductService;
 import com.sanjeevsky.platform.response.ApiResponse;
+import com.sanjeevsky.platform.security.AdminOnly;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 
@@ -37,6 +39,7 @@ public class ProductCatalogController {
         return new ResponseEntity<>(ApiResponse.ok("Catalog service is up and healthy", null), HttpStatus.OK);
     }
 
+    @AdminOnly
     @PostMapping("/addProduct")
     public ResponseEntity<ApiResponse<Product>> addProduct(
             @RequestParam("categoryId") UUID categoryId,
@@ -64,6 +67,36 @@ public class ProductCatalogController {
         log.info(LIST_PRODUCTS_REQUEST, page, size, sort);
         Page<Product> products = productService.listProducts(page, size, sort);
         return new ResponseEntity<>(ApiResponse.ok(products), HttpStatus.OK);
+    }
+
+    @AdminOnly
+    @GetMapping("/admin/list")
+    public ResponseEntity<ApiResponse<Page<Product>>> listProductsForAdmin(
+            @RequestParam(required = false, defaultValue = "") String q,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "modifiedAt") String sort) {
+        Page<Product> products = productService.listProductsForAdmin(q, status, page, size, sort);
+        return ResponseEntity.ok(ApiResponse.ok(products));
+    }
+
+    @AdminOnly
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponse<Product>> updateProduct(
+            @PathVariable UUID id,
+            @RequestBody ProductUpdateRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                "Product updated successfully",
+                productService.updateProduct(id, request)));
+    }
+
+    @AdminOnly
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Product>> retireProduct(@PathVariable UUID id) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                "Product retired successfully",
+                productService.retireProduct(id)));
     }
 
     @GetMapping("/search")

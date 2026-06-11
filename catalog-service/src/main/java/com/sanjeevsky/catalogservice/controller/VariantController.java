@@ -2,8 +2,10 @@ package com.sanjeevsky.catalogservice.controller;
 
 import com.sanjeevsky.catalogservice.model.Variant;
 import com.sanjeevsky.catalogservice.model.dto.VariantDTO;
+import com.sanjeevsky.catalogservice.model.dto.VariantUpdateRequest;
 import com.sanjeevsky.catalogservice.service.VariantService;
 import com.sanjeevsky.platform.response.ApiResponse;
+import com.sanjeevsky.platform.security.AdminOnly;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +26,7 @@ public class VariantController {
         this.mapper = mapper;
     }
 
+    @AdminOnly
     @PostMapping("/add/{productId}")
     public ResponseEntity<ApiResponse<Variant>> addVariant(
             @PathVariable("productId") UUID productId,
@@ -35,5 +38,22 @@ public class VariantController {
     @GetMapping("/{variantId}")
     public ResponseEntity<ApiResponse<Variant>> getVariant(@PathVariable("variantId") UUID variantId) {
         return ResponseEntity.ok(ApiResponse.ok(service.getVariant(variantId)));
+    }
+
+    @AdminOnly
+    @PutMapping("/{variantId}")
+    public ResponseEntity<ApiResponse<Variant>> updateVariant(
+            @PathVariable UUID variantId,
+            @RequestBody VariantUpdateRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                "Variant updated successfully",
+                service.updateVariant(variantId, request)));
+    }
+
+    @AdminOnly
+    @DeleteMapping("/{variantId}")
+    public ResponseEntity<ApiResponse<Void>> deleteVariant(@PathVariable UUID variantId) {
+        service.deleteVariant(variantId);
+        return ResponseEntity.ok(ApiResponse.ok("Variant deleted successfully", null));
     }
 }

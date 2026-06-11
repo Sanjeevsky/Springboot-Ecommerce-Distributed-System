@@ -1,11 +1,13 @@
 package com.sanjeevsky.orderservice.exceptions;
 
 import com.sanjeevsky.platform.response.ApiResponse;
+import com.sanjeevsky.platform.security.AdminAccessDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.stream.Collectors;
 
@@ -18,6 +20,11 @@ public class GlobalExceptionHandler {
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .collect(Collectors.joining("; "));
         return new ResponseEntity<>(ApiResponse.error(message), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<Void>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return new ResponseEntity<>(ApiResponse.error("Invalid value for " + ex.getName()), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(OrderNotFoundException.class)
@@ -38,6 +45,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ServiceUnavailableException.class)
     public ResponseEntity<ApiResponse<Void>> handleServiceUnavailable(ServiceUnavailableException ex) {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    @ExceptionHandler(AdminAccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleForbidden(AdminAccessDeniedException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(Exception.class)

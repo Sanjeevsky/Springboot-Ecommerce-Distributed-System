@@ -3,6 +3,7 @@ package com.sanjeevsky.catalogservice.controller;
 import com.sanjeevsky.catalogservice.model.Brand;
 import com.sanjeevsky.catalogservice.service.BrandService;
 import com.sanjeevsky.platform.response.ApiResponse;
+import com.sanjeevsky.platform.security.AdminOnly;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,6 +43,7 @@ public class BrandController {
         return ResponseEntity.ok(ApiResponse.ok(brandService.getBrandList()));
     }
 
+    @AdminOnly
     @PostMapping("/add-brand")
     public ResponseEntity<ApiResponse<Brand>> addBrand(@RequestParam("name") String name) {
         log.info(ADD_BRAND_REQUEST_WITH_BRAND_NAME, name);
