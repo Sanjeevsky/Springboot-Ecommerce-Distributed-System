@@ -1,8 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Plus, Save, Trash2 } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { ArrowLeft, Plus, Save, Trash2, Upload } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Badge, Button, Input, Select } from "../../components/index.js";
-import { catalog, inventory } from "../../lib/services.js";
+import { catalog, inventory, media } from "../../lib/services.js";
 
 const EMPTY_PRODUCT = {
   name: "", model: "", description: "", mrpPrice: "", salePrice: "",
@@ -32,6 +32,9 @@ export default function StudioProductEditor() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     Promise.all([catalog.brandOptions(), catalog.categoryOptions()])
@@ -72,6 +75,29 @@ export default function StudioProductEditor() {
   );
 
   const setField = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+
+  const uploadImage = async (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (file) {
+      event.target.value = ""; // allow re-selecting the same file
+      setUploadError("");
+      setUploading(true);
+      try {
+        const url = await media.upload(file);
+        // Append the new URL to the newline-separated image list.
+        setForm((current) => ({
+          ...current,
+          images: current.images ? `${current.images.trimEnd()}\n${url}` : url,
+        }));
+      } catch (err) {
+        setUploadError(err.body || err.message || "Upload failed");
+      } finally {
+        setUploading(false);
+      }
+    }
+  };
+
+  const imageList = (form.images || "").split("\n").map((s) => s.trim()).filter(Boolean);
 
   const saveProduct = async (event) => {
     event.preventDefault();
@@ -224,7 +250,40 @@ export default function StudioProductEditor() {
             <Field label="Description" wide>
               <textarea className="studio-textarea" value={form.description} onChange={(e) => setField("description", e.target.value)} rows="4" />
             </Field>
-            <Field label="Image URLs, one per line" wide>
+            <Field label="Images" wide>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10, flexWrap: "wrap" }}>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/gif"
+                  style={{ display: "none" }}
+                  onChange={uploadImage}
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  iconLeft={<Upload size={16} />}
+                  loading={uploading}
+                  onClick={() => fileInputRef.current && fileInputRef.current.click()}
+                >
+                  Upload image
+                </Button>
+                <span className="studio-muted" style={{ fontSize: 13 }}>or paste URLs below, one per line</span>
+              </div>
+              {uploadError && <div className="studio-error" style={{ marginBottom: 10 }}>{uploadError}</div>}
+              {imageList.length > 0 && (
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                  {imageList.map((url) => (
+                    <img
+                      key={url}
+                      src={url}
+                      alt=""
+                      style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }}
+                      onError={(e) => { e.currentTarget.style.opacity = 0.3; }}
+                    />
+                  ))}
+                </div>
+              )}
               <textarea className="studio-textarea" value={form.images} onChange={(e) => setField("images", e.target.value)} rows="3" />
             </Field>
           </div>
