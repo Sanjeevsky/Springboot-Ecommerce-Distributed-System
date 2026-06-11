@@ -789,14 +789,17 @@ function composeServiceBlock(service) {
   return match ? match[0] : "";
 }
 
-const zookeeperBlock = composeServiceBlock("zookeeper");
-if (!zookeeperBlock.includes('test: ["CMD", "nc", "-z", "localhost", "2181"]')) {
-  fail("docker-compose.yml: zookeeper must define a TCP healthcheck for Kafka startup sequencing");
+if (composeServiceBlock("zookeeper")) {
+  fail("docker-compose.yml: zookeeper must not exist — kafka runs in single-node KRaft mode");
 }
 
 const kafkaBlock = composeServiceBlock("kafka");
-if (!/zookeeper:\n\s+condition:\s+service_healthy/.test(kafkaBlock)) {
-  fail("docker-compose.yml: kafka must wait for zookeeper service_healthy");
+if (!kafkaBlock.includes("KAFKA_PROCESS_ROLES: broker,controller")
+    || !kafkaBlock.includes("KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:29093")) {
+  fail("docker-compose.yml: kafka must run in single-node KRaft mode (broker,controller roles)");
+}
+if (!kafkaBlock.includes('test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]')) {
+  fail("docker-compose.yml: kafka must define a broker healthcheck for startup sequencing");
 }
 
 const kafkaUiBlock = composeServiceBlock("kafka-ui");
@@ -2079,7 +2082,7 @@ if (!verifyLocalText.includes("verify_gateway_standard_routes")
 }
 for (const expectedGatewayAuthGuardMarker of [
   "/auth-service/updatePassword",
-  "/catalog-service/getBrands",
+  "/catalog-service/getBrand/",
   "/cart-service/cart",
   "/customer-service/address",
   "/payment-service/initiate",

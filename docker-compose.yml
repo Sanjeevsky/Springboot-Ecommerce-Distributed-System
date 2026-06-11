@@ -4,6 +4,7 @@ services:
 
   mysql:
     image: mysql:8.0
+    restart: unless-stopped
     command: >-
       --max-connections=60 --innodb-buffer-pool-size=64M --performance-schema=OFF
       --table-open-cache=200 --table-definition-cache=200
@@ -26,6 +27,7 @@ services:
 
   opensearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.13.4
+    restart: unless-stopped
     environment:
       - discovery.type=single-node
       - ES_JAVA_OPTS=-Xms256m -Xmx512m
@@ -45,6 +47,7 @@ services:
 
   redis:
     image: redis:7.2-alpine
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
@@ -59,6 +62,7 @@ services:
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
+    restart: unless-stopped
     ports:
       - "9092:9092"
     environment:
@@ -86,6 +90,7 @@ services:
 
   zipkin:
     image: openzipkin/zipkin:2.24
+    restart: unless-stopped
     ports:
       - "9411:9411"
     networks:
@@ -98,6 +103,7 @@ services:
 
   prometheus:
     image: prom/prometheus:v2.47.0
+    restart: unless-stopped
     ports:
       - "9090:9090"
     volumes:
@@ -112,6 +118,7 @@ services:
 
   grafana:
     image: grafana/grafana:10.1.0
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
@@ -133,6 +140,7 @@ services:
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
+    restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
@@ -282,7 +290,7 @@ services:
       - SPRING_BOOT_ADMIN_CLIENT_URL=http://spring-server:9000
       - SPRING_BOOT_ADMIN_CLIENT_ENABLED=${SPRING_BOOT_ADMIN_CLIENT_ENABLED:-false}
       - SPRING_BOOT_ADMIN_CLIENT_USERNAME=${SPRING_BOOT_ADMIN_CLIENT_USERNAME:-client}
-      - SPRING_BOOT_ADMIN_CLIENT_PASSWORD=${SPRING_BOOT_ADMIN_CLIENT_PASSWORD:-false}
+      - SPRING_BOOT_ADMIN_CLIENT_PASSWORD=${SPRING_BOOT_ADMIN_CLIENT_PASSWORD:-client}
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_REDIS_HOST=redis
       - SPRING_REDIS_PORT=6379
@@ -689,6 +697,7 @@ services:
 
   kafka-connect:
     image: debezium/connect:2.4
+    restart: unless-stopped
     ports:
       - "8093:8083"
     depends_on:
@@ -729,6 +738,27 @@ services:
         curl -sf http://kafka-connect:8083/connectors/catalog-mysql-connector > /dev/null 2>&1 && echo "Connector already registered" || curl -sf -X POST http://kafka-connect:8083/connectors -H "Content-Type: application/json" -d "{\"name\":\"catalog-mysql-connector\",\"config\":{\"connector.class\":\"io.debezium.connector.mysql.MySqlConnector\",\"database.hostname\":\"mysql\",\"database.port\":\"3306\",\"database.user\":\"root\",\"database.password\":\"$$MYSQL_PASSWORD\",\"database.server.id\":\"184054\",\"topic.prefix\":\"catalog\",\"database.include.list\":\"product-catalog-db\",\"table.include.list\":\"product-catalog-db.product\",\"schema.history.internal.kafka.bootstrap.servers\":\"kafka:29092\",\"schema.history.internal.kafka.topic\":\"schema-changes.catalog\",\"include.schema.changes\":\"false\",\"snapshot.mode\":\"schema_only\",\"key.converter\":\"org.apache.kafka.connect.json.JsonConverter\",\"value.converter\":\"org.apache.kafka.connect.json.JsonConverter\",\"key.converter.schemas.enabled\":\"false\",\"value.converter.schemas.enabled\":\"false\"}}"
     networks:
       - ecommerce-network
+
+  # ─── Frontend ─────────────────────────────────────────────────────────────────
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    ports:
+      # 4173 (vite preview convention) — 5173 stays free for `npm run dev`
+      - "4173:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    networks:
+      - ecommerce-network
+    healthcheck:
+      # 127.0.0.1, not localhost: nginx listens IPv4-only, busybox wget prefers ::1
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:80"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
 volumes:
   mysql-data:

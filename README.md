@@ -37,6 +37,7 @@ A production-grade ecommerce platform built as a microservices architecture usin
 
 | Service | Port | Description |
 |---------|------|-------------|
+| frontend | 4173 | Trove storefront — React (Vite) SPA served by nginx, proxies `/api/*` to the gateway |
 | service-discovery | 8761 | Eureka server — service registry |
 | cloud-config | 8071 | Spring Cloud Config Server |
 | spring-server | 9000 | Spring Boot Admin UI |
@@ -135,6 +136,7 @@ docker compose up -d
 
 | UI | URL |
 |----|-----|
+| Trove Storefront | http://localhost:4173 |
 | Eureka Dashboard | http://localhost:8761 |
 | Spring Boot Admin | http://localhost:9000 (client / client; optional `platform-tools` profile) |
 | Kafka UI | http://localhost:8080 |
@@ -159,6 +161,8 @@ Application services default to the `dev` profile for Eureka-backed local runs; 
 `customer-service/src/main/resources/application-local.properties` is an opt-in isolated profile for direct customer-service debugging; it disables Eureka and is not used by Docker Compose or smoke verification.
 
 The API Gateway uses explicit standard-prefix routes such as `/cart-service/**`, `/order-service/**`, and `/catalog-service/**`. Spring Cloud Gateway discovery-locator routes are disabled so raw service-id paths such as `/shopping-cart-service/**` are not exposed alongside the standard application routes.
+
+**Frontend development:** the dockerized storefront on :4173 serves the production build. For hot-reload development run `cd frontend && npm install && npm run dev` — the Vite dev server on :5173 proxies `/api` to the gateway on :8081 (see `frontend/.env.example` for config).
 
 Kafka broker endpoints:
 

@@ -445,6 +445,7 @@ function isPublicGatewayRoute(url) {
     || path === "/auth-service/login"
     || path === "/catalog-service/product/list"
     || path === "/catalog-service/product/search"
+    || path === "/catalog-service/product/suggest"
     || path === "/catalog-service/product/getProduct/{var}";
 }
 

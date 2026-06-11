@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc --noEmit)",
+      "Bash(npx tsc --noEmit *)",
+      "Bash(node --check *)",
+      "Bash(redis-cli *)",
+      "Bash(psql *)",
+      "Bash(npm test *)",
+      "Bash(npm start)",
+      "Bash(export JAVA_HOME=*)",
+      "Bash(curl -s *)",
+      "Bash(curl -f *)",
+      "Bash(curl -o /dev/null *)"
+    ]
+  }
+}
