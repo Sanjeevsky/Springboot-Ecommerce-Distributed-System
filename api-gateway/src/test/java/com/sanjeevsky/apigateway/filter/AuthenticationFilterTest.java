@@ -108,6 +108,58 @@ class AuthenticationFilterTest {
     }
 
     @Test
+    void filter_securedRouteTokenWithoutRoleClaim_defaultsRoleHeaderToCustomer() throws Exception {
+        Claims claims = Jwts.claims().setSubject("buyer@example.com");
+        when(jwtUtil.getAllClaimsFromToken("good-token")).thenReturn(claims);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/order-service/orders")
+                        .header("Authorization", "Bearer good-token")
+                        .build());
+        AtomicReference<ServerWebExchange> capturedExchange = new AtomicReference<>();
+
+        filter.filter(exchange, capturedChain(new AtomicBoolean(false), capturedExchange)).block();
+
+        assertEquals("CUSTOMER", capturedExchange.get().getRequest().getHeaders().getFirst("X-User-Role"));
+    }
+
+    @Test
+    void filter_securedRouteAdminToken_addsAdminRoleHeader() throws Exception {
+        Claims claims = Jwts.claims().setSubject("admin@trove.local");
+        claims.put("role", "ADMIN");
+        when(jwtUtil.getAllClaimsFromToken("admin-token")).thenReturn(claims);
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/order-service/orders")
+                        .header("Authorization", "Bearer admin-token")
+                        .header("X-User-Role", "spoofed")
+                        .build());
+        AtomicReference<ServerWebExchange> capturedExchange = new AtomicReference<>();
+
+        filter.filter(exchange, capturedChain(new AtomicBoolean(false), capturedExchange)).block();
+
+        assertEquals(
+                List.of("ADMIN"),
+                capturedExchange.get().getRequest().getHeaders().get("X-User-Role"));
+    }
+
+    @Test
+    void filter_openRoute_stripsClientIdentityHeaders() {
+        MockServerWebExchange exchange = MockServerWebExchange.from(
+                MockServerHttpRequest.get("/catalog-service/product/list")
+                        .header("X-User", "spoofed@example.com")
+                        .header("X-User-Role", "ADMIN")
+                        .build());
+        AtomicBoolean chainCalled = new AtomicBoolean(false);
+        AtomicReference<ServerWebExchange> capturedExchange = new AtomicReference<>();
+
+        filter.filter(exchange, capturedChain(chainCalled, capturedExchange)).block();
+
+        assertTrue(chainCalled.get());
+        assertNull(capturedExchange.get().getRequest().getHeaders().getFirst("X-User"));
+        assertNull(capturedExchange.get().getRequest().getHeaders().getFirst("X-User-Role"));
+        verifyNoInteractions(jwtUtil);
+    }
+
+    @Test
     void filter_securedRouteValidBearerAuth_replacesClientUserHeader() throws Exception {
         Claims claims = Jwts.claims().setSubject("buyer@example.com");
         when(jwtUtil.getAllClaimsFromToken("good-token")).thenReturn(claims);

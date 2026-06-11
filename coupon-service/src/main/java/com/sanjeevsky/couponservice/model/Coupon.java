@@ -1,5 +1,6 @@
 package com.sanjeevsky.couponservice.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.Type;
@@ -50,6 +51,7 @@ public class Coupon {
     @PositiveOrZero(message = "usedCount must not be negative")
     private int usedCount = 0;
 
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate expiryDate;
 
     @Builder.Default

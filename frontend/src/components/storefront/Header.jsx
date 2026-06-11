@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Heart, ShoppingBag, User, Moon, Sun, LayoutGrid } from "lucide-react";
+import { Search, Heart, ShoppingBag, User, Moon, Sun, LayoutGrid, Store, LogOut } from "lucide-react";
 import { Input } from "../index.js";
 import { Logo } from "./Logo.jsx";
 import { useStore } from "../../store/StoreContext.jsx";
+import { isAdmin, isLoggedIn, logout } from "../../lib/auth.js";
 import { useTheme } from "../../store/ThemeContext.jsx";
 import { catalog } from "../../lib/services.js";
 
@@ -71,6 +72,11 @@ export function Header({ onOpenCart }) {
     navigate(`/search?q=${encodeURIComponent(s)}`);
   };
 
+  const signOut = () => {
+    logout();
+    navigate("/login");
+  };
+
   return (
     <header style={{ position: "sticky", top: 0, zIndex: 100, background: "var(--surface)", borderBottom: "1px solid var(--border)" }}>
       <div style={{ background: "var(--ink-900)", color: "var(--paper)", textAlign: "center", padding: "7px 16px", fontSize: 13, fontWeight: 500 }}>
@@ -119,9 +125,19 @@ export function Header({ onOpenCart }) {
           <button onClick={toggle} aria-label="Toggle theme" style={{ ...navBtn, padding: 10 }}>
             {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
           </button>
+          {isAdmin() && (
+            <button onClick={() => navigate("/studio")} style={navBtn}>
+              <Store size={18} /><span style={navLabel}>Studio</span>
+            </button>
+          )}
           <button onClick={() => navigate("/account/orders")} style={navBtn}>
             <User size={18} /><span style={navLabel}>Account</span>
           </button>
+          {isLoggedIn() && (
+            <button onClick={signOut} style={navBtn}>
+              <LogOut size={18} /><span style={navLabel}>Sign out</span>
+            </button>
+          )}
           <button onClick={() => navigate("/account/wishlist")} style={navBtn}>
             <span style={{ position: "relative", display: "inline-flex" }}><Heart size={18} /><CountDot n={wishCount} /></span>
             <span style={navLabel}>Saved</span>

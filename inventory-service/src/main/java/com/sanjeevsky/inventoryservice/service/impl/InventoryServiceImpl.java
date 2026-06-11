@@ -34,7 +34,7 @@ public class InventoryServiceImpl implements InventoryService {
 
         Optional<Inventory> existing = variantId != null
                 ? inventoryRepository.findByProductIdAndVariantId(productId, variantId)
-                : inventoryRepository.findByProductId(productId);
+                : inventoryRepository.findByProductIdAndVariantIdIsNull(productId);
 
         Inventory inventory = existing.orElseGet(() -> Inventory.builder()
                 .productId(productId)
@@ -56,6 +56,44 @@ public class InventoryServiceImpl implements InventoryService {
     }
 
     @Override
+    @Transactional
+    public Inventory setStock(UUID productId, UUID variantId, int totalQty) {
+        validateProductId(productId);
+        if (totalQty < 0) {
+            throw new InvalidInventoryRequestException("Stock total quantity must not be negative");
+        }
+
+        Optional<Inventory> existing = variantId != null
+                ? inventoryRepository.findByProductIdAndVariantId(productId, variantId)
+                : inventoryRepository.findByProductIdAndVariantIdIsNull(productId);
+
+        Inventory inventory = existing.orElseGet(() -> Inventory.builder()
+                .productId(productId)
+                .variantId(variantId)
+                .build());
+        if (totalQty < inventory.getReservedQty()) {
+            throw new InvalidInventoryRequestException(
+                    "Stock total quantity cannot be below reserved quantity " + inventory.getReservedQty());
+        }
+
+        int delta = totalQty - inventory.getTotalQty();
+        inventory.setTotalQty(totalQty);
+        inventory = inventoryRepository.save(inventory);
+
+        transactionRepository.save(InventoryTransaction.builder()
+                .inventoryId(inventory.getId())
+                .type("ADJUST")
+                .quantity(delta)
+                .build());
+        return inventory;
+    }
+
+    @Override
+    public List<Inventory> listStock() {
+        return inventoryRepository.findAll();
+    }
+
+    @Override
     public Inventory getStock(UUID productId, UUID variantId) {
         validateProductId(productId);
         if (variantId != null) {
@@ -63,7 +101,7 @@ public class InventoryServiceImpl implements InventoryService {
                     .orElseThrow(() -> new InventoryNotFoundException(
                             "Inventory not found for productId=" + productId + " variantId=" + variantId));
         }
-        return inventoryRepository.findByProductId(productId)
+        return inventoryRepository.findByProductIdAndVariantIdIsNull(productId)
                 .orElseThrow(() -> new InventoryNotFoundException(
                         "Inventory not found for productId=" + productId));
     }

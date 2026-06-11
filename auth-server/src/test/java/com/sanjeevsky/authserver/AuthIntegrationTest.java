@@ -26,7 +26,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 "spring.datasource.password=",
                 "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
                 "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.H2Dialect",
-                "spring.jpa.hibernate.ddl-auto=create-drop"
+                "spring.jpa.hibernate.ddl-auto=create-drop",
+                "admin.seed.enabled=true",
+                "admin.seed.email=admin@trove.local",
+                "admin.seed.password=admin123"
         }
 )
 @AutoConfigureMockMvc
@@ -56,6 +59,32 @@ class AuthIntegrationTest {
         mockMvc.perform(post("/auth-service/signup")
                         .contentType(MediaType.APPLICATION_JSON).content(body))
                 .andExpect(status().isConflict());
+    }
+
+    // ─── Roles ────────────────────────────────────────────────────────────────
+
+    @Test
+    void signup_clientSuppliedAdminRole_isIgnored() throws Exception {
+        mockMvc.perform(post("/auth-service/signup")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"sneaky@example.com\",\"password\":\"secret123\",\"role\":\"ADMIN\"}"))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/auth-service/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"sneaky@example.com\",\"password\":\"secret123\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.role").value("CUSTOMER"));
+    }
+
+    @Test
+    void login_seededAdmin_returnsAdminRole() throws Exception {
+        mockMvc.perform(post("/auth-service/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"admin@trove.local\",\"password\":\"admin123\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.role").value("ADMIN"))
+                .andExpect(jsonPath("$.data.token").isNotEmpty());
     }
 
     // ─── Login ────────────────────────────────────────────────────────────────

@@ -25,8 +25,8 @@ public class SubCategory {
     @Type(type = "org.hibernate.type.UUIDCharType")
     private UUID id;
     private String subcategoryName;
-    @ManyToOne(cascade = CascadeType.ALL, optional = false)
-    @JoinColumn(name = "category_id", nullable = false, unique = true)
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "category_id", nullable = false)
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Category category;
     @CreationTimestamp

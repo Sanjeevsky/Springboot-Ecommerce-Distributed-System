@@ -32,6 +32,8 @@
      "  setRunnerVar('runId', runId);",
      "  setRunnerVar('runnerEmail', 'e2e_' + suffix + '@example.com');",
      "  setRunnerVar('runnerPassword', 'password123');",
+     "  setRunnerVar('adminEmail', 'admin@trove.local');",
+     "  setRunnerVar('adminPassword', 'admin123');",
      "  setRunnerVar('brandName', 'Samsung_' + suffix);",
      "  setRunnerVar('categoryName', 'Electronics_' + suffix);",
      "  setRunnerVar('subCategoryName', 'Smartphones_' + suffix);",
@@ -270,6 +272,14 @@
   {
    "key": "sagaOrderId",
    "value": ""
+  },
+  {
+   "key": "adminEmail",
+   "value": "admin@trove.local"
+  },
+  {
+   "key": "adminPassword",
+   "value": "admin123"
   }
  ],
  "item": [
@@ -410,7 +420,9 @@
        "script": {
         "type": "text/javascript",
         "exec": [
-         "pm.test('Update Password: status 200', () => pm.response.to.have.status(200));"
+         "pm.test('Update Password: status 200', () => pm.response.to.have.status(200));",
+         "pm.collectionVariables.set('runnerPassword', 'newPassword456');",
+         "try { pm.environment.set('runnerPassword', 'newPassword456'); } catch (e) {}"
         ]
        }
       }
@@ -445,6 +457,58 @@
         "auth-service",
         "updatePassword"
        ]
+      }
+     }
+    },
+    {
+     "name": "03a — Login as Admin",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('03a — Login as Admin: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "var data = json && json.data;",
+         "var token = typeof data === 'string' ? data : data && (data.token || data.accessToken || data.jwt);",
+         "pm.test('Login token present', function () { pm.expect(token).to.be.a('string').and.not.empty; });",
+         "pm.test('Login role is ADMIN', function () { if (data && typeof data === 'object' && data.role) { pm.expect(data.role).to.equal('ADMIN'); } });",
+         "pm.collectionVariables.set('token', token);",
+         "try { pm.environment.set('token', token); } catch (e) {}"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/auth-service/login",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "auth-service",
+        "login"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "auth": {
+       "type": "noauth"
       }
      }
     }
@@ -848,6 +912,105 @@
      }
     },
     {
+     "name": "12a — List Products for Admin",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('12a — List Products for Admin: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "pm.test('Admin product page returned', function () { pm.expect(json.data && json.data.content).to.be.an('array'); });"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [],
+      "url": {
+       "raw": "{{baseUrl}}/catalog-service/product/admin/list?q=&status=1&page=0&size=20&sort=modifiedAt",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "catalog-service",
+        "product",
+        "admin",
+        "list"
+       ],
+       "query": [
+        {
+         "key": "q",
+         "value": ""
+        },
+        {
+         "key": "status",
+         "value": "1"
+        },
+        {
+         "key": "page",
+         "value": "0"
+        },
+        {
+         "key": "size",
+         "value": "20"
+        },
+        {
+         "key": "sort",
+         "value": "modifiedAt"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "12b — Update Product",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('12b — Update Product: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "pm.test('Product update persisted', function () { pm.expect(json.data.description).to.equal('Updated by the Postman collection runner'); });"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "PUT",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/catalog-service/product/{{productId}}",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "catalog-service",
+        "product",
+        "{{productId}}"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"description\": \"Updated by the Postman collection runner\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
      "name": "13 — Get Product by ID",
      "event": [
       {
@@ -1063,6 +1226,51 @@
      }
     },
     {
+     "name": "16a — Update Variant",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('16a — Update Variant: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "pm.test('Variant update persisted', function () { pm.expect(json.data.condition2Value).to.equal('Graphite'); });"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "PUT",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/catalog-service/variant/{{variantId}}",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "catalog-service",
+        "variant",
+        "{{variantId}}"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"condition2Value\": \"Graphite\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
      "name": "17 — Get Variant by ID",
      "event": [
       {
@@ -1142,6 +1350,128 @@
         }
        }
       },
+      "url": {
+       "raw": "{{baseUrl}}/inventory-service/stock",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "inventory-service",
+        "stock"
+       ]
+      }
+     }
+    },
+    {
+     "name": "18a — Set Product Stock",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('18a — Set Product Stock: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "pm.test('Product stock set to 100', function () { pm.expect(json.data.totalQty).to.equal(100); });"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "PUT",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/inventory-service/stock/{{productId}}",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "inventory-service",
+        "stock",
+        "{{productId}}"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"totalQty\": 100\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "18b — Set Variant Stock",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('18b — Set Variant Stock: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "pm.test('Variant stock set to 100', function () { pm.expect(json.data.totalQty).to.equal(100); });"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "PUT",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/inventory-service/stock/{{productId}}/variant/{{variantId}}",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "inventory-service",
+        "stock",
+        "{{productId}}",
+        "variant",
+        "{{variantId}}"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"totalQty\": 100\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      }
+     }
+    },
+    {
+     "name": "18c — List All Stock",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('18c — List All Stock: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "pm.test('Inventory list returned', function () { pm.expect(json.data).to.be.an('array'); });"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [],
       "url": {
        "raw": "{{baseUrl}}/inventory-service/stock",
        "host": [
@@ -1258,6 +1588,58 @@
    "name": "03 - Customer (Addresses)",
    "description": "Shipping address CRUD. Gateway injects X-User from JWT; no need to send it manually.",
    "item": [
+    {
+     "name": "21a — Restore Customer Login",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('21a — Restore Customer Login: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "var data = json && json.data;",
+         "var token = typeof data === 'string' ? data : data && (data.token || data.accessToken || data.jwt);",
+         "pm.test('Login token present', function () { pm.expect(token).to.be.a('string').and.not.empty; });",
+         "pm.test('Login role is CUSTOMER', function () { if (data && typeof data === 'object' && data.role) { pm.expect(data.role).to.equal('CUSTOMER'); } });",
+         "pm.collectionVariables.set('token', token);",
+         "try { pm.environment.set('token', token); } catch (e) {}"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/auth-service/login",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "auth-service",
+        "login"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"email\": \"{{runnerEmail}}\",\n  \"password\": \"{{runnerPassword}}\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "auth": {
+       "type": "noauth"
+      }
+     }
+    },
     {
      "name": "22 — Add Address → save addressId",
      "event": [
@@ -2013,6 +2395,58 @@
    "description": "Coupon creation, validation, and application.",
    "item": [
     {
+     "name": "35a — Login as Admin for Coupon Management",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('35a — Login as Admin for Coupon Management: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "var data = json && json.data;",
+         "var token = typeof data === 'string' ? data : data && (data.token || data.accessToken || data.jwt);",
+         "pm.test('Login token present', function () { pm.expect(token).to.be.a('string').and.not.empty; });",
+         "pm.test('Login role is ADMIN', function () { if (data && typeof data === 'object' && data.role) { pm.expect(data.role).to.equal('ADMIN'); } });",
+         "pm.collectionVariables.set('token', token);",
+         "try { pm.environment.set('token', token); } catch (e) {}"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/auth-service/login",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "auth-service",
+        "login"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "auth": {
+       "type": "noauth"
+      }
+     }
+    },
+    {
      "name": "36 — Create Coupon → save couponId",
      "event": [
       {
@@ -2057,6 +2491,95 @@
         "coupon-service",
         "coupon"
        ]
+      }
+     }
+    },
+    {
+     "name": "36a — List All Coupons as Admin",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('36a — List All Coupons as Admin: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "pm.test('Admin coupon list is an array', function () { pm.expect(json.data).to.be.an('array'); });",
+         "pm.test('Created coupon is visible to admin', function () { pm.expect(json.data.some(function (coupon) { return coupon.id === pm.collectionVariables.get('couponId'); })).to.equal(true); });"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/coupon-service/admin/coupons",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "coupon-service",
+        "admin",
+        "coupons"
+       ]
+      }
+     }
+    },
+    {
+     "name": "36b — Restore Customer Login",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('36b — Restore Customer Login: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "var data = json && json.data;",
+         "var token = typeof data === 'string' ? data : data && (data.token || data.accessToken || data.jwt);",
+         "pm.test('Login token present', function () { pm.expect(token).to.be.a('string').and.not.empty; });",
+         "pm.test('Login role is CUSTOMER', function () { if (data && typeof data === 'object' && data.role) { pm.expect(data.role).to.equal('CUSTOMER'); } });",
+         "pm.collectionVariables.set('token', token);",
+         "try { pm.environment.set('token', token); } catch (e) {}"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/auth-service/login",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "auth-service",
+        "login"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"email\": \"{{runnerEmail}}\",\n  \"password\": \"{{runnerPassword}}\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "auth": {
+       "type": "noauth"
       }
      }
     },
@@ -3571,6 +4094,295 @@
         "notifications",
         "{{notificationId}}",
         "read"
+       ]
+      }
+     }
+    }
+   ]
+  },
+  {
+   "name": "99 - Admin Cleanup",
+   "item": [
+    {
+     "name": "60 — Login as Admin for Cleanup",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('60 — Login as Admin for Cleanup: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "var data = json && json.data;",
+         "var token = typeof data === 'string' ? data : data && (data.token || data.accessToken || data.jwt);",
+         "pm.test('Login token present', function () { pm.expect(token).to.be.a('string').and.not.empty; });",
+         "pm.test('Login role is ADMIN', function () { if (data && typeof data === 'object' && data.role) { pm.expect(data.role).to.equal('ADMIN'); } });",
+         "pm.collectionVariables.set('token', token);",
+         "try { pm.environment.set('token', token); } catch (e) {}"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "POST",
+      "header": [
+       {
+        "key": "Content-Type",
+        "value": "application/json"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/auth-service/login",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "auth-service",
+        "login"
+       ]
+      },
+      "body": {
+       "mode": "raw",
+       "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+       "options": {
+        "raw": {
+         "language": "json"
+        }
+       }
+      },
+      "auth": {
+       "type": "noauth"
+      }
+     }
+    },
+    {
+     "name": "60a — Analytics Summary",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('Analytics Summary: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "var data = json.data || {};",
+         "pm.test('Analytics summary has ISO range', function () { pm.expect(data.from).to.match(/^\\d{4}-\\d{2}-\\d{2}$/); pm.expect(data.to).to.match(/^\\d{4}-\\d{2}-\\d{2}$/); });",
+         "pm.test('Analytics summary has non-negative metrics', function () { pm.expect(data.revenue).to.be.a('number').and.at.least(0); pm.expect(data.orderCount).to.be.a('number').and.at.least(0); pm.expect(data.averageOrderValue).to.be.a('number').and.at.least(0); });",
+         "pm.test('Analytics status breakdown present', function () { pm.expect(data.statusBreakdown).to.be.an('object'); });"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/order-service/analytics/summary",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "order-service",
+        "analytics",
+        "summary"
+       ]
+      }
+     }
+    },
+    {
+     "name": "60b — Daily Analytics",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('Daily Analytics: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "var rows = json.data || [];",
+         "pm.test('Daily analytics returns 30 points', function () { pm.expect(rows).to.be.an('array').with.lengthOf(30); });",
+         "pm.test('Daily analytics point contract', function () { pm.expect(rows[0].date).to.match(/^\\d{4}-\\d{2}-\\d{2}$/); pm.expect(rows[0].revenue).to.be.a('number'); pm.expect(rows[0].orderCount).to.be.a('number'); });"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/order-service/analytics/daily?days=30",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "order-service",
+        "analytics",
+        "daily"
+       ],
+       "query": [
+        {
+         "key": "days",
+         "value": "30"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "60c — Top Product Analytics",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('Top Product Analytics: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "var rows = json.data || [];",
+         "pm.test('Top product analytics is an array', function () { pm.expect(rows).to.be.an('array'); });",
+         "pm.test('Top product analytics respects limit', function () { pm.expect(rows.length).to.be.at.most(10); });",
+         "if (rows.length) { pm.test('Top product analytics row contract', function () { pm.expect(rows[0].productId).to.be.a('string'); pm.expect(rows[0].productName).to.be.a('string'); pm.expect(rows[0].quantity).to.be.a('number'); pm.expect(rows[0].revenue).to.be.a('number'); }); }"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "GET",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/order-service/analytics/top-products?limit=10",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "order-service",
+        "analytics",
+        "top-products"
+       ],
+       "query": [
+        {
+         "key": "limit",
+         "value": "10"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "60d — Deactivate Managed Coupon",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('60d — Deactivate Managed Coupon: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "pm.test('Coupon active state is false', function () { pm.expect(json.data.active).to.equal(false); });",
+         "pm.test('Coupon identity is preserved', function () { pm.expect(json.data.id).to.equal(pm.collectionVariables.get('couponId')); });"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "PUT",
+      "header": [
+       {
+        "key": "Authorization",
+        "value": "Bearer {{token}}"
+       }
+      ],
+      "url": {
+       "raw": "{{baseUrl}}/coupon-service/coupon/{{couponId}}/active?active=false",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "coupon-service",
+        "coupon",
+        "{{couponId}}",
+        "active"
+       ],
+       "query": [
+        {
+         "key": "active",
+         "value": "false"
+        }
+       ]
+      }
+     }
+    },
+    {
+     "name": "61 — Delete Variant",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('61 — Delete Variant: status 200', function () { pm.response.to.have.status(200); });"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "DELETE",
+      "header": [],
+      "url": {
+       "raw": "{{baseUrl}}/catalog-service/variant/{{variantId}}",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "catalog-service",
+        "variant",
+        "{{variantId}}"
+       ]
+      }
+     }
+    },
+    {
+     "name": "62 — Retire Product",
+     "event": [
+      {
+       "listen": "test",
+       "script": {
+        "type": "text/javascript",
+        "exec": [
+         "pm.test('62 — Retire Product: status 200', function () { pm.response.to.have.status(200); });",
+         "var json = pm.response.json();",
+         "pm.test('Product is retired', function () { pm.expect(json.data.status).to.equal(0); });"
+        ]
+       }
+      }
+     ],
+     "request": {
+      "method": "DELETE",
+      "header": [],
+      "url": {
+       "raw": "{{baseUrl}}/catalog-service/product/{{productId}}",
+       "host": [
+        "{{baseUrl}}"
+       ],
+       "path": [
+        "catalog-service",
+        "product",
+        "{{productId}}"
        ]
       }
      }

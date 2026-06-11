@@ -9,6 +9,10 @@ public interface InventoryService {
 
     Inventory addStock(UUID productId, UUID variantId, int quantity);
 
+    Inventory setStock(UUID productId, UUID variantId, int totalQty);
+
+    List<Inventory> listStock();
+
     Inventory getStock(UUID productId, UUID variantId);
 
     Inventory getStockById(UUID inventoryId);

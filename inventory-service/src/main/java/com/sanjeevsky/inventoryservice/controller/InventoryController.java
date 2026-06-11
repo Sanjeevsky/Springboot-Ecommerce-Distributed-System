@@ -3,6 +3,7 @@ package com.sanjeevsky.inventoryservice.controller;
 import com.sanjeevsky.inventoryservice.model.Inventory;
 import com.sanjeevsky.inventoryservice.service.InventoryService;
 import com.sanjeevsky.platform.response.ApiResponse;
+import com.sanjeevsky.platform.security.AdminOnly;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -20,6 +21,7 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
 
+    @AdminOnly
     @PostMapping("/stock")
     public ResponseEntity<ApiResponse<Inventory>> addStock(@RequestBody @Valid StockRequest request) {
         log.info("POST /inventory-service/stock - productId={}, variantId={}, quantity={}",
@@ -30,6 +32,31 @@ public class InventoryController {
                 request.getQuantity()
         );
         return ResponseEntity.ok(ApiResponse.ok("Stock updated successfully", inventory));
+    }
+
+    @AdminOnly
+    @GetMapping("/stock")
+    public ResponseEntity<ApiResponse<List<Inventory>>> listStock() {
+        return ResponseEntity.ok(ApiResponse.ok(inventoryService.listStock()));
+    }
+
+    @AdminOnly
+    @PutMapping("/stock/{productId}")
+    public ResponseEntity<ApiResponse<Inventory>> setProductStock(
+            @PathVariable UUID productId,
+            @RequestBody @Valid SetStockRequest request) {
+        Inventory inventory = inventoryService.setStock(productId, null, request.getTotalQty());
+        return ResponseEntity.ok(ApiResponse.ok("Stock quantity set successfully", inventory));
+    }
+
+    @AdminOnly
+    @PutMapping("/stock/{productId}/variant/{variantId}")
+    public ResponseEntity<ApiResponse<Inventory>> setVariantStock(
+            @PathVariable UUID productId,
+            @PathVariable UUID variantId,
+            @RequestBody @Valid SetStockRequest request) {
+        Inventory inventory = inventoryService.setStock(productId, variantId, request.getTotalQty());
+        return ResponseEntity.ok(ApiResponse.ok("Stock quantity set successfully", inventory));
     }
 
     @GetMapping("/stock/{productId}")

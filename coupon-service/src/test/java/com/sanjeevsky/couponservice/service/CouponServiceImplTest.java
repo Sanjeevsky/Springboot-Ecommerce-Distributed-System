@@ -256,6 +256,32 @@ class CouponServiceImplTest {
         verifyNoInteractions(couponRepository);
     }
 
+    @Test
+    void applyCoupon_inactive_throwsInvalidCouponException() {
+        Coupon coupon = activeCoupon();
+        coupon.setActive(false);
+        when(couponRepository.findByCode(CODE)).thenReturn(Optional.of(coupon));
+
+        assertThatThrownBy(() -> couponService.applyCoupon(CODE))
+                .isInstanceOf(InvalidCouponException.class)
+                .hasMessageContaining("not active");
+
+        verify(couponRepository, never()).save(any());
+    }
+
+    @Test
+    void applyCoupon_usageLimitReached_throwsInvalidCouponException() {
+        Coupon coupon = activeCoupon();
+        coupon.setUsedCount(coupon.getMaxUsageCount());
+        when(couponRepository.findByCode(CODE)).thenReturn(Optional.of(coupon));
+
+        assertThatThrownBy(() -> couponService.applyCoupon(CODE))
+                .isInstanceOf(InvalidCouponException.class)
+                .hasMessageContaining("limit");
+
+        verify(couponRepository, never()).save(any());
+    }
+
     // ─── getActiveCoupons ─────────────────────────────────────────────────────
 
     @Test
@@ -267,5 +293,37 @@ class CouponServiceImplTest {
 
         assertThat(result).hasSize(2);
         verify(couponRepository).findByActiveTrue();
+    }
+
+    @Test
+    void getAllCoupons_returnsAdministrativeList() {
+        List<Coupon> coupons = List.of(activeCoupon(), activeCoupon());
+        when(couponRepository.findAllByOrderByCreatedAtDesc()).thenReturn(coupons);
+
+        assertThat(couponService.getAllCoupons()).containsExactlyElementsOf(coupons);
+        verify(couponRepository).findAllByOrderByCreatedAtDesc();
+    }
+
+    @Test
+    void setCouponActive_updatesAndSavesCoupon() {
+        Coupon coupon = activeCoupon();
+        UUID couponId = coupon.getId();
+        when(couponRepository.findById(couponId)).thenReturn(Optional.of(coupon));
+        when(couponRepository.save(coupon)).thenReturn(coupon);
+
+        Coupon result = couponService.setCouponActive(couponId, false);
+
+        assertThat(result.isActive()).isFalse();
+        verify(couponRepository).save(coupon);
+    }
+
+    @Test
+    void setCouponActive_missingCouponThrowsNotFound() {
+        UUID couponId = UUID.randomUUID();
+        when(couponRepository.findById(couponId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> couponService.setCouponActive(couponId, true))
+                .isInstanceOf(CouponNotFoundException.class)
+                .hasMessageContaining(couponId.toString());
     }
 }

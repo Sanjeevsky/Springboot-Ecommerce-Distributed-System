@@ -7,6 +7,7 @@ import com.sanjeevsky.catalogservice.model.Brand;
 import com.sanjeevsky.catalogservice.model.Category;
 import com.sanjeevsky.catalogservice.model.Product;
 import com.sanjeevsky.catalogservice.model.SubCategory;
+import com.sanjeevsky.catalogservice.model.dto.ProductUpdateRequest;
 import com.sanjeevsky.catalogservice.repository.ProductRepository;
 import com.sanjeevsky.catalogservice.service.impl.ProductServiceImpl;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,9 @@ class ProductServiceImplTest {
                 .gstValue(18.0)
                 .discount(10.0)
                 .status(1)
+                .brand(Brand.builder().id(BRAND_ID).build())
+                .category(Category.builder().id(CATEGORY_ID).build())
+                .subCategory(SubCategory.builder().id(SUB_ID).build())
                 .build();
     }
 
@@ -238,6 +242,28 @@ class ProductServiceImplTest {
         verifyNoInteractions(productRepository);
     }
 
+    @Test
+    void listProductsForAdmin_filtersByKeywordAndStatus() {
+        Page<Product> page = new PageImpl<>(List.of(product("Widget")));
+        when(productRepository.searchForAdmin(eq("widget"), eq(0), any(Pageable.class))).thenReturn(page);
+
+        Page<Product> result = productService.listProductsForAdmin(" widget ", 0, 0, 20, "modifiedAt");
+
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        verify(productRepository).searchForAdmin(eq("widget"), eq(0), argThat(pageable ->
+                pageable.getSort().getOrderFor("modifiedAt") != null
+                        && pageable.getSort().getOrderFor("modifiedAt").isDescending()));
+    }
+
+    @Test
+    void listProductsForAdmin_invalidStatus_throwsInvalidProductRequestException() {
+        assertThatThrownBy(() -> productService.listProductsForAdmin("", 2, 0, 20, "name"))
+                .isInstanceOf(InvalidProductRequestException.class)
+                .hasMessage("Status must be 0 or 1");
+
+        verifyNoInteractions(productRepository);
+    }
+
     // ─── searchProducts ───────────────────────────────────────────────────────
 
     @Test
@@ -277,5 +303,54 @@ class ProductServiceImplTest {
                 .hasMessageContaining("Page size must be between 1 and 100");
 
         verifyNoInteractions(productRepository);
+    }
+
+    @Test
+    void updateProduct_partialRequest_mergesAndSaves() {
+        Product stored = product("Old name");
+        ProductUpdateRequest request = new ProductUpdateRequest();
+        request.setName(" Updated name ");
+        request.setSalePrice(80.0);
+        request.setBrandId(BRAND_ID);
+
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(stored));
+        when(brandService.getBrand(BRAND_ID)).thenReturn(Brand.builder().id(BRAND_ID).build());
+        when(productRepository.findByModelAndBrandId("M1", BRAND_ID)).thenReturn(Optional.of(stored));
+        when(productRepository.save(stored)).thenReturn(stored);
+
+        Product result = productService.updateProduct(PRODUCT_ID, request);
+
+        assertThat(result.getName()).isEqualTo("Updated name");
+        assertThat(result.getSalePrice()).isEqualTo(80.0);
+        verify(productRepository).save(stored);
+    }
+
+    @Test
+    void updateProduct_duplicateModelForBrand_throwsConflict() {
+        Product stored = product("Widget");
+        Product duplicate = product("Other");
+        duplicate.setId(UUID.randomUUID());
+        ProductUpdateRequest request = new ProductUpdateRequest();
+        request.setModel("DUPLICATE");
+
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(stored));
+        when(productRepository.findByModelAndBrandId("DUPLICATE", BRAND_ID)).thenReturn(Optional.of(duplicate));
+
+        assertThatThrownBy(() -> productService.updateProduct(PRODUCT_ID, request))
+                .isInstanceOf(ProductAlreadyExistsException.class);
+
+        verify(productRepository, never()).save(any());
+    }
+
+    @Test
+    void retireProduct_setsInactiveAndSaves() {
+        Product stored = product("Widget");
+        when(productRepository.findById(PRODUCT_ID)).thenReturn(Optional.of(stored));
+        when(productRepository.save(stored)).thenReturn(stored);
+
+        Product result = productService.retireProduct(PRODUCT_ID);
+
+        assertThat(result.getStatus()).isZero();
+        verify(productRepository).save(stored);
     }
 }

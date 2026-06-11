@@ -13,7 +13,7 @@ public interface InventoryRepository extends JpaRepository<Inventory, UUID> {
 
     Optional<Inventory> findByProductIdAndVariantId(UUID productId, UUID variantId);
 
-    Optional<Inventory> findByProductId(UUID productId);
+    Optional<Inventory> findByProductIdAndVariantIdIsNull(UUID productId);
 
     List<Inventory> findAllByProductId(UUID productId);
 }

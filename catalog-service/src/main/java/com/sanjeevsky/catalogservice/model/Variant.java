@@ -32,8 +32,8 @@ public class Variant {
     private double mrpPrice;
     @Column(nullable = false)
     private double salePrice;
-    @ManyToOne(cascade = CascadeType.ALL, optional = false)
-    @JoinColumn(name = "product_id", nullable = false, unique = true)
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "product_id", nullable = false)
     @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private Product product;
     @CreationTimestamp

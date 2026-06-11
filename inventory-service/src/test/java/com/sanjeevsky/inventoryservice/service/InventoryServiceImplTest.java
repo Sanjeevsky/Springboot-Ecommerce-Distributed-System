@@ -133,11 +133,63 @@ class InventoryServiceImplTest {
     @Test
     void getStock_withoutVariant_usesProductOnlyLookup() {
         Inventory inv = inventory(50, 10);
-        when(inventoryRepository.findByProductId(PRODUCT_ID)).thenReturn(Optional.of(inv));
+        when(inventoryRepository.findByProductIdAndVariantIdIsNull(PRODUCT_ID)).thenReturn(Optional.of(inv));
 
         Inventory result = inventoryService.getStock(PRODUCT_ID, null);
 
         assertThat(result).isSameAs(inv);
+    }
+
+    @Test
+    void setStock_aboveReserved_updatesTotalAndWritesAdjustment() {
+        Inventory inv = inventory(50, 10);
+        when(inventoryRepository.findByProductIdAndVariantId(PRODUCT_ID, VARIANT_ID))
+                .thenReturn(Optional.of(inv));
+        when(inventoryRepository.save(inv)).thenReturn(inv);
+
+        Inventory result = inventoryService.setStock(PRODUCT_ID, VARIANT_ID, 40);
+
+        assertThat(result.getTotalQty()).isEqualTo(40);
+        ArgumentCaptor<InventoryTransaction> captor = ArgumentCaptor.forClass(InventoryTransaction.class);
+        verify(transactionRepository).save(captor.capture());
+        assertThat(captor.getValue().getType()).isEqualTo("ADJUST");
+        assertThat(captor.getValue().getQuantity()).isEqualTo(-10);
+    }
+
+    @Test
+    void setStock_belowReserved_throwsInvalidInventoryRequestException() {
+        Inventory inv = inventory(50, 10);
+        when(inventoryRepository.findByProductIdAndVariantId(PRODUCT_ID, VARIANT_ID))
+                .thenReturn(Optional.of(inv));
+
+        assertThatThrownBy(() -> inventoryService.setStock(PRODUCT_ID, VARIANT_ID, 9))
+                .isInstanceOf(InvalidInventoryRequestException.class)
+                .hasMessageContaining("cannot be below reserved quantity 10");
+
+        verify(inventoryRepository, never()).save(any());
+        verifyNoInteractions(transactionRepository);
+    }
+
+    @Test
+    void setStock_missingProductLevelInventory_createsEntry() {
+        when(inventoryRepository.findByProductIdAndVariantIdIsNull(PRODUCT_ID)).thenReturn(Optional.empty());
+        when(inventoryRepository.save(any(Inventory.class))).thenAnswer(invocation -> {
+            Inventory value = invocation.getArgument(0);
+            value.setId(INVENTORY_ID);
+            return value;
+        });
+
+        Inventory result = inventoryService.setStock(PRODUCT_ID, null, 25);
+
+        assertThat(result.getVariantId()).isNull();
+        assertThat(result.getTotalQty()).isEqualTo(25);
+    }
+
+    @Test
+    void listStock_returnsRepositoryContents() {
+        when(inventoryRepository.findAll()).thenReturn(List.of(inventory(50, 10)));
+
+        assertThat(inventoryService.listStock()).hasSize(1);
     }
 
     @Test

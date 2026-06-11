@@ -6,6 +6,7 @@ import com.sanjeevsky.authserver.exceptions.NoSuchUserExistsException;
 import com.sanjeevsky.authserver.exceptions.UserAlreadyExistsException;
 import com.sanjeevsky.authserver.jwtgenerator.JwtTokenGenerator;
 import com.sanjeevsky.authserver.modal.LoginDTO;
+import com.sanjeevsky.authserver.modal.Role;
 import com.sanjeevsky.authserver.modal.UpdatePasswordRequest;
 import com.sanjeevsky.authserver.modal.User;
 import com.sanjeevsky.authserver.modal.UserDTO;
@@ -37,6 +38,8 @@ public class UserServiceImp implements UserService {
             throw new UserAlreadyExistsException("User Already Exists with this Email...!!");
         }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        // Roles are never client-assignable: every self-registration is a customer.
+        user.setRole(Role.CUSTOMER);
         return repository.save(user);
     }
 
@@ -46,7 +49,7 @@ public class UserServiceImp implements UserService {
         Optional<User> stored = repository.findById(user.getEmail());
         if (stored.isPresent()) {
             if (passwordEncoder.matches(user.getPassword(), stored.get().getPassword())) {
-                return generator.generateToken(user);
+                return generator.generateToken(user, stored.get().getRole());
             } else {
                 throw new CredentialsMismatchException("Credentials Mismatch..Please try with valid credentials");
             }

@@ -6,6 +6,7 @@ import com.sanjeevsky.authserver.exceptions.NoSuchUserExistsException;
 import com.sanjeevsky.authserver.exceptions.UserAlreadyExistsException;
 import com.sanjeevsky.authserver.jwtgenerator.JwtTokenGenerator;
 import com.sanjeevsky.authserver.modal.LoginDTO;
+import com.sanjeevsky.authserver.modal.Role;
 import com.sanjeevsky.authserver.modal.UpdatePasswordRequest;
 import com.sanjeevsky.authserver.modal.User;
 import com.sanjeevsky.authserver.modal.UserDTO;
@@ -64,6 +65,37 @@ class UserServiceImpTest {
         assertThat(result.getPassword()).isEqualTo(ENCODED_PASSWORD);
         verify(passwordEncoder).encode(RAW_PASSWORD);
         verify(repository).save(incoming);
+    }
+
+    @Test
+    void registerUser_clientSuppliedAdminRole_isForcedToCustomer() {
+        User incoming = new User();
+        incoming.setEmail(EMAIL);
+        incoming.setPassword(RAW_PASSWORD);
+        incoming.setRole(Role.ADMIN);
+
+        when(repository.findById(EMAIL)).thenReturn(Optional.empty());
+        when(passwordEncoder.encode(RAW_PASSWORD)).thenReturn(ENCODED_PASSWORD);
+        when(repository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        User result = userService.registerUser(incoming);
+
+        assertThat(result.getRole()).isEqualTo(Role.CUSTOMER);
+    }
+
+    @Test
+    void authenticateUser_adminUser_generatesTokenWithAdminRole() {
+        User admin = storedUser();
+        admin.setRole(Role.ADMIN);
+        when(repository.findById(EMAIL)).thenReturn(Optional.of(admin));
+        when(passwordEncoder.matches(RAW_PASSWORD, ENCODED_PASSWORD)).thenReturn(true);
+        UserDTO dto = new UserDTO(EMAIL, RAW_PASSWORD);
+        when(generator.generateToken(dto, Role.ADMIN)).thenReturn(new LoginDTO(EMAIL, "jwt.token.here", "ADMIN"));
+
+        LoginDTO result = userService.authenticateUser(dto);
+
+        assertThat(result.getRole()).isEqualTo("ADMIN");
+        verify(generator).generateToken(dto, Role.ADMIN);
     }
 
     @Test
@@ -139,9 +171,9 @@ class UserServiceImpTest {
     void authenticateUser_correctCredentials_returnsLoginDTO() {
         when(repository.findById(EMAIL)).thenReturn(Optional.of(storedUser()));
         when(passwordEncoder.matches(RAW_PASSWORD, ENCODED_PASSWORD)).thenReturn(true);
-        LoginDTO expectedToken = new LoginDTO(EMAIL, "jwt.token.here");
+        LoginDTO expectedToken = new LoginDTO(EMAIL, "jwt.token.here", "CUSTOMER");
         UserDTO dto = new UserDTO(EMAIL, RAW_PASSWORD);
-        when(generator.generateToken(dto)).thenReturn(expectedToken);
+        when(generator.generateToken(dto, Role.CUSTOMER)).thenReturn(expectedToken);
 
         LoginDTO result = userService.authenticateUser(dto);
 
@@ -157,7 +189,7 @@ class UserServiceImpTest {
         assertThatThrownBy(() -> userService.authenticateUser(new UserDTO(EMAIL, "wrongPass")))
                 .isInstanceOf(CredentialsMismatchException.class);
 
-        verify(generator, never()).generateToken(any());
+        verify(generator, never()).generateToken(any(), any());
     }
 
     @Test
@@ -172,16 +204,16 @@ class UserServiceImpTest {
     void authenticateUser_trimsEmailBeforeLookupAndTokenGeneration() {
         when(repository.findById(EMAIL)).thenReturn(Optional.of(storedUser()));
         when(passwordEncoder.matches(RAW_PASSWORD, ENCODED_PASSWORD)).thenReturn(true);
-        LoginDTO expectedToken = new LoginDTO(EMAIL, "jwt.token.here");
+        LoginDTO expectedToken = new LoginDTO(EMAIL, "jwt.token.here", "CUSTOMER");
         UserDTO dto = new UserDTO("  " + EMAIL + "  ", RAW_PASSWORD);
-        when(generator.generateToken(dto)).thenReturn(expectedToken);
+        when(generator.generateToken(dto, Role.CUSTOMER)).thenReturn(expectedToken);
 
         LoginDTO result = userService.authenticateUser(dto);
 
         assertThat(result.getEmail()).isEqualTo(EMAIL);
         assertThat(dto.getEmail()).isEqualTo(EMAIL);
         verify(repository).findById(EMAIL);
-        verify(generator).generateToken(dto);
+        verify(generator).generateToken(dto, Role.CUSTOMER);
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.sanjeevsky.authserver.jwtgenerator;
 
 import com.sanjeevsky.authserver.modal.LoginDTO;
+import com.sanjeevsky.authserver.modal.Role;
 import com.sanjeevsky.authserver.modal.UserDTO;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
@@ -16,15 +17,17 @@ public class JwtTokenGenerator {
     @Value("${jwt.secret}")
     private String secret;
 
-    public LoginDTO generateToken(UserDTO user) {
+    public LoginDTO generateToken(UserDTO user, Role role) {
+        Role effectiveRole = role == null ? Role.CUSTOMER : role;
         final String jwt = Jwts.builder()
                 .setIssuer("EcommerceApplicationAdmin")
                 .setSubject(user.getEmail())
+                .claim("role", effectiveRole.name())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + VALIDITY))
                 .signWith(SignatureAlgorithm.HS256, secret)
                 .compact();
 
-        return new LoginDTO(user.getEmail(), jwt);
+        return new LoginDTO(user.getEmail(), jwt, effectiveRole.name());
     }
 }

@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -121,6 +122,32 @@ class CouponControllerTest {
                 .andExpect(jsonPath("$.data[0].id").value(COUPON_ID.toString()));
 
         verify(couponService).getActiveCoupons();
+    }
+
+    @Test
+    void getAllCoupons_returnsAdminServiceList() throws Exception {
+        when(couponService.getAllCoupons()).thenReturn(List.of(coupon()));
+
+        mockMvc.perform(get("/coupon-service/admin/coupons"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").value(COUPON_ID.toString()));
+
+        verify(couponService).getAllCoupons();
+    }
+
+    @Test
+    void setCouponActive_forwardsIdAndState() throws Exception {
+        Coupon coupon = coupon();
+        coupon.setActive(false);
+        when(couponService.setCouponActive(COUPON_ID, false)).thenReturn(coupon);
+
+        mockMvc.perform(put("/coupon-service/coupon/{couponId}/active", COUPON_ID)
+                        .param("active", "false"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message").value("Coupon deactivated"))
+                .andExpect(jsonPath("$.data.active").value(false));
+
+        verify(couponService).setCouponActive(COUPON_ID, false);
     }
 
     private Coupon coupon() {

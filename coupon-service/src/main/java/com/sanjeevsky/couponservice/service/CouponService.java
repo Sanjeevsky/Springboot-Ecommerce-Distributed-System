@@ -4,6 +4,7 @@ import com.sanjeevsky.couponservice.model.Coupon;
 import com.sanjeevsky.couponservice.model.CouponValidationResult;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface CouponService {
 
@@ -14,4 +15,8 @@ public interface CouponService {
     Coupon applyCoupon(String code);
 
     List<Coupon> getActiveCoupons();
+
+    List<Coupon> getAllCoupons();
+
+    Coupon setCouponActive(UUID couponId, boolean active);
 }

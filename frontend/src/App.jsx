@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { Suspense, useState } from "react";
 import { Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
-import { isLoggedIn } from "./lib/auth.js";
+import { isLoggedIn, isAdmin } from "./lib/auth.js";
 import { Header } from "./components/storefront/Header.jsx";
 import { Footer } from "./components/storefront/Footer.jsx";
 import { CartDrawer } from "./components/storefront/CartDrawer.jsx";
@@ -23,12 +23,31 @@ import Addresses from "./pages/account/Addresses.jsx";
 import Notifications from "./pages/account/Notifications.jsx";
 import Payments from "./pages/account/Payments.jsx";
 import Settings from "./pages/account/Settings.jsx";
+import StudioLayout from "./pages/studio/StudioLayout.jsx";
+import StudioProducts from "./pages/studio/StudioProducts.jsx";
+import StudioProductEditor from "./pages/studio/StudioProductEditor.jsx";
+import StudioInventory from "./pages/studio/StudioInventory.jsx";
+import StudioCoupons from "./pages/studio/StudioCoupons.jsx";
+
+const StudioHome = React.lazy(() => import("./pages/studio/StudioHome.jsx"));
 
 // Redirects logged-out visitors to /login, remembering where they wanted to go.
 function RequireAuth({ children }) {
   const location = useLocation();
   if (!isLoggedIn()) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+  return children;
+}
+
+// Admin-only routes: logged-out users go to login, customers go home.
+function RequireAdmin({ children }) {
+  const location = useLocation();
+  if (!isLoggedIn()) {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+  if (!isAdmin()) {
+    return <Navigate to="/" replace />;
   }
   return children;
 }
@@ -88,6 +107,19 @@ export default function App() {
           <Route path="payments" element={<Payments />} />
           <Route path="settings" element={<Settings />} />
         </Route>
+      </Route>
+
+      <Route path="/studio" element={<RequireAdmin><StudioLayout /></RequireAdmin>}>
+        <Route index element={(
+          <Suspense fallback={<div className="studio-chart-empty">Loading analytics...</div>}>
+            <StudioHome />
+          </Suspense>
+        )} />
+        <Route path="products" element={<StudioProducts />} />
+        <Route path="products/new" element={<StudioProductEditor />} />
+        <Route path="products/:productId" element={<StudioProductEditor />} />
+        <Route path="inventory" element={<StudioInventory />} />
+        <Route path="coupons" element={<StudioCoupons />} />
       </Route>
     </Routes>
   );

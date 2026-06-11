@@ -2,6 +2,7 @@ package com.sanjeevsky.catalogservice.service.impl;
 
 import com.sanjeevsky.catalogservice.exceptions.*;
 import com.sanjeevsky.catalogservice.model.Product;
+import com.sanjeevsky.catalogservice.model.dto.ProductUpdateRequest;
 import com.sanjeevsky.catalogservice.repository.ProductRepository;
 import com.sanjeevsky.catalogservice.search.ProductDocumentMapper;
 import com.sanjeevsky.catalogservice.search.document.ProductDocument;
@@ -80,11 +81,7 @@ public class ProductServiceImpl implements ProductService {
         product.setCategory(categoryService.getCategory(categoryId));
         product.setSubCategory(subCategoryService.getSubCategory(subCategoryId));
         Product saved = productRepository.save(product);
-        try {
-            searchRepository.save(documentMapper.toDocument(saved));
-        } catch (Exception e) {
-            log.warn("OpenSearch index skipped for product {}: {}", saved.getId(), e.getMessage());
-        }
+        indexProduct(saved);
         return saved;
     }
 
@@ -107,6 +104,21 @@ public class ProductServiceImpl implements ProductService {
         String sortField = normalizeProductSort(sort);
         PageRequest pageable = PageRequest.of(page, size, Sort.by(sortField).ascending());
         return productRepository.findAllByStatus(1, pageable);
+    }
+
+    @Override
+    public Page<Product> listProductsForAdmin(
+            String keyword,
+            Integer status,
+            int page,
+            int size,
+            String sort) {
+        validatePagination(page, size);
+        validateStatus(status);
+        String sortField = normalizeProductSort(sort);
+        String normalizedKeyword = isBlank(keyword) ? null : keyword.trim();
+        PageRequest pageable = PageRequest.of(page, size, Sort.by(sortField).descending());
+        return productRepository.searchForAdmin(normalizedKeyword, status, pageable);
     }
 
     @Override
@@ -173,6 +185,72 @@ public class ProductServiceImpl implements ProductService {
         }
     }
 
+    @Override
+    @CacheEvict(value = "products", allEntries = true)
+    public Product updateProduct(UUID productId, ProductUpdateRequest request) {
+        if (productId == null) {
+            throw new InvalidProductRequestException("Product id is required");
+        }
+        if (request == null) {
+            throw new InvalidProductRequestException("Product update request is required");
+        }
+
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new NoSuchProductExistsException(NO_PRODUCT_FOUND_WITH_GIVEN_UUID));
+
+        if (request.getName() != null) product.setName(request.getName());
+        if (request.getDescription() != null) product.setDescription(request.getDescription().trim());
+        if (request.getModel() != null) product.setModel(request.getModel());
+        if (request.getMrpPrice() != null) product.setMrpPrice(request.getMrpPrice());
+        if (request.getSalePrice() != null) product.setSalePrice(request.getSalePrice());
+        if (request.getGstValue() != null) product.setGstValue(request.getGstValue());
+        if (request.getDiscount() != null) product.setDiscount(request.getDiscount());
+        if (request.getStatus() != null) product.setStatus(request.getStatus());
+        if (request.getHasVariant() != null) product.setHasVariant(request.getHasVariant());
+        if (request.getImages() != null) product.setImages(request.getImages());
+        if (request.getBrandId() != null) product.setBrand(brandService.getBrand(request.getBrandId()));
+        if (request.getCategoryId() != null) product.setCategory(categoryService.getCategory(request.getCategoryId()));
+        if (request.getSubCategoryId() != null) {
+            product.setSubCategory(subCategoryService.getSubCategory(request.getSubCategoryId()));
+        }
+
+        validateProductRequest(product);
+        UUID brandId = product.getBrand() == null ? null : product.getBrand().getId();
+        if (brandId == null) {
+            throw new InvalidProductRequestException("Brand id is required");
+        }
+        Optional<Product> duplicate = productRepository.findByModelAndBrandId(product.getModel(), brandId);
+        if (duplicate.isPresent() && !productId.equals(duplicate.get().getId())) {
+            throw new ProductAlreadyExistsException(PRODUCT_WITH_THIS_MODEL_AND_BRAND_ALREADY_EXISTS_IN_CATALOG);
+        }
+
+        Product saved = productRepository.save(product);
+        indexProduct(saved);
+        return saved;
+    }
+
+    @Override
+    @CacheEvict(value = "products", allEntries = true)
+    public Product retireProduct(UUID productId) {
+        if (productId == null) {
+            throw new InvalidProductRequestException("Product id is required");
+        }
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new NoSuchProductExistsException(NO_PRODUCT_FOUND_WITH_GIVEN_UUID));
+        product.setStatus(0);
+        Product saved = productRepository.save(product);
+        indexProduct(saved);
+        return saved;
+    }
+
+    private void indexProduct(Product product) {
+        try {
+            searchRepository.save(documentMapper.toDocument(product));
+        } catch (Exception e) {
+            log.warn("OpenSearch index skipped for product {}: {}", product.getId(), e.getMessage());
+        }
+    }
+
     private void validateProductRequest(Product product) {
         if (product == null) {
             throw new InvalidProductRequestException("Product request is required");
@@ -222,6 +300,12 @@ public class ProductServiceImpl implements ProductService {
                     + String.join(", ", ALLOWED_PRODUCT_SORT_FIELDS));
         }
         return sortField;
+    }
+
+    private void validateStatus(Integer status) {
+        if (status != null && status != 0 && status != 1) {
+            throw new InvalidProductRequestException("Status must be 0 or 1");
+        }
     }
 
     private void validatePagination(int page, int size) {

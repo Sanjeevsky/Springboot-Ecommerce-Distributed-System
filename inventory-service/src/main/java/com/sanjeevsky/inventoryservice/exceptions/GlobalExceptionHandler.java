@@ -1,6 +1,7 @@
 package com.sanjeevsky.inventoryservice.exceptions;
 
 import com.sanjeevsky.platform.response.ApiResponse;
+import com.sanjeevsky.platform.security.AdminAccessDeniedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -33,6 +34,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidInventoryRequestException.class)
     public ResponseEntity<ApiResponse<Void>> handleInvalidInventoryRequest(InvalidInventoryRequestException ex) {
         return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(AdminAccessDeniedException.class)
+    public ResponseEntity<ApiResponse<Void>> handleForbidden(AdminAccessDeniedException ex) {
+        return new ResponseEntity<>(ApiResponse.error(ex.getMessage()), HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(RuntimeException.class)

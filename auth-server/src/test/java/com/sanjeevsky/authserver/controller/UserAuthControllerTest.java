@@ -2,6 +2,7 @@ package com.sanjeevsky.authserver.controller;
 
 import com.sanjeevsky.authserver.exceptions.GlobalExceptionHandler;
 import com.sanjeevsky.authserver.modal.LoginDTO;
+import com.sanjeevsky.authserver.modal.Role;
 import com.sanjeevsky.authserver.modal.UpdatePasswordRequest;
 import com.sanjeevsky.authserver.modal.User;
 import com.sanjeevsky.authserver.modal.UserDTO;
@@ -64,7 +65,7 @@ class UserAuthControllerTest {
 
     @Test
     void login_validRequest_returnsToken() throws Exception {
-        when(userService.authenticateUser(any(UserDTO.class))).thenReturn(new LoginDTO(EMAIL, "token-1"));
+        when(userService.authenticateUser(any(UserDTO.class))).thenReturn(new LoginDTO(EMAIL, "token-1", "CUSTOMER"));
 
         mockMvc.perform(post("/auth-service/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -126,6 +127,6 @@ class UserAuthControllerTest {
     }
 
     private User user() {
-        return new User(EMAIL, "secret123", null, null);
+        return new User(EMAIL, "secret123", Role.CUSTOMER, null, null);
     }
 }

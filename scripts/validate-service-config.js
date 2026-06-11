@@ -731,6 +731,11 @@ if (!gatewayAuthFilterText.includes('regionMatches(true, 0, "Bearer ", 0, 7)')
 if (!gatewayAuthFilterText.includes('headers.set("X-User", claims.getSubject())')) {
   fail("api-gateway AuthenticationFilter: JWT subject must replace any client-supplied X-User header");
 }
+if (!gatewayAuthFilterText.includes('claims.get("role", String.class)')
+    || !gatewayAuthFilterText.includes('headers.set("X-User-Role"')
+    || !gatewayAuthFilterText.includes('headers.remove("X-User-Role")')) {
+  fail("api-gateway AuthenticationFilter: JWT role must replace client-supplied X-User-Role and public routes must strip it");
+}
 const gatewayAuthFilterTestText = fs.readFileSync(
   path.join(root, "api-gateway", "src", "test", "java", "com", "sanjeevsky", "apigateway", "filter", "AuthenticationFilterTest.java"),
   "utf8"
@@ -739,6 +744,39 @@ if (!gatewayAuthFilterTestText.includes("filter_securedRouteValidBearerAuth_repl
     || !gatewayAuthFilterTestText.includes('"spoofed@example.com"')
     || !gatewayAuthFilterTestText.includes('List.of("buyer@example.com")')) {
   fail("api-gateway AuthenticationFilterTest: must cover replacement of client-supplied X-User headers");
+}
+if (!gatewayAuthFilterTestText.includes("filter_securedRouteAdminToken_addsAdminRoleHeader")
+    || !gatewayAuthFilterTestText.includes("filter_securedRouteTokenWithoutRoleClaim_defaultsRoleHeaderToCustomer")
+    || !gatewayAuthFilterTestText.includes("filter_openRoute_stripsClientIdentityHeaders")) {
+  fail("api-gateway AuthenticationFilterTest: must cover admin roles, legacy customer fallback, and public identity-header stripping");
+}
+
+const adminAuthorizationInterceptorText = fs.readFileSync(
+  path.join(root, "platform-commons", "src", "main", "java", "com", "sanjeevsky", "platform", "security", "AdminAuthorizationInterceptor.java"),
+  "utf8"
+);
+const platformSpringFactoriesText = fs.readFileSync(
+  path.join(root, "platform-commons", "src", "main", "resources", "META-INF", "spring.factories"),
+  "utf8"
+);
+if (!adminAuthorizationInterceptorText.includes("method.hasMethodAnnotation(AdminOnly.class)")
+    || !adminAuthorizationInterceptorText.includes("MdcConstants.HEADER_USER_ROLE")
+    || !adminAuthorizationInterceptorText.includes('"ADMIN".equalsIgnoreCase')
+    || !platformSpringFactoriesText.includes("AdminAuthorizationAutoConfiguration")) {
+  fail("platform-commons: shared @AdminOnly authorization must be auto-configured and require X-User-Role=ADMIN");
+}
+
+const adminSeederText = fs.readFileSync(
+  path.join(root, "auth-server", "src", "main", "java", "com", "sanjeevsky", "authserver", "config", "AdminUserSeeder.java"),
+  "utf8"
+);
+if (!adminSeederText.includes('@ConditionalOnProperty(name = "admin.seed.enabled", havingValue = "true")')
+    || !adminSeederText.includes('@Value("${admin.seed.email}")')
+    || !adminSeederText.includes('@Value("${admin.seed.password}")')
+    || !composeText.includes("ADMIN_SEED_ENABLED=true")
+    || !composeText.includes("ADMIN_SEED_EMAIL=${ADMIN_SEED_EMAIL:-admin@trove.local}")
+    || !composeText.includes("ADMIN_SEED_PASSWORD=${ADMIN_SEED_PASSWORD:-admin123}")) {
+  fail("auth-server: local admin seeding must be explicit, configurable, and enabled by Docker Compose");
 }
 
 for (const service of ["api-gateway", "auth-server"]) {
@@ -985,6 +1023,55 @@ if (!orderControllerTestText.includes("createOrder_withCouponAndIdempotencyKey_p
   fail("order-service: controller tests must cover X-User and Idempotency-Key propagation");
 }
 
+const orderAnalyticsControllerText = fs.readFileSync(
+  path.join(root, "order-service", "src", "main", "java", "com", "sanjeevsky", "orderservice", "controller", "OrderAnalyticsController.java"),
+  "utf8"
+);
+const orderAnalyticsServiceText = fs.readFileSync(
+  path.join(root, "order-service", "src", "main", "java", "com", "sanjeevsky", "orderservice", "service", "impl", "OrderAnalyticsServiceImpl.java"),
+  "utf8"
+);
+const orderAnalyticsControllerTestText = fs.readFileSync(
+  path.join(root, "order-service", "src", "test", "java", "com", "sanjeevsky", "orderservice", "controller", "OrderAnalyticsControllerTest.java"),
+  "utf8"
+);
+const orderAnalyticsAuthorizationTestText = fs.readFileSync(
+  path.join(root, "order-service", "src", "test", "java", "com", "sanjeevsky", "orderservice", "controller", "OrderAnalyticsAuthorizationTest.java"),
+  "utf8"
+);
+const studioHomeText = fs.readFileSync(
+  path.join(root, "frontend", "src", "pages", "studio", "StudioHome.jsx"),
+  "utf8"
+);
+if (!orderAnalyticsControllerText.includes('@RequestMapping("/order-service/analytics")')
+    || !orderAnalyticsControllerText.includes("@AdminOnly")
+    || !orderAnalyticsControllerText.includes('@GetMapping("/summary")')
+    || !orderAnalyticsControllerText.includes('@GetMapping("/daily")')
+    || !orderAnalyticsControllerText.includes('@GetMapping("/top-products")')) {
+  fail("order-service: analytics endpoints must use the standard prefix and require the shared admin guard");
+}
+if (!orderAnalyticsServiceText.includes("REVENUE_STATUSES")
+    || !orderAnalyticsServiceText.includes("OrderStatus.CONFIRMED")
+    || !orderAnalyticsServiceText.includes("OrderStatus.SHIPPED")
+    || !orderAnalyticsServiceText.includes("OrderStatus.DELIVERED")
+    || !orderAnalyticsServiceText.includes("Analytics from date must be on or before to date")) {
+  fail("order-service: analytics must validate date ranges and exclude pending/cancelled orders from recognized revenue");
+}
+if (!orderAnalyticsControllerTestText.includes("getSummary_passesDateRangeAndReturnsContract")
+    || !orderAnalyticsControllerTestText.includes("getDaily_passesDaysAndReturnsPoints")
+    || !orderAnalyticsControllerTestText.includes("getTopProducts_passesLimitAndReturnsRows")
+    || !orderAnalyticsAuthorizationTestText.includes("summary_customerRoleReturns403")
+    || !orderAnalyticsAuthorizationTestText.includes("summary_adminRoleReachesService")) {
+  fail("order-service: analytics tests must cover endpoint contracts and admin authorization");
+}
+if (!studioHomeText.includes("ResponsiveContainer")
+    || !studioHomeText.includes("analytics.summary")
+    || !studioHomeText.includes("analytics.daily")
+    || !studioHomeText.includes("analytics.topProducts")
+    || !studioHomeText.includes("Low stock")) {
+  fail("frontend: Studio overview must render sales analytics and low-stock alerts");
+}
+
 const couponControllerText = fs.readFileSync(
   path.join(root, "coupon-service", "src", "main", "java", "com", "sanjeevsky", "couponservice", "controller", "CouponController.java"),
   "utf8"
@@ -1003,6 +1090,38 @@ const couponIntegrationTestText = fs.readFileSync(
 );
 const couponControllerTestText = fs.readFileSync(
   path.join(root, "coupon-service", "src", "test", "java", "com", "sanjeevsky", "couponservice", "controller", "CouponControllerTest.java"),
+  "utf8"
+);
+const couponAuthorizationTestText = fs.readFileSync(
+  path.join(root, "coupon-service", "src", "test", "java", "com", "sanjeevsky", "couponservice", "controller", "CouponAdminAuthorizationTest.java"),
+  "utf8"
+);
+const studioCouponsText = fs.readFileSync(
+  path.join(root, "frontend", "src", "pages", "studio", "StudioCoupons.jsx"),
+  "utf8"
+);
+const studioLayoutText = fs.readFileSync(
+  path.join(root, "frontend", "src", "pages", "studio", "StudioLayout.jsx"),
+  "utf8"
+);
+const frontendAppText = fs.readFileSync(
+  path.join(root, "frontend", "src", "App.jsx"),
+  "utf8"
+);
+const frontendServicesText = fs.readFileSync(
+  path.join(root, "frontend", "src", "lib", "services.js"),
+  "utf8"
+);
+const studioProductsText = fs.readFileSync(
+  path.join(root, "frontend", "src", "pages", "studio", "StudioProducts.jsx"),
+  "utf8"
+);
+const studioInventoryText = fs.readFileSync(
+  path.join(root, "frontend", "src", "pages", "studio", "StudioInventory.jsx"),
+  "utf8"
+);
+const csvExportText = fs.readFileSync(
+  path.join(root, "frontend", "src", "lib", "csv.js"),
   "utf8"
 );
 if (!couponControllerText.includes("@RequestBody @Valid Coupon coupon")
@@ -1045,6 +1164,63 @@ if (!couponControllerTestText.includes('post("/coupon-service/coupon")')
     || !couponControllerTestText.includes('verify(couponService).validateCoupon("SAVE10", 200.0)')
     || !couponControllerTestText.includes("verifyNoInteractions(couponService)")) {
   fail("coupon-service: controller tests must cover standard routes, service forwarding, and validation short-circuit");
+}
+if (!couponControllerText.includes('@GetMapping("/admin/coupons")')
+    || !couponControllerText.includes('@PutMapping("/coupon/{couponId}/active")')
+    || (couponControllerText.match(/@AdminOnly/g) || []).length < 3
+    || !couponServiceImplText.includes("findAllByOrderByCreatedAtDesc()")
+    || !couponServiceImplText.includes("validateCouponCanBeApplied(coupon)")) {
+  fail("coupon-service: coupon creation, administration, and activation lifecycle must use admin-gated standard routes");
+}
+for (const testName of [
+  "applyCoupon_inactive_throwsInvalidCouponException",
+  "applyCoupon_usageLimitReached_throwsInvalidCouponException",
+  "getAllCoupons_returnsAdministrativeList",
+  "setCouponActive_updatesAndSavesCoupon",
+  "setCouponActive_missingCouponThrowsNotFound",
+]) {
+  if (!couponServiceTestText.includes(testName)) {
+    fail(`coupon-service: missing lifecycle service test ${testName}`);
+  }
+}
+for (const testName of [
+  "getAllCoupons_returnsAdminServiceList",
+  "setCouponActive_forwardsIdAndState",
+]) {
+  if (!couponControllerTestText.includes(testName)) {
+    fail(`coupon-service: missing lifecycle controller test ${testName}`);
+  }
+}
+for (const testName of [
+  "createCoupon_customerRoleReturns403",
+  "getAllCoupons_adminRoleReachesService",
+  "setCouponActive_customerRoleReturns403",
+  "setCouponActive_adminRoleReachesService",
+]) {
+  if (!couponAuthorizationTestText.includes(testName)) {
+    fail(`coupon-service: missing admin authorization test ${testName}`);
+  }
+}
+if (!couponIntegrationTestText.includes("adminListAndDeactivateCoupon")) {
+  fail("coupon-service: integration tests must cover the admin list and activation lifecycle");
+}
+if (!studioCouponsText.includes("coupons.adminList")
+    || !studioCouponsText.includes("coupons.create")
+    || !studioCouponsText.includes("coupons.setActive")
+    || !studioLayoutText.includes('to: "/studio/coupons"')
+    || !frontendAppText.includes('path="coupons"')
+    || !frontendServicesText.includes('"/coupon-service/admin/coupons"')
+    || !frontendServicesText.includes("/coupon-service/coupon/${couponId}/active")) {
+  fail("frontend: Studio coupon management must list, create, and activate coupons through standard gateway routes");
+}
+if (!csvExportText.includes("export function toCsv")
+    || !csvExportText.includes("export function downloadCsv")
+    || !csvExportText.includes('/^[=+\\-@]/')
+    || !studioHomeText.includes('downloadCsv("trove-daily-sales.csv"')
+    || !studioProductsText.includes('downloadCsv("trove-products.csv"')
+    || !studioInventoryText.includes('downloadCsv("trove-inventory.csv"')
+    || !studioCouponsText.includes('downloadCsv("trove-coupons.csv"')) {
+  fail("frontend: Studio CSV exports must share a formula-safe serializer across analytics, products, inventory, and coupons");
 }
 
 const variantControllerText = fs.readFileSync(
@@ -1123,6 +1299,15 @@ const subCategoryControllerTestText = fs.readFileSync(
   path.join(root, "catalog-service", "src", "test", "java", "com", "sanjeevsky", "catalogservice", "controller", "SubCategoryControllerTest.java"),
   "utf8"
 );
+const productCatalogControllerText = fs.readFileSync(
+  path.join(root, "catalog-service", "src", "main", "java", "com", "sanjeevsky", "catalogservice", "controller", "ProductCatalogController.java"),
+  "utf8"
+);
+if (!productCatalogControllerText.includes('@GetMapping("/admin/list")')
+    || (productCatalogControllerText.match(/@AdminOnly/g) || []).length < 4
+    || (variantControllerText.match(/@AdminOnly/g) || []).length < 3) {
+  fail("catalog-service: product administration and all catalog write endpoints must remain admin-only");
+}
 if (!productDtoText.includes("@PositiveOrZero(message = \"GST value must not be negative\")")
     || !productDtoText.includes("@PositiveOrZero(message = \"Discount must not be negative\")")
     || !productDtoText.includes("@Max(value = 1, message = \"Status must be 0 or 1\")")
@@ -1469,6 +1654,16 @@ const inventoryControllerTestText = fs.readFileSync(
   path.join(root, "inventory-service", "src", "test", "java", "com", "sanjeevsky", "inventoryservice", "controller", "InventoryControllerTest.java"),
   "utf8"
 );
+const inventoryControllerText = fs.readFileSync(
+  path.join(root, "inventory-service", "src", "main", "java", "com", "sanjeevsky", "inventoryservice", "controller", "InventoryController.java"),
+  "utf8"
+);
+if ((inventoryControllerText.match(/@AdminOnly/g) || []).length < 4
+    || !inventoryControllerText.includes('@PutMapping("/stock/{productId}")')
+    || !inventoryControllerText.includes('@PutMapping("/stock/{productId}/variant/{variantId}")')
+    || !inventoryControllerText.includes('@GetMapping("/stock")')) {
+  fail("inventory-service: stock list, additive writes, and absolute product/variant updates must remain admin-only");
+}
 if (!inventoryServiceImplText.includes("validatePositiveQuantity(quantity, \"Stock quantity\")")
     || !inventoryServiceImplText.includes("validatePositiveQuantity(qty, \"Reservation quantity\")")
     || !inventoryServiceImplText.includes("validatePositiveQuantity(qty, \"Release quantity\")")

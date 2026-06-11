@@ -7,6 +7,7 @@ import com.sanjeevsky.catalogservice.search.repository.ProductSearchRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
@@ -22,7 +23,7 @@ public class DebeziumCdcConsumer {
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "catalog.product-catalog-db.product", groupId = "catalog-es-sync")
-    public void onProductChange(String message) {
+    public void onProductChange(@Payload(required = false) String message) {
         if (message == null) return; // tombstone record
         try {
             JsonNode root = objectMapper.readTree(message);

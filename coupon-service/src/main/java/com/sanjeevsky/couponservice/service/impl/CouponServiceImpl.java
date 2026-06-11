@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -110,6 +111,7 @@ public class CouponServiceImpl implements CouponService {
         log.info("Applying coupon code: {}", normalizedCode);
         Coupon coupon = couponRepository.findByCode(normalizedCode)
                 .orElseThrow(() -> new CouponNotFoundException("Coupon not found: " + normalizedCode));
+        validateCouponCanBeApplied(coupon);
         coupon.setUsedCount(coupon.getUsedCount() + 1);
         Coupon updated = couponRepository.save(coupon);
         log.info("Coupon {} applied, usedCount now: {}", normalizedCode, updated.getUsedCount());
@@ -120,6 +122,23 @@ public class CouponServiceImpl implements CouponService {
     public List<Coupon> getActiveCoupons() {
         log.info("Fetching all active coupons");
         return couponRepository.findByActiveTrue();
+    }
+
+    @Override
+    public List<Coupon> getAllCoupons() {
+        log.info("Fetching all coupons for administration");
+        return couponRepository.findAllByOrderByCreatedAtDesc();
+    }
+
+    @Override
+    public Coupon setCouponActive(UUID couponId, boolean active) {
+        if (couponId == null) {
+            throw new InvalidCouponException("Coupon id is required");
+        }
+        Coupon coupon = couponRepository.findById(couponId)
+                .orElseThrow(() -> new CouponNotFoundException("Coupon not found: " + couponId));
+        coupon.setActive(active);
+        return couponRepository.save(coupon);
     }
 
     private void validateCouponForCreate(Coupon coupon) {
@@ -163,6 +182,18 @@ public class CouponServiceImpl implements CouponService {
     private void validateOrderAmount(double orderAmount) {
         if (!Double.isFinite(orderAmount) || Double.compare(orderAmount, 0.0) < 0) {
             throw new InvalidCouponException("Order amount must not be negative");
+        }
+    }
+
+    private void validateCouponCanBeApplied(Coupon coupon) {
+        if (!coupon.isActive()) {
+            throw new InvalidCouponException("Coupon is not active");
+        }
+        if (coupon.getExpiryDate() != null && coupon.getExpiryDate().isBefore(LocalDate.now())) {
+            throw new InvalidCouponException("Coupon has expired");
+        }
+        if (coupon.getMaxUsageCount() != -1 && coupon.getUsedCount() >= coupon.getMaxUsageCount()) {
+            throw new InvalidCouponException("Coupon usage limit exceeded");
         }
     }
 }

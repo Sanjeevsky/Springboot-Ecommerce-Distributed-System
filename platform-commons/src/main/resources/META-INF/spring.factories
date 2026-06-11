@@ -1,2 +1,3 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  com.sanjeevsky.platform.mdc.MdcLoggingAutoConfiguration
+  com.sanjeevsky.platform.mdc.MdcLoggingAutoConfiguration,\
+  com.sanjeevsky.platform.security.AdminAuthorizationAutoConfiguration

@@ -18,6 +18,15 @@ public interface ProductRepository extends JpaRepository<Product, UUID> {
 
     Page<Product> findAllByStatus(int status, Pageable pageable);
 
+    @Query("SELECT p FROM Product p WHERE " +
+           "(:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
+           "OR LOWER(p.model) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
+           "AND (:status IS NULL OR p.status = :status)")
+    Page<Product> searchForAdmin(
+            @Param("keyword") String keyword,
+            @Param("status") Integer status,
+            Pageable pageable);
+
     @Query("SELECT p FROM Product p WHERE p.status = 1 " +
            "AND (:keyword IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) " +
            "AND (:categoryId IS NULL OR p.category.id = :categoryId) " +

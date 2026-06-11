@@ -3,6 +3,7 @@ package com.sanjeevsky.catalogservice.controller;
 import com.sanjeevsky.catalogservice.model.SubCategory;
 import com.sanjeevsky.catalogservice.service.SubCategoryService;
 import com.sanjeevsky.platform.response.ApiResponse;
+import com.sanjeevsky.platform.security.AdminOnly;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ public class SubCategoryController {
         this.subCategoryService = subCategoryService;
     }
 
+    @AdminOnly
     @PostMapping("/add-subcategory/{category-id}")
     public ResponseEntity<ApiResponse<SubCategory>> addSubCategory(
             @PathVariable(name = "category-id") UUID categoryId,
