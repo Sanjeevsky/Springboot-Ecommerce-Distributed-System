@@ -36,6 +36,7 @@ class ProductServiceImplTest {
     @Mock private BrandService brandService;
     @Mock private CategoryService categoryService;
     @Mock private SubCategoryService subCategoryService;
+    @Mock private AuditService auditService;
 
     @InjectMocks
     private ProductServiceImpl productService;

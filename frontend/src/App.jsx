@@ -28,6 +28,7 @@ import StudioProducts from "./pages/studio/StudioProducts.jsx";
 import StudioProductEditor from "./pages/studio/StudioProductEditor.jsx";
 import StudioInventory from "./pages/studio/StudioInventory.jsx";
 import StudioCoupons from "./pages/studio/StudioCoupons.jsx";
+import StudioActivity from "./pages/studio/StudioActivity.jsx";
 
 const StudioHome = React.lazy(() => import("./pages/studio/StudioHome.jsx"));
 
@@ -120,6 +121,7 @@ export default function App() {
         <Route path="products/:productId" element={<StudioProductEditor />} />
         <Route path="inventory" element={<StudioInventory />} />
         <Route path="coupons" element={<StudioCoupons />} />
+        <Route path="activity" element={<StudioActivity />} />
       </Route>
     </Routes>
   );

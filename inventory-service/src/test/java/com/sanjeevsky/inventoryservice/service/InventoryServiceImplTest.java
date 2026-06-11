@@ -33,6 +33,9 @@ class InventoryServiceImplTest {
     @Mock
     private InventoryTransactionRepository transactionRepository;
 
+    @Mock
+    private com.sanjeevsky.inventoryservice.service.AuditService auditService;
+
     @InjectMocks
     private InventoryServiceImpl inventoryService;
 
