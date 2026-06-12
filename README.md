@@ -152,7 +152,7 @@ The default `docker compose up -d` stack starts the application services plus Ka
 SPRING_BOOT_ADMIN_CLIENT_ENABLED=true docker compose --profile platform-tools up -d
 ```
 
-Zipkin runs in the Docker stack, but service tracing is disabled by default to keep full-stack local verification within typical Docker Desktop memory limits. Set `SPRING_ZIPKIN_ENABLED=true` before `docker compose up` to emit spans.
+Zipkin runs in the Docker stack and service tracing is **enabled by default** — every service reports B3 spans (100% sampling), so a `traceId` from the logs is searchable in Zipkin at http://localhost:9411. If you need to trim memory for a constrained machine, disable it with `SPRING_ZIPKIN_ENABLED=false docker compose up -d`.
 
 Auth tokens are signed by `auth-server` and verified by `api-gateway`; both read the same `JWT_SECRET` value. Docker Compose defaults it to `local-dev-secret` for local runs, and you can override it before starting the stack.
 Docker Compose also enables an idempotent local Studio administrator by default: `admin@trove.local` / `admin123`. Override these with `ADMIN_SEED_EMAIL` and `ADMIN_SEED_PASSWORD`, or set `ADMIN_SEED_ENABLED=false` on `auth-server` to disable seeding. Change the default password outside disposable local environments.

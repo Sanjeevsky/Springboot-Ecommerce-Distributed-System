@@ -276,7 +276,7 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
       - JWT_SECRET=${JWT_SECRET:-local-dev-secret}
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
-      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
+      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-true}
     networks:
       - ecommerce-network
     healthcheck:
@@ -329,7 +329,7 @@ services:
       - MINIO_BUCKET=${MINIO_BUCKET:-product-images}
       - MEDIA_PUBLIC_BASE_URL=${MEDIA_PUBLIC_BASE_URL:-http://localhost:9000/product-images}
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
-      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
+      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-true}
     networks:
       - ecommerce-network
     healthcheck:
@@ -366,7 +366,7 @@ services:
       - SPRING_BOOT_ADMIN_CLIENT_PASSWORD=${SPRING_BOOT_ADMIN_CLIENT_PASSWORD:-client}
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
-      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
+      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-true}
     networks:
       - ecommerce-network
     healthcheck:
@@ -407,7 +407,7 @@ services:
       - SPRING_REDIS_PORT=6379
       - CLIENTS_CATALOG_URL=http://catalog-service:8084
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
-      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
+      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-true}
     networks:
       - ecommerce-network
     healthcheck:
@@ -446,7 +446,7 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
-      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
+      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-true}
     networks:
       - ecommerce-network
     healthcheck:
@@ -479,7 +479,7 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
       - JWT_SECRET=${JWT_SECRET:-local-dev-secret}
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
-      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
+      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-true}
     networks:
       - ecommerce-network
     healthcheck:
@@ -521,7 +521,7 @@ services:
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - MYSQL_HOST=mysql
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
-      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
+      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-true}
     networks:
       - ecommerce-network
     healthcheck:
@@ -560,7 +560,7 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
-      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
+      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-true}
     networks:
       - ecommerce-network
     healthcheck:
@@ -596,7 +596,7 @@ services:
       - SPRING_BOOT_ADMIN_CLIENT_PASSWORD=${SPRING_BOOT_ADMIN_CLIENT_PASSWORD:-client}
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
-      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
+      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-true}
     networks:
       - ecommerce-network
     healthcheck:
@@ -635,7 +635,7 @@ services:
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
-      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
+      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-true}
     networks:
       - ecommerce-network
     healthcheck:
@@ -671,7 +671,7 @@ services:
       - SPRING_BOOT_ADMIN_CLIENT_PASSWORD=${SPRING_BOOT_ADMIN_CLIENT_PASSWORD:-client}
       - SPRING_PROFILES_ACTIVE=dev
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
-      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
+      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-true}
       - CLIENTS_CART_URL=http://shopping-cart-service:8086
     networks:
       - ecommerce-network
@@ -716,7 +716,7 @@ services:
       - CLIENTS_COUPON_URL=http://coupon-service:8089
       - CLIENTS_INVENTORY_URL=http://inventory-service:8088
       - SPRING_ZIPKIN_BASEURL=http://zipkin:9411/
-      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}
+      - SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-true}
     networks:
       - ecommerce-network
     healthcheck:

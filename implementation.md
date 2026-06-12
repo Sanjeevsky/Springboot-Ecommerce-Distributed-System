@@ -88,7 +88,7 @@ Business services include:
 ```properties
 spring.profiles.active=dev
 spring.zipkin.baseUrl=http://localhost:9411/
-spring.zipkin.enabled=false            # Docker also defaults tracing off; opt in with SPRING_ZIPKIN_ENABLED=true
+spring.zipkin.enabled=false            # service default; Docker defaults tracing on; disable with SPRING_ZIPKIN_ENABLED=false
 spring.sleuth.sampler.probability=1.0
 management.endpoint.health.show-details=always
 management.endpoints.web.exposure.include=*
@@ -97,7 +97,7 @@ management.endpoints.web.exposure.include=*
 **1.3 Docker-compose (completed)**
 - Observability starts with the default stack.
 - Business services run by default.
-- Docker keeps Zipkin available but leaves service tracing disabled by default; set `SPRING_ZIPKIN_ENABLED=true` to emit spans.
+- Docker defaults tracing on; disable with SPRING_ZIPKIN_ENABLED=false. Zipkin stays available at :9411 and every service reports B3 spans (sampler probability 1.0).
 - Docker disables Spring Cloud Config clients for app containers so local startup uses packaged service properties instead of resolving `localhost:8071` inside containers.
 - Docker runs `cloud-config` in native local mode for manual config-server checks, avoiding remote Git clone dependency during local startup.
 - Application containers wait for `service-discovery` and `cloud-config` health before startup to reduce Eureka registration races.

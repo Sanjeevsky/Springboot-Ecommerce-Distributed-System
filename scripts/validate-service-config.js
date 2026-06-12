@@ -617,12 +617,12 @@ if (implementationText.includes("grep -o '<app>.*</app>'")
     || !implementationText.includes("grep -o '<name>[^<]*</name>'")) {
   fail("implementation.md: Build & Run commands must use maintained Docker jar build and Eureka name checks");
 }
-if (/SPRING_ZIPKIN_ENABLED=true/.test(composeText)) {
-  fail("docker-compose.yml: tracing must default to opt-in with SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}");
+if (composeText.includes("SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-false}")) {
+  fail("docker-compose.yml: tracing is enabled by default; use SPRING_ZIPKIN_ENABLED=${SPRING_ZIPKIN_ENABLED:-true}");
 }
-if (implementationText.includes("overridden to true in docker")
-    || !implementationText.includes("Docker also defaults tracing off; opt in with SPRING_ZIPKIN_ENABLED=true")) {
-  fail("implementation.md: Zipkin snippet must document Docker tracing as opt-in");
+if (implementationText.includes("defaults tracing off")
+    || !implementationText.includes("Docker defaults tracing on; disable with SPRING_ZIPKIN_ENABLED=false")) {
+  fail("implementation.md: Zipkin snippet must document Docker tracing as on by default");
 }
 if (generateArchText.includes("Receives B3 traces from all 12 business services")
     || !generateArchText.includes("Services emit B3 traces when SPRING_ZIPKIN_ENABLED=true")) {
