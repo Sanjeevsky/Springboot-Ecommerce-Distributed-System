@@ -552,8 +552,15 @@ for (const service of Object.keys(expectedApplicationNames)) {
   if (!text.includes("COPY target/*.jar app.jar") || text.includes("ADD target/*.jar")) {
     fail(`${service}: Dockerfile must COPY the packaged jar instead of using ADD`);
   }
-  if (!text.includes("-Xmx96m") || !text.includes("-XX:MaxMetaspaceSize=128m") || !text.includes("-XX:MaxDirectMemorySize=32m")) {
-    fail(`${service}: Dockerfile must use the low-memory JVM profile for full-stack local verification`);
+  // catalog-service is the heaviest JVM (Hibernate + Spring Data ES/Redis + Kafka + MinIO
+  // SDK/OkHttp4/Kotlin) and exhausts the shared 128m Metaspace after hours of traffic
+  // (OutOfMemoryError: Metaspace -> intermittent 500s), so it gets a larger explicit cap.
+  const jvmProfiles = {
+    "catalog-service": ["-Xmx192m", "-XX:MaxMetaspaceSize=256m", "-XX:MaxDirectMemorySize=32m"],
+  };
+  const requiredJvmFlags = jvmProfiles[service] || ["-Xmx96m", "-XX:MaxMetaspaceSize=128m", "-XX:MaxDirectMemorySize=32m"];
+  if (!requiredJvmFlags.every((flag) => text.includes(flag))) {
+    fail(`${service}: Dockerfile must use the capped JVM profile (${requiredJvmFlags.join(" ")}) for full-stack local verification`);
   }
   const dockerignoreFile = path.join(root, service, ".dockerignore");
   if (!fs.existsSync(dockerignoreFile)) {
