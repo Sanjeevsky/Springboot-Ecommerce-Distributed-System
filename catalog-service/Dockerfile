@@ -1,4 +1,4 @@
-FROM eclipse-temurin:11-jre
+FROM bellsoft/liberica-openjre-alpine:11
 COPY target/*.jar app.jar
 # catalog-service is the heaviest JVM in the stack (Hibernate + Spring Data Elasticsearch +
 # Redis + Kafka + ModelMapper + SpringDoc + MinIO SDK/OkHttp4/Kotlin). The shared 128m

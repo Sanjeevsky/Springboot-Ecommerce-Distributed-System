@@ -197,7 +197,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -222,7 +222,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8071/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8071/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -280,7 +280,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8083/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -333,7 +333,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8084/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -370,7 +370,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8082/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -411,7 +411,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8086/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8086/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -450,7 +450,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8085/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -483,7 +483,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -525,7 +525,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8087/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8087/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -564,7 +564,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8088/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8088/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -600,7 +600,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8089/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8089/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -639,7 +639,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8090/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -676,7 +676,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8091/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8091/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 10
@@ -720,7 +720,7 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8092/actuator/health"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:8092/actuator/health"]
       interval: 15s
       timeout: 5s
       retries: 10

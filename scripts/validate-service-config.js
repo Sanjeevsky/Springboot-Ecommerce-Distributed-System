@@ -878,7 +878,7 @@ if (!grafanaBlock.includes('test: ["CMD", "wget", "-qO-", "http://localhost:3000
 }
 
 const serviceDiscoveryBlock = composeServiceBlock("service-discovery");
-if (!serviceDiscoveryBlock.includes('test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]')
+if (!serviceDiscoveryBlock.includes('test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]')
     || !serviceDiscoveryBlock.includes("start_period: 180s")) {
   fail("docker-compose.yml: service-discovery must define an actuator healthcheck with Spring startup grace");
 }
@@ -887,7 +887,7 @@ const cloudConfigBlock = composeServiceBlock("cloud-config");
 const cloudConfigNativeRepoPath = path.join(root, "cloud-config", "src", "main", "resources", "config-repo", "application.properties");
 if (!cloudConfigBlock.includes("SPRING_PROFILES_ACTIVE=native")
     || !cloudConfigBlock.includes("SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=classpath:/config-repo")
-    || !cloudConfigBlock.includes('test: ["CMD", "curl", "-f", "http://localhost:8071/actuator/health"]')
+    || !cloudConfigBlock.includes('test: ["CMD", "wget", "-qO-", "http://localhost:8071/actuator/health"]')
     || !cloudConfigBlock.includes("start_period: 180s")
     || !fs.existsSync(cloudConfigNativeRepoPath)
     || !fs.readFileSync(cloudConfigNativeRepoPath, "utf8").includes("configserver.local.mode=true")
@@ -935,7 +935,7 @@ for (const service of Object.keys(expectedApplicationNames)) {
     }
     const expectedHealthPort = expectedComposeHealthPorts[service];
     if (expectedHealthPort
-        && (!block.includes(`test: ["CMD", "curl", "-f", "http://localhost:${expectedHealthPort}/actuator/health"]`)
+        && (!block.includes(`test: ["CMD", "wget", "-qO-", "http://localhost:${expectedHealthPort}/actuator/health"]`)
           || !block.includes("start_period: 180s"))) {
       fail(`docker-compose.yml: ${service} must define an actuator healthcheck on port ${expectedHealthPort} with Spring startup grace`);
     }
