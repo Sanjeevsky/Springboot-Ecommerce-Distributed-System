@@ -118,11 +118,12 @@ class AuthIntegrationTest {
     }
 
     @Test
-    void login_unknownUser_returns404() throws Exception {
+    void login_unknownUser_returns401() throws Exception {
+        // Unknown email returns 401 (not 404) so callers cannot enumerate registered accounts.
         mockMvc.perform(post("/auth-service/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\":\"ghost@example.com\",\"password\":\"pass1234\"}"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isUnauthorized());
     }
 
     // ─── UpdatePassword ───────────────────────────────────────────────────────
