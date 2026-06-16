@@ -18,11 +18,24 @@
 //   notification-svc  GET  /notification-service/notifications, /notifications/unread
 //   review-service    GET  /review-service/review/product/{id}, /summary, POST /review-service/review
 
+import { logout } from "./auth.js";
+
 const BASE = import.meta.env.VITE_API_BASE || "/api";
 
 function authHeader() {
   const token = localStorage.getItem("trove_token");
   return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+// A 401 from the gateway means the session is missing/expired/invalid. Clear it and
+// signal the app to bounce the user to /login with a toast. Login/signup are exempt —
+// their own 401 (bad credentials) is surfaced by the form, not the global handler.
+function handleUnauthorized(path) {
+  if (path.startsWith("/auth-service/")) return;
+  logout();
+  window.dispatchEvent(new CustomEvent("trove:unauthorized", {
+    detail: { from: window.location.pathname + window.location.search },
+  }));
 }
 
 async function request(path, { method = "GET", body, headers } = {}) {
@@ -36,6 +49,7 @@ async function request(path, { method = "GET", body, headers } = {}) {
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!res.ok) {
+    if (res.status === 401) handleUnauthorized(path);
     const text = await res.text().catch(() => "");
     const err = new Error(`${res.status} ${res.statusText} — ${path}`);
     err.status = res.status;

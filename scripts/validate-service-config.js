@@ -552,8 +552,15 @@ for (const service of Object.keys(expectedApplicationNames)) {
   if (!text.includes("COPY target/*.jar app.jar") || text.includes("ADD target/*.jar")) {
     fail(`${service}: Dockerfile must COPY the packaged jar instead of using ADD`);
   }
-  if (!text.includes("-Xmx96m") || !text.includes("-XX:MaxMetaspaceSize=128m") || !text.includes("-XX:MaxDirectMemorySize=32m")) {
-    fail(`${service}: Dockerfile must use the low-memory JVM profile for full-stack local verification`);
+  // catalog-service is the heaviest JVM (Hibernate + Spring Data ES/Redis + Kafka + MinIO
+  // SDK/OkHttp4/Kotlin) and exhausts the shared 128m Metaspace after hours of traffic
+  // (OutOfMemoryError: Metaspace -> intermittent 500s), so it gets a larger explicit cap.
+  const jvmProfiles = {
+    "catalog-service": ["-Xmx192m", "-XX:MaxMetaspaceSize=256m", "-XX:MaxDirectMemorySize=32m"],
+  };
+  const requiredJvmFlags = jvmProfiles[service] || ["-Xmx96m", "-XX:MaxMetaspaceSize=128m", "-XX:MaxDirectMemorySize=32m"];
+  if (!requiredJvmFlags.every((flag) => text.includes(flag))) {
+    fail(`${service}: Dockerfile must use the capped JVM profile (${requiredJvmFlags.join(" ")}) for full-stack local verification`);
   }
   const dockerignoreFile = path.join(root, service, ".dockerignore");
   if (!fs.existsSync(dockerignoreFile)) {
@@ -871,7 +878,7 @@ if (!grafanaBlock.includes('test: ["CMD", "wget", "-qO-", "http://localhost:3000
 }
 
 const serviceDiscoveryBlock = composeServiceBlock("service-discovery");
-if (!serviceDiscoveryBlock.includes('test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]')
+if (!serviceDiscoveryBlock.includes('test: ["CMD", "wget", "-qO-", "http://localhost:8761/actuator/health"]')
     || !serviceDiscoveryBlock.includes("start_period: 180s")) {
   fail("docker-compose.yml: service-discovery must define an actuator healthcheck with Spring startup grace");
 }
@@ -880,7 +887,7 @@ const cloudConfigBlock = composeServiceBlock("cloud-config");
 const cloudConfigNativeRepoPath = path.join(root, "cloud-config", "src", "main", "resources", "config-repo", "application.properties");
 if (!cloudConfigBlock.includes("SPRING_PROFILES_ACTIVE=native")
     || !cloudConfigBlock.includes("SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=classpath:/config-repo")
-    || !cloudConfigBlock.includes('test: ["CMD", "curl", "-f", "http://localhost:8071/actuator/health"]')
+    || !cloudConfigBlock.includes('test: ["CMD", "wget", "-qO-", "http://localhost:8071/actuator/health"]')
     || !cloudConfigBlock.includes("start_period: 180s")
     || !fs.existsSync(cloudConfigNativeRepoPath)
     || !fs.readFileSync(cloudConfigNativeRepoPath, "utf8").includes("configserver.local.mode=true")
@@ -928,7 +935,7 @@ for (const service of Object.keys(expectedApplicationNames)) {
     }
     const expectedHealthPort = expectedComposeHealthPorts[service];
     if (expectedHealthPort
-        && (!block.includes(`test: ["CMD", "curl", "-f", "http://localhost:${expectedHealthPort}/actuator/health"]`)
+        && (!block.includes(`test: ["CMD", "wget", "-qO-", "http://localhost:${expectedHealthPort}/actuator/health"]`)
           || !block.includes("start_period: 180s"))) {
       fail(`docker-compose.yml: ${service} must define an actuator healthcheck on port ${expectedHealthPort} with Spring startup grace`);
     }
