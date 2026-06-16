@@ -162,6 +162,39 @@
           "refId": "A"
         }
       ]
+    },
+    {
+      "datasource": "Prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "custom": { "thresholdsStyle": { "mode": "line" } },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 85 },
+              { "color": "red", "value": 95 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 28 },
+      "id": 9,
+      "options": { "legend": { "calcs": ["lastNotNull", "max"], "displayMode": "table", "placement": "right" }, "tooltip": { "mode": "multi", "sort": "desc" } },
+      "title": "JVM Metaspace Utilization % (cap 128/192/256m by tier; alert > 85%)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "100 * jvm_memory_used_bytes{job=~\"$service\",id=\"Metaspace\"} / jvm_memory_max_bytes{job=~\"$service\",id=\"Metaspace\"}",
+          "legendFormat": "{{ job }}",
+          "refId": "A"
+        }
+      ]
     }
   ],
   "refresh": "10s",

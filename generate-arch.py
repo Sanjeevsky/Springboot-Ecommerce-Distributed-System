@@ -178,7 +178,7 @@ def build_graph():
          'tip':'Scrapes /actuator/prometheus from all 12 services every 15s. Feeds Grafana.'},
         {'id':'grafana',    'name':'Grafana',      'port':'3000',  'type':'obs',
          'tag':'Dashboards','icon':'◈',
-         'tip':'Auto-provisioned with Prometheus datasource + ecommerce-overview dashboard (8 panels). admin/admin.'},
+         'tip':'Auto-provisioned with Prometheus datasource + ecommerce-overview dashboard (9 panels). admin/admin.'},
         {'id':'kafka-ui',   'name':'Kafka UI',     'port':'8080',  'type':'obs',
          'tag':'Topic Monitor','icon':'◈',
          'tip':'provectuslabs/kafka-ui — browse topics, partitions, consumer group lag in real time.'},
