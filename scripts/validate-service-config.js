@@ -552,11 +552,24 @@ for (const service of Object.keys(expectedApplicationNames)) {
   if (!text.includes("COPY target/*.jar app.jar") || text.includes("ADD target/*.jar")) {
     fail(`${service}: Dockerfile must COPY the packaged jar instead of using ADD`);
   }
-  // catalog-service is the heaviest JVM (Hibernate + Spring Data ES/Redis + Kafka + MinIO
-  // SDK/OkHttp4/Kotlin) and exhausts the shared 128m Metaspace after hours of traffic
-  // (OutOfMemoryError: Metaspace -> intermittent 500s), so it gets a larger explicit cap.
+  // The shared 128m Metaspace is too tight for the Spring business services: warm steady
+  // state runs 75-88% of cap (order-service ~88%), and exceeding it throws
+  // OutOfMemoryError: Metaspace -> intermittent 500s. So every business service gets 192m,
+  // and catalog-service (heaviest: + Spring Data ES/Redis + MinIO SDK/OkHttp4/Kotlin) gets
+  // 256m. Only the lightweight infra (eureka/config/gateway/boot-admin) keeps 128m.
+  const businessJvmProfile = ["-Xmx96m", "-XX:MaxMetaspaceSize=192m", "-XX:MaxDirectMemorySize=32m"];
   const jvmProfiles = {
     "catalog-service": ["-Xmx192m", "-XX:MaxMetaspaceSize=256m", "-XX:MaxDirectMemorySize=32m"],
+    "auth-server": businessJvmProfile,
+    "customer-service": businessJvmProfile,
+    "payment-service": businessJvmProfile,
+    "shopping-cart-service": businessJvmProfile,
+    "notification-service": businessJvmProfile,
+    "inventory-service": businessJvmProfile,
+    "coupon-service": businessJvmProfile,
+    "review-service": businessJvmProfile,
+    "wishlist-service": businessJvmProfile,
+    "order-service": businessJvmProfile,
   };
   const requiredJvmFlags = jvmProfiles[service] || ["-Xmx96m", "-XX:MaxMetaspaceSize=128m", "-XX:MaxDirectMemorySize=32m"];
   if (!requiredJvmFlags.every((flag) => text.includes(flag))) {
