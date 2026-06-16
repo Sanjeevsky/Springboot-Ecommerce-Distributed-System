@@ -41,21 +41,30 @@ function RequireAuth({ children }) {
   return children;
 }
 
-// Admin-only routes: logged-out users go to login, customers go home.
+// Admin-only routes: logged-out users go to login, signed-in customers get an
+// "access denied" toast (via trove:forbidden) and are sent home.
 function RequireAdmin({ children }) {
   const location = useLocation();
-  if (!isLoggedIn()) {
+  const loggedIn = isLoggedIn();
+  const admin = isAdmin();
+  React.useEffect(() => {
+    if (loggedIn && !admin) {
+      window.dispatchEvent(new CustomEvent("trove:forbidden"));
+    }
+  }, [loggedIn, admin]);
+  if (!loggedIn) {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
-  if (!isAdmin()) {
+  if (!admin) {
     return <Navigate to="/" replace />;
   }
   return children;
 }
 
-// Listens for the global 401 signal from the API client and bounces the user to
-// /login (remembering where they were) with an explanatory toast. Lives at the app
-// root so it fires for storefront, account, and studio routes alike.
+// Listens for the global auth signals from the API client (and route guards):
+//   trove:unauthorized (401) — clear session, toast, bounce to /login (remember path)
+//   trove:forbidden    (403) — keep session, toast "access denied", stay put
+// Lives at the app root so it fires for storefront, account, and studio routes alike.
 function AuthWatcher() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -66,12 +75,23 @@ function AuthWatcher() {
       showToast({
         tone: "warning",
         title: "Please sign in",
-        message: "Your session has expired or you don't have access. Sign in to continue.",
+        message: "Your session has expired. Sign in to continue.",
       });
       navigate("/login", { state: { from: e.detail?.from }, replace: true });
     };
+    const onForbidden = () => {
+      showToast({
+        tone: "danger",
+        title: "Access denied",
+        message: "You don't have permission to access that.",
+      });
+    };
     window.addEventListener("trove:unauthorized", onUnauthorized);
-    return () => window.removeEventListener("trove:unauthorized", onUnauthorized);
+    window.addEventListener("trove:forbidden", onForbidden);
+    return () => {
+      window.removeEventListener("trove:unauthorized", onUnauthorized);
+      window.removeEventListener("trove:forbidden", onForbidden);
+    };
   }, [navigate, location.pathname, showToast]);
   return null;
 }
