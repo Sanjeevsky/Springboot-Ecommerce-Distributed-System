@@ -1,11 +1,11 @@
 import React, { Suspense, useState } from "react";
-import { Routes, Route, Outlet, Navigate, useLocation } from "react-router-dom";
+import { Routes, Route, Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { isLoggedIn, isAdmin } from "./lib/auth.js";
 import { Header } from "./components/storefront/Header.jsx";
 import { Footer } from "./components/storefront/Footer.jsx";
 import { CartDrawer } from "./components/storefront/CartDrawer.jsx";
 import { Toast, Button } from "./components/index.js";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, AlertTriangle } from "lucide-react";
 import { useStore } from "./store/StoreContext.jsx";
 
 import Home from "./pages/Home.jsx";
@@ -53,6 +53,29 @@ function RequireAdmin({ children }) {
   return children;
 }
 
+// Listens for the global 401 signal from the API client and bounces the user to
+// /login (remembering where they were) with an explanatory toast. Lives at the app
+// root so it fires for storefront, account, and studio routes alike.
+function AuthWatcher() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { showToast } = useStore();
+  React.useEffect(() => {
+    const onUnauthorized = (e) => {
+      if (location.pathname === "/login") return;
+      showToast({
+        tone: "warning",
+        title: "Please sign in",
+        message: "Your session has expired or you don't have access. Sign in to continue.",
+      });
+      navigate("/login", { state: { from: e.detail?.from }, replace: true });
+    };
+    window.addEventListener("trove:unauthorized", onUnauthorized);
+    return () => window.removeEventListener("trove:unauthorized", onUnauthorized);
+  }, [navigate, location.pathname, showToast]);
+  return null;
+}
+
 // Storefront chrome wrapper (header, footer, cart drawer, toast).
 function StorefrontLayout() {
   const [cartOpen, setCartOpen] = useState(false);
@@ -78,8 +101,12 @@ function StorefrontLayout() {
 
       <div style={{ position: "fixed", top: 90, right: 20, zIndex: 1100, display: "flex", flexDirection: "column", gap: 10 }}>
         {toast && (
-          <Toast {...toast} icon={<CheckCircle2 size={18} />} onClose={dismissToast}
-            action={<Button variant="link" size="sm" onClick={() => { dismissToast(); window.dispatchEvent(new Event("trove:open-cart")); }}>View cart</Button>} />
+          <Toast {...toast}
+            icon={toast.tone === "success" ? <CheckCircle2 size={18} /> : <AlertTriangle size={18} />}
+            onClose={dismissToast}
+            action={toast.tone === "success"
+              ? <Button variant="link" size="sm" onClick={() => { dismissToast(); window.dispatchEvent(new Event("trove:open-cart")); }}>View cart</Button>
+              : null} />
         )}
       </div>
     </>
@@ -88,6 +115,8 @@ function StorefrontLayout() {
 
 export default function App() {
   return (
+    <>
+    <AuthWatcher />
     <Routes>
       <Route element={<StorefrontLayout />}>
         <Route index element={<Home />} />
@@ -124,5 +153,6 @@ export default function App() {
         <Route path="activity" element={<StudioActivity />} />
       </Route>
     </Routes>
+    </>
   );
 }
