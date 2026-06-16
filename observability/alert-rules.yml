@@ -1,0 +1,24 @@
+groups:
+  - name: jvm-metaspace
+    rules:
+      # The stack runs tight per-service Metaspace caps (infra 128m / business 192m /
+      # catalog 256m). Exceeding the cap throws OutOfMemoryError: Metaspace -> intermittent
+      # 500s, so warn well before the cap and page if it gets critical. Percentages match
+      # the "JVM Metaspace Utilization %" panel in the ecommerce-overview dashboard.
+      - alert: HighJvmMetaspaceUsage
+        expr: 100 * jvm_memory_used_bytes{id="Metaspace"} / jvm_memory_max_bytes{id="Metaspace"} > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.job }} Metaspace above 85% of cap"
+          description: "{{ $labels.job }} JVM Metaspace is at {{ $value | printf \"%.0f\" }}% of MaxMetaspaceSize for 10m. Raise the service's -XX:MaxMetaspaceSize (see scripts/validate-service-config.js jvmProfiles) before it OOMs."
+
+      - alert: CriticalJvmMetaspaceUsage
+        expr: 100 * jvm_memory_used_bytes{id="Metaspace"} / jvm_memory_max_bytes{id="Metaspace"} > 95
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.job }} Metaspace above 95% of cap"
+          description: "{{ $labels.job }} JVM Metaspace is at {{ $value | printf \"%.0f\" }}% of MaxMetaspaceSize for 5m and is about to throw OutOfMemoryError: Metaspace (intermittent 500s). Raise the cap and redeploy."

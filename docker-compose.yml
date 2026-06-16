@@ -129,6 +129,7 @@ services:
       - "9090:9090"
     volumes:
       - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./observability/alert-rules.yml:/etc/prometheus/alert-rules.yml
     networks:
       - ecommerce-network
     healthcheck:
