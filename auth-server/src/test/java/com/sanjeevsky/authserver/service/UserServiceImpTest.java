@@ -193,11 +193,12 @@ class UserServiceImpTest {
     }
 
     @Test
-    void authenticateUser_userNotFound_throwsNoSuchUserExistsException() {
+    void authenticateUser_userNotFound_throwsCredentialsMismatchException() {
+        // Unknown email yields the same generic 401 as a wrong password (no user enumeration).
         when(repository.findById(EMAIL)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.authenticateUser(new UserDTO(EMAIL, RAW_PASSWORD)))
-                .isInstanceOf(NoSuchUserExistsException.class);
+                .isInstanceOf(CredentialsMismatchException.class);
     }
 
     @Test

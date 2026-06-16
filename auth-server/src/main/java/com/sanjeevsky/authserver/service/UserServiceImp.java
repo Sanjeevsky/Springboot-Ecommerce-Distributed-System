@@ -47,15 +47,13 @@ public class UserServiceImp implements UserService {
     public LoginDTO authenticateUser(UserDTO user) {
         validateLoginRequest(user);
         Optional<User> stored = repository.findById(user.getEmail());
-        if (stored.isPresent()) {
-            if (passwordEncoder.matches(user.getPassword(), stored.get().getPassword())) {
-                return generator.generateToken(user, stored.get().getRole());
-            } else {
-                throw new CredentialsMismatchException("Credentials Mismatch..Please try with valid credentials");
-            }
-        } else {
-            throw new NoSuchUserExistsException("No User Found With Given Credentials...!!");
+        // A failed login returns a uniform 401 whether the email is unknown or the
+        // password is wrong: a 404 for unknown emails would let callers enumerate which
+        // accounts exist, and a generic message keeps the two cases indistinguishable.
+        if (stored.isPresent() && passwordEncoder.matches(user.getPassword(), stored.get().getPassword())) {
+            return generator.generateToken(user, stored.get().getRole());
         }
+        throw new CredentialsMismatchException("Invalid email or password");
     }
 
     @Override
