@@ -38,6 +38,14 @@ function handleUnauthorized(path) {
   }));
 }
 
+// A 403 means the session is valid but the user lacks permission (e.g. a customer
+// hitting an @AdminOnly endpoint). Unlike a 401 we keep the session and do NOT bounce
+// to login — re-authenticating wouldn't help — we just signal the app to toast "access
+// denied" and let the page stay put.
+function handleForbidden() {
+  window.dispatchEvent(new CustomEvent("trove:forbidden"));
+}
+
 async function request(path, { method = "GET", body, headers } = {}) {
   const res = await fetch(`${BASE}${path}`, {
     method,
@@ -50,6 +58,7 @@ async function request(path, { method = "GET", body, headers } = {}) {
   });
   if (!res.ok) {
     if (res.status === 401) handleUnauthorized(path);
+    else if (res.status === 403) handleForbidden();
     const text = await res.text().catch(() => "");
     const err = new Error(`${res.status} ${res.statusText} — ${path}`);
     err.status = res.status;
