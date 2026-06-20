@@ -22,3 +22,56 @@ groups:
         annotations:
           summary: "{{ $labels.job }} Metaspace above 95% of cap"
           description: "{{ $labels.job }} JVM Metaspace is at {{ $value | printf \"%.0f\" }}% of MaxMetaspaceSize for 5m and is about to throw OutOfMemoryError: Metaspace (intermittent 500s). Raise the cap and redeploy."
+
+  # Resilience signals for the failure paths exercised by the chaos harness
+  # (scripts/chaos.sh) and documented in docs/resilience-plan.md.
+  - name: resilience
+    rules:
+      # A downstream that hangs makes order-service's Feign time limiter cancel the call
+      # at 4s (see CircuitBreakerConfiguration.java); a sustained stream of timeouts means
+      # a dependency (payment/cart/inventory) is slow and the circuit breaker is shedding
+      # load. The breaker name carries the Feign method, e.g.
+      # HardCodedTarget#initiatePayment(PaymentRequest).
+      - alert: DownstreamCallTimeoutsHigh
+        expr: sum by (job, name) (rate(resilience4j_timelimiter_calls_total{kind="timeout"}[5m])) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.job }} timing out on {{ $labels.name }}"
+          description: "{{ $labels.job }} is timing out {{ $value | printf \"%.2f\" }} calls/s on {{ $labels.name }} for 5m — a downstream dependency is slow; the circuit breaker should be shedding load."
+
+      # 5xx ratio per service. http_server_requests is the Spring MVC server metric;
+      # status=~\"5..\" captures server errors regardless of route.
+      - alert: HighHttpErrorRate
+        expr: |
+          sum by (job) (rate(http_server_requests_seconds_count{status=~"5.."}[5m]))
+            / sum by (job) (rate(http_server_requests_seconds_count[5m])) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.job }} serving >5% 5xx"
+          description: "{{ $labels.job }} has a {{ $value | humanizePercentage }} HTTP 5xx rate over 5m for 10m."
+
+      # Kafka consumer lag that stays high means a consumer is down or can't keep up;
+      # after a consumer outage lag should drain within seconds (hypothesis #4).
+      - alert: KafkaConsumerLagGrowing
+        expr: max by (job, topic) (kafka_consumer_fetch_manager_records_lag) > 50
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.job }} lagging on {{ $labels.topic }}"
+          description: "{{ $labels.job }} consumer lag on {{ $labels.topic }} is {{ $value | printf \"%.0f\" }} records for 10m — the consumer is down or not keeping up."
+
+      # Saga compensations mean payments are failing after stock was reserved. A few are
+      # normal; a sustained rate signals a payment-path problem (hypothesis #3).
+      - alert: SagaCompensationRateHigh
+        expr: sum(rate(order_saga_terminal_total{outcome="COMPENSATED"}[5m])) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Checkout sagas compensating frequently"
+          description: "Order sagas are compensating at {{ $value | printf \"%.2f\" }}/s over 5m for 10m — payments are failing after stock reservation; check payment-service."
