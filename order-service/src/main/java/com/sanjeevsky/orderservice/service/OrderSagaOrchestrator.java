@@ -14,6 +14,7 @@ import com.sanjeevsky.platform.events.OrderConfirmedEvent;
 import com.sanjeevsky.platform.events.OrderItemEvent;
 import com.sanjeevsky.platform.events.StockReservationRequestedEvent;
 import com.sanjeevsky.platform.model.order.OrderStatus;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -44,6 +45,17 @@ public class OrderSagaOrchestrator {
     private final OrderRepository orderRepository;
     private final OrderEventPublisher eventPublisher;
     private final CartFeignClient cartFeignClient;
+    private final MeterRegistry meterRegistry;
+
+    /**
+     * Counts each saga that reaches a terminal state, tagged by outcome
+     * (COMPLETED / COMPENSATED / FAILED). Drives the SagaCompensationRate alert and the
+     * Studio/Grafana saga-outcome panel — a rising COMPENSATED rate means payments are
+     * failing after stock was reserved.
+     */
+    private void recordOutcome(SagaStatus outcome) {
+        meterRegistry.counter("order_saga_terminal_total", "outcome", outcome.name()).increment();
+    }
 
     /**
      * Begins the saga: persists the saga log in {@code STARTED} and requests stock reservation
@@ -106,6 +118,7 @@ public class OrderSagaOrchestrator {
             saga.setLastError(reason);
             sagaRepository.save(saga);
             cancelOrder(orderId, reason);
+            recordOutcome(SagaStatus.FAILED);
             log.info("Saga FAILED (insufficient stock) for orderId={}: {}", orderId, reason);
         }, () -> log.warn("No saga found for orderId={} on StockInsufficient", orderId));
     }
@@ -132,6 +145,7 @@ public class OrderSagaOrchestrator {
             saga.setStatus(SagaStatus.COMPLETED);
             saga.setCurrentStep("COMPLETED");
             sagaRepository.save(saga);
+            recordOutcome(SagaStatus.COMPLETED);
 
             eventPublisher.publishOrderConfirmed(OrderConfirmedEvent.builder()
                     .orderId(orderId)
@@ -164,6 +178,7 @@ public class OrderSagaOrchestrator {
             saga.setStatus(SagaStatus.COMPENSATED);
             saga.setCurrentStep("COMPENSATED");
             sagaRepository.save(saga);
+            recordOutcome(SagaStatus.COMPENSATED);
             log.info("Saga COMPENSATED for orderId={}, order CANCELLED", orderId);
         }, () -> log.warn("No saga found for orderId={} on PaymentFailed", orderId));
     }

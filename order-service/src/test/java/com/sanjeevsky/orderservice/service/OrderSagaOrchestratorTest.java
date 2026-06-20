@@ -13,11 +13,14 @@ import com.sanjeevsky.platform.events.OrderCancelledEvent;
 import com.sanjeevsky.platform.events.OrderConfirmedEvent;
 import com.sanjeevsky.platform.events.StockReservationRequestedEvent;
 import com.sanjeevsky.platform.model.order.OrderStatus;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
@@ -40,6 +43,7 @@ class OrderSagaOrchestratorTest {
     @Mock OrderRepository orderRepository;
     @Mock OrderEventPublisher eventPublisher;
     @Mock CartFeignClient cartFeignClient;
+    @Spy MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
     @InjectMocks OrderSagaOrchestrator orchestrator;
 
@@ -168,6 +172,9 @@ class OrderSagaOrchestratorTest {
         verify(sagaRepository, org.mockito.Mockito.atLeastOnce()).save(sagaCaptor.capture());
         assertThat(sagaCaptor.getValue().getStatus()).isEqualTo(SagaStatus.COMPENSATED);
         verify(eventPublisher, never()).publishOrderConfirmed(any());
+        // the terminal outcome is metered for the SagaCompensationRate alert / saga panel
+        assertThat(meterRegistry.counter("order_saga_terminal_total", "outcome", "COMPENSATED").count())
+                .isEqualTo(1.0);
     }
 
     @Test
