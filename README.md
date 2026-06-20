@@ -437,6 +437,25 @@ JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-11.jdk/Contents/Home \
 
 GitHub Actions runs static validation and Java 11 module tests on pushes and pull requests.
 
+### Resilience / chaos testing
+
+`scripts/chaos.sh` injects faults into the running Docker stack to validate that the
+system degrades gracefully and recovers — circuit breakers (order-service → cart /
+payment / coupon) and the orchestration saga's compensation path. Faults are applied
+by docker-compose service name, so the harness needs no container-name bookkeeping.
+
+```bash
+scripts/chaos.sh kill payment-service    # SIGKILL — prove the circuit breaker opens
+scripts/chaos.sh pause inventory-service # freeze the process — prove the saga compensates
+scripts/chaos.sh slow catalog-service 400 # 400ms egress latency via a tc/netem sidecar
+scripts/chaos.sh status                  # current state of the business services
+scripts/chaos.sh restore                 # undo every fault on all known services
+```
+
+Run the `load-tests/` k6 scenarios alongside it to observe the blast radius in Grafana.
+See [docs/resilience-plan.md](docs/resilience-plan.md) for the steady-state hypotheses
+each fault probes and the phased rollout (PR A here is the harness).
+
 ---
 
 ## Project Structure
