@@ -165,22 +165,56 @@ public class OrderSagaOrchestrator {
                 log.info("Ignoring PaymentFailed for orderId={}; saga already {}", orderId, saga.getStatus());
                 return;
             }
-            saga.setStatus(SagaStatus.COMPENSATING);
-            saga.setCurrentStep("RELEASE_STOCK");
-            saga.setLastError(reason);
-            sagaRepository.save(saga);
-            log.info("Saga COMPENSATING for orderId={} (payment failed): releasing reserved stock", orderId);
-
-            // OrderCancelledEvent triggers inventory-service to release the reserved stock
-            // (OrderEventConsumer.handleOrderCancelled) — this is the compensation of step 1.
-            cancelOrder(orderId, reason);
-
-            saga.setStatus(SagaStatus.COMPENSATED);
-            saga.setCurrentStep("COMPENSATED");
-            sagaRepository.save(saga);
-            recordOutcome(SagaStatus.COMPENSATED);
-            log.info("Saga COMPENSATED for orderId={}, order CANCELLED", orderId);
+            log.info("Saga compensating for orderId={} (payment failed)", orderId);
+            compensate(saga, orderId, reason);
         }, () -> log.warn("No saga found for orderId={} on PaymentFailed", orderId));
+    }
+
+    /**
+     * Compensate a saga that has been parked in an in-flight state past its timeout — driven by
+     * {@link SagaTimeoutReaper}, not by a downstream reply. The motivating case: payment-service
+     * is <em>unreachable</em>, so the {@code ChargePaymentCommand} sits unconsumed and the saga
+     * stays {@code STOCK_RESERVED} forever; {@link #onPaymentFailed} only fires on a payment
+     * <em>failure reply</em>, never on silence. This is the timeout-driven sibling that releases
+     * the reserved stock (and cancels {@code STARTED} sagas whose stock reply was lost) instead of
+     * leaking it indefinitely.
+     */
+    @Transactional
+    public void compensateStuckSaga(UUID orderId, String reason) {
+        sagaRepository.findByOrderId(orderId).ifPresentOrElse(saga -> {
+            // A real reply may have landed between the reaper's scan and this transaction.
+            if (isTerminal(saga.getStatus()) || saga.getStatus() == SagaStatus.COMPENSATING) {
+                log.info("Ignoring timeout reap for orderId={}; saga already {}", orderId, saga.getStatus());
+                return;
+            }
+            log.warn("Saga TIMED OUT in {} for orderId={}; compensating: {}", saga.getStatus(), orderId, reason);
+            meterRegistry.counter("order_saga_reaped_total", "from", saga.getStatus().name()).increment();
+            compensate(saga, orderId, reason);
+        }, () -> log.warn("No saga found for orderId={} on timeout reap", orderId));
+    }
+
+    /**
+     * Shared compensation of step 1: mark COMPENSATING, cancel the order (which releases any
+     * reserved stock), then mark COMPENSATED and meter the terminal outcome. Caller must have
+     * already guarded against terminal/in-flight states.
+     */
+    private void compensate(SagaInstance saga, UUID orderId, String reason) {
+        saga.setStatus(SagaStatus.COMPENSATING);
+        saga.setCurrentStep("RELEASE_STOCK");
+        saga.setLastError(reason);
+        sagaRepository.save(saga);
+        log.info("Saga COMPENSATING for orderId={}: releasing reserved stock", orderId);
+
+        // OrderCancelledEvent triggers inventory-service to release the reserved stock
+        // (OrderEventConsumer.handleOrderCancelled) — this is the compensation of step 1.
+        // Idempotent for a STARTED saga whose stock was never actually reserved.
+        cancelOrder(orderId, reason);
+
+        saga.setStatus(SagaStatus.COMPENSATED);
+        saga.setCurrentStep("COMPENSATED");
+        sagaRepository.save(saga);
+        recordOutcome(SagaStatus.COMPENSATED);
+        log.info("Saga COMPENSATED for orderId={}, order CANCELLED", orderId);
     }
 
     private void cancelOrder(UUID orderId, String reason) {

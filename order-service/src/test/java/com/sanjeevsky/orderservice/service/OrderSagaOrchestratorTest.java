@@ -178,6 +178,52 @@ class OrderSagaOrchestratorTest {
     }
 
     @Test
+    void compensateStuckSaga_releasesStockForTimedOutStockReservedSaga() {
+        UUID orderId = UUID.randomUUID();
+        Order order = order(orderId, OrderStatus.PENDING);
+        when(sagaRepository.findByOrderId(orderId)).thenReturn(Optional.of(saga(orderId, SagaStatus.STOCK_RESERVED, false)));
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+
+        orchestrator.compensateStuckSaga(orderId, "timed out");
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        verify(eventPublisher).publishOrderCancelled(any(OrderCancelledEvent.class));
+        ArgumentCaptor<SagaInstance> sagaCaptor = ArgumentCaptor.forClass(SagaInstance.class);
+        verify(sagaRepository, org.mockito.Mockito.atLeastOnce()).save(sagaCaptor.capture());
+        assertThat(sagaCaptor.getValue().getStatus()).isEqualTo(SagaStatus.COMPENSATED);
+        // metered both as a terminal COMPENSATED outcome and as a reaped (timeout) saga
+        assertThat(meterRegistry.counter("order_saga_terminal_total", "outcome", "COMPENSATED").count()).isEqualTo(1.0);
+        assertThat(meterRegistry.counter("order_saga_reaped_total", "from", "STOCK_RESERVED").count()).isEqualTo(1.0);
+        verify(eventPublisher, never()).publishChargePayment(any());
+    }
+
+    @Test
+    void compensateStuckSaga_compensatesTimedOutStartedSaga() {
+        UUID orderId = UUID.randomUUID();
+        Order order = order(orderId, OrderStatus.PENDING);
+        when(sagaRepository.findByOrderId(orderId)).thenReturn(Optional.of(saga(orderId, SagaStatus.STARTED, false)));
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+
+        orchestrator.compensateStuckSaga(orderId, "timed out");
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CANCELLED);
+        verify(eventPublisher).publishOrderCancelled(any(OrderCancelledEvent.class));
+        assertThat(meterRegistry.counter("order_saga_reaped_total", "from", "STARTED").count()).isEqualTo(1.0);
+    }
+
+    @Test
+    void compensateStuckSaga_isNoOpWhenSagaAlreadyTerminal() {
+        UUID orderId = UUID.randomUUID();
+        when(sagaRepository.findByOrderId(orderId)).thenReturn(Optional.of(saga(orderId, SagaStatus.COMPLETED, false)));
+
+        orchestrator.compensateStuckSaga(orderId, "timed out");
+
+        verify(sagaRepository, never()).save(any());
+        verify(eventPublisher, never()).publishOrderCancelled(any());
+        assertThat(meterRegistry.counter("order_saga_reaped_total", "from", "COMPLETED").count()).isEqualTo(0.0);
+    }
+
+    @Test
     void unknownOrder_isIgnoredGracefully() {
         UUID orderId = UUID.randomUUID();
         when(sagaRepository.findByOrderId(orderId)).thenReturn(Optional.empty());

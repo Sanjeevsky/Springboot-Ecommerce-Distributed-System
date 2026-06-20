@@ -54,11 +54,19 @@ guards on the current status, so a redelivered Kafka message is a no-op.
 STARTED ─► STOCK_RESERVED ─► PAYMENT_CONFIRMED ─► COMPLETED      (happy path)
    │
    ├─► FAILED                                                    (insufficient stock)
-   └─ (STOCK_RESERVED) ─► COMPENSATING ─► COMPENSATED            (payment failed → release stock)
+   ├─ (STOCK_RESERVED) ─► COMPENSATING ─► COMPENSATED            (payment failed reply → release stock)
+   └─ (STARTED | STOCK_RESERVED, timed out) ─► COMPENSATING ─► COMPENSATED  (reaper: participant unreachable)
 ```
 
 > The shared `OrderStatus` enum is left untouched — `Order.status` stays `PENDING` during the saga
 > and flips to `CONFIRMED`/`CANCELLED` only at the end. Saga progress lives in `SagaInstance`.
+
+> **Timeout reaper.** Compensation above is driven by a downstream *reply* (`PaymentFailed`). If a
+> participant is instead *unreachable* — payment-service down, its `ChargePaymentCommand` unconsumed —
+> the saga would park in `STOCK_RESERVED` forever and leak reserved stock. `SagaTimeoutReaper` is a
+> scheduled sweep that compensates any saga stuck in an in-flight state past `saga.timeout` (default
+> 2m), driving it down the same `COMPENSATING → COMPENSATED` path. It re-guards on status inside its
+> own transaction, so a reply that arrives mid-sweep is a no-op. See `docs/resilience-plan.md` Phase F.
 
 ---
 

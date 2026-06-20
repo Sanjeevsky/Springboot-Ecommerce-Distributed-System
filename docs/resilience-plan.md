@@ -10,12 +10,13 @@ against documented steady-state hypotheses.
 
 ## Implementation status
 
-Phases A–E complete. This is Phase 8, following the completed sales-catalog-admin plan
+Phases A–F complete. This is Phase 8, following the completed sales-catalog-admin plan
 (Phases 0–7) and the operational-hardening PRs (#8–#14: tracing-on, image slim,
 the Metaspace OOM fixes, auth-error UX, Metaspace monitoring). Phase B turned up — and
-fixed — a real bug (the Feign circuit breakers never engaged). Two follow-ups are flagged
-below and not done here: a saga timeout/reaper (Phase C) and exporting per-Feign-client
-breaker state to Prometheus (Phase D).
+fixed — a real bug (the Feign circuit breakers never engaged). The saga timeout/reaper that
+Phase C flagged as a gap is now built out in **[Phase F](#phase-f--saga-timeout-reaper-done)**.
+One item remains **deferred by design**, not skipped — exporting per-Feign-client breaker
+state to Prometheus; its rationale is in [Deferred by design](#deferred-by-design) below.
 
 ## What already exists (the foundation)
 
@@ -120,11 +121,11 @@ subsequent calls fail in ~50ms until payment recovers.
   which makes payment-service reply with a `PaymentFailed` event. That is the *correct*
   trigger — compensation is driven by a payment failure *reply*, not by payment being
   unreachable.
-- **Finding (documented gap, not fixed here)**: if payment-service is merely *down*,
+- **Finding (gap surfaced here, closed in Phase F)**: if payment-service is merely *down*,
   the `ChargePaymentCommand` sits unconsumed on `payment-commands` and the saga parks
-  in `STOCK_RESERVED` indefinitely — there is no timeout-based compensation. A saga
-  timeout/reaper would be a separate feature PR; flagged here so it isn't mistaken for
-  validated behaviour.
+  in `STOCK_RESERVED` indefinitely — the orchestrator only compensates on a payment *reply*.
+  This phase validates the reply-driven path; the timeout-driven path is a separate feature,
+  now built in **[Phase F](#phase-f--saga-timeout-reaper-done)**.
 
 Verified live: healthy saga `STARTED → STOCK_RESERVED → PAYMENT_CONFIRMED → COMPLETED`
 (cart cleared); failing saga `STARTED → STOCK_RESERVED → COMPENSATING → COMPENSATED`
@@ -150,7 +151,8 @@ with `lastError="Simulated payment gateway failure"`, reserved stock released, c
   resilience4j-spring-boot2 Micrometer binder doesn't track at runtime (only the time-limiter
   side is metered, hence the timeout-based alert). Breaker **open/close transitions remain
   observable** via order-service's `/actuator/circuitbreakerevents` (which Phase B's
-  validation asserts against). Wiring breaker state into Prometheus is a follow-up.
+  validation asserts against). Wiring breaker state into Prometheus is a follow-up — see
+  [Deferred by design](#deferred-by-design).
 
 Verified live: `promtool check rules` passes (6 rules), all four alerts load in Prometheus
 (`/api/v1/rules`), and Grafana provisions the 11-panel dashboard.
@@ -160,7 +162,8 @@ Verified live: `promtool check rules` passes (6 rules), all four alerts load in 
 - **`scripts/chaos-suite.sh`**: runs the Phase B and Phase C validations as one gated
   suite (in the spirit of `scripts/verify-local.sh`), reports a combined pass/fail, and
   always `chaos.sh restore`s on exit — even on failure or Ctrl-C — so a failed run never
-  leaves a service paused. Skippable with `RUN_CIRCUIT_BREAKER=0` / `RUN_SAGA=0`.
+  leaves a service paused. Skippable with `RUN_CIRCUIT_BREAKER=0` / `RUN_SAGA=0`; the slower
+  Phase F saga-timeout check is opt-in via `RUN_SAGA_TIMEOUT=1`.
 - **Soak baseline** — the regression reference below.
 
 ### Soak / steady-state baseline
@@ -181,13 +184,71 @@ production figures, but they pin the right order of magnitude:
 A P99 spike on the latency panel with HikariCP pinned at 3 indicates DB connection-pool
 exhaustion; consumer lag that does not drain within seconds indicates a stuck consumer.
 
+## Phase F — Saga timeout reaper *(done)*
+
+Closes the gap Phase C surfaced: the orchestrator compensates only on a payment *failure
+reply*, so a saga whose participant is *unreachable* (payment-service down, its
+`ChargePaymentCommand` unconsumed) parks in `STOCK_RESERVED` forever and the reserved stock
+leaks. Phase C validated the reply-driven path; this phase adds the timeout-driven sibling.
+
+- **`SagaTimeoutReaper`** (order-service) — a `@Scheduled` sweep (gated by
+  `saga.reaper.enabled`, default on; `@EnableScheduling` added to the app) that every
+  `saga.reaper.interval-ms` (30s) finds sagas parked in an in-flight state
+  (`STARTED` / `STOCK_RESERVED`) whose last transition is older than `saga.timeout` (2m) via
+  `SagaInstanceRepository.findByStatusInAndUpdatedAtBefore`, and compensates each. The two
+  transient states (`PAYMENT_CONFIRMED` / `COMPENSATING`) flip terminal inside one
+  transaction, so they can't park and aren't swept.
+- **`OrderSagaOrchestrator.compensateStuckSaga`** — the timeout-driven sibling of
+  `onPaymentFailed`, sharing the same private `compensate(...)` step (mark `COMPENSATING` →
+  `cancelOrder` releases reserved stock via `OrderCancelledEvent` → mark `COMPENSATED`). It
+  re-guards on the current status inside its own transaction, so a real reply landing between
+  the reaper's scan and the compensation is a no-op (no double-compensation). The release is
+  idempotent for a `STARTED` saga whose stock was never actually reserved.
+- **Metrics**: each reaped saga increments `order_saga_reaped_total{from="<state>"}` *and* the
+  existing `order_saga_terminal_total{outcome="COMPENSATED"}` — so the Phase D
+  `SagaCompensationRateHigh` alert already fires when the reaper is doing work (a participant
+  is down), and the new counter distinguishes timeout-driven from decline-driven compensation.
+- **Tests**: `SagaTimeoutReaperTest` (compensates every stuck saga; no-op when none stuck;
+  one failure doesn't abort the batch) and three new `OrderSagaOrchestratorTest` cases
+  (compensates a timed-out `STOCK_RESERVED` and `STARTED` saga; no-op when already terminal).
+- **End-to-end**: `scripts/validate-saga-timeout.sh` proves it against the live stack —
+  `chaos.sh pause payment-service`, start a real saga, assert it parks in `STOCK_RESERVED`,
+  then assert the reaper drives it to `COMPENSATED` with a timeout `lastError`, releases the
+  reserved stock, and preserves the cart. It always restores payment-service on exit. Because
+  the default reaper waits `saga.timeout` (2m), it is **opt-in** in `chaos-suite.sh`
+  (`RUN_SAGA_TIMEOUT=1`); run order-service with `SAGA_TIMEOUT=PT15S` /
+  `SAGA_REAPER_INTERVAL_MS=5000` and `REAP_WAIT=40` for a fast run.
+
+Each stuck saga is compensated in its own transaction, so one failure doesn't abort the rest
+of the sweep. The reaper is idempotent run-to-run: once a saga is `COMPENSATED` it leaves the
+in-flight set and is never re-scanned.
+
+## Deferred by design
+
+One resilience item was considered and **intentionally left out** of this phase. It is
+documented here so it isn't mistaken for validated behaviour, and so a future contributor
+doesn't "fix" it as if it were a bug — it is a separate feature, not a gap in this work.
+(The saga timeout/reaper that previously sat here is now implemented — see
+[Phase F](#phase-f--saga-timeout-reaper-done).)
+
+1. **Per-Feign-client breaker state → Prometheus.** `resilience4j_circuitbreaker_state` for
+   the `HardCodedTarget#…` Feign breakers is not scraped: Spring Cloud's factory keeps those
+   lazily-created breakers in a registry the resilience4j-spring-boot2 Micrometer binder
+   doesn't track at runtime (only the time-limiter side is metered). A speculative metrics
+   binding was **reverted rather than shipped unconfirmed**. Breaker open/close transitions
+   stay observable via order-service `/actuator/circuitbreakerevents` (asserted by Phase B),
+   and the Phase D alerts key off the exported time-limiter timeout metric
+   (`resilience4j_timelimiter_calls_total{kind="timeout"}`) instead. Wiring breaker state
+   into Prometheus is a follow-up.
+
 ## Recommended approach
 
 Phases **A → C are the core** — the harness plus the two proofs that matter
 (circuit breakers genuinely open/recover, and the saga genuinely compensates
 end-to-end). Phases **D and E are the polish** that make the validation permanent
 and prevent it from rotting: alerts so regressions page, and a soak baseline so
-performance drift is caught.
+performance drift is caught. **Phase F** then hardens the saga itself — turning the
+unreachable-participant gap C documented into bounded, auto-compensated behaviour.
 
 ## Suggested PR sequence
 
@@ -196,5 +257,6 @@ performance drift is caught.
 3. **PR C** — Phase C (saga compensation end-to-end).
 4. **PR D** — Phase D (resilience alert rules + Grafana panels).
 5. **PR E** — Phase E (chaos suite gating + soak baseline).
+6. **PR F** — Phase F (saga timeout reaper for the unreachable-participant case).
 
 Each PR is independently shippable; A unblocks everything.
