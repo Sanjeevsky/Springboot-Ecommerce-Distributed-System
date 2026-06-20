@@ -7,9 +7,15 @@
 # injected fault on exit, even on failure or interrupt, so a failed run never leaves
 # payment-service paused.
 #
-#   scripts/chaos-suite.sh                 # run both
+#   scripts/chaos-suite.sh                 # run both fast checks
 #   RUN_CIRCUIT_BREAKER=0 scripts/chaos-suite.sh   # saga only
 #   RUN_SAGA=0 scripts/chaos-suite.sh              # circuit breaker only
+#   RUN_SAGA_TIMEOUT=1 scripts/chaos-suite.sh      # also run the saga timeout reaper check
+#
+# The saga-timeout (PR F) check is opt-in: by default the reaper waits saga.timeout (2m), so
+# it is off here to keep the suite fast. Enable it with RUN_SAGA_TIMEOUT=1, ideally with a
+# short reaper — e.g. order-service started with SAGA_TIMEOUT=PT15S SAGA_REAPER_INTERVAL_MS=5000
+# and the check run as `RUN_SAGA_TIMEOUT=1 REAP_WAIT=40 scripts/chaos-suite.sh`.
 #
 # Requires the stack up (docker compose up -d).
 #
@@ -20,6 +26,7 @@ cd "$ROOT_DIR"
 
 RUN_CIRCUIT_BREAKER="${RUN_CIRCUIT_BREAKER:-1}"
 RUN_SAGA="${RUN_SAGA:-1}"
+RUN_SAGA_TIMEOUT="${RUN_SAGA_TIMEOUT:-0}"
 
 bold() { printf '\033[1m%s\033[0m\n' "$*"; }
 green() { printf '\033[32m%s\033[0m\n' "$*"; }
@@ -48,6 +55,7 @@ echo
 
 [ "$RUN_CIRCUIT_BREAKER" = "1" ] && run_check "Circuit-breaker validation" "scripts/validate-circuit-breaker.sh"
 [ "$RUN_SAGA" = "1" ]            && run_check "Saga compensation validation" "scripts/validate-saga-compensation.sh"
+[ "$RUN_SAGA_TIMEOUT" = "1" ]    && run_check "Saga timeout reaper validation" "scripts/validate-saga-timeout.sh"
 
 bold "── suite summary ──"
 if [ "${#FAILED[@]}" -eq 0 ]; then

@@ -468,18 +468,33 @@ scripts/validate-circuit-breaker.sh   # requires the stack up
 `scripts/validate-saga-compensation.sh` proves the checkout saga compensates: a healthy
 saga completes and clears the cart, while a saga forced to fail at payment
 (`simulatePaymentFailure=true`) reaches `COMPENSATED`, releases the reserved stock back
-to inventory, and leaves the cart intact.
+to inventory, and leaves the cart intact. That path is reply-driven; if a participant is
+instead *unreachable*, a scheduled `SagaTimeoutReaper` compensates any saga parked in an
+in-flight state past `saga.timeout` (default 2m) so reserved stock never leaks
+(see [docs/resilience-plan.md](docs/resilience-plan.md) Phase F).
 
 ```bash
 scripts/validate-saga-compensation.sh   # requires the stack up
 ```
 
-`scripts/chaos-suite.sh` runs both validations as one gated suite and always restores any
-injected fault on exit. See [docs/resilience-plan.md](docs/resilience-plan.md) for the
-steady-state/soak baseline.
+`scripts/validate-saga-timeout.sh` proves that reaper: it pauses payment-service, starts a
+real saga, confirms it parks in `STOCK_RESERVED`, and asserts the reaper then drives it to
+`COMPENSATED` (timeout-driven), releasing the reserved stock and preserving the cart. With
+the default 2m timeout it waits up to ~3m; shorten it by starting order-service with
+`SAGA_TIMEOUT=PT15S SAGA_REAPER_INTERVAL_MS=5000` and running with `REAP_WAIT=40`.
 
 ```bash
-scripts/chaos-suite.sh   # circuit-breaker + saga checks; requires the stack up
+scripts/validate-saga-timeout.sh        # requires the stack up; pauses payment-service
+```
+
+`scripts/chaos-suite.sh` runs the validations as one gated suite and always restores any
+injected fault on exit. The circuit-breaker and saga-compensation checks run by default; the
+slower saga-timeout check is opt-in via `RUN_SAGA_TIMEOUT=1`. See
+[docs/resilience-plan.md](docs/resilience-plan.md) for the steady-state/soak baseline.
+
+```bash
+scripts/chaos-suite.sh                       # circuit-breaker + saga compensation
+RUN_SAGA_TIMEOUT=1 scripts/chaos-suite.sh    # also run the saga timeout reaper check
 ```
 
 ---
@@ -520,7 +535,7 @@ scripts/chaos-suite.sh   # circuit-breaker + saga checks; requires the stack up
 | auth-server | 27 | 10 |
 | catalog-service | 114 | — |
 | customer-service | 27 | — |
-| order-service | 75 | — |
+| order-service | 81 | — |
 | payment-service | 42 | 15 |
 | shopping-cart-service | 31 | 8 |
 | coupon-service | 37 | 12 |
@@ -528,4 +543,4 @@ scripts/chaos-suite.sh   # circuit-breaker + saga checks; requires the stack up
 | wishlist-service | 17 | 10 |
 | inventory-service | 51 | 8 |
 | notification-service | 16 | 8 |
-| **Total** | **492** | **81** |
+| **Total** | **498** | **81** |
