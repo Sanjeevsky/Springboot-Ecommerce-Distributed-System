@@ -454,7 +454,16 @@ scripts/chaos.sh restore                 # undo every fault on all known service
 
 Run the `load-tests/` k6 scenarios alongside it to observe the blast radius in Grafana.
 See [docs/resilience-plan.md](docs/resilience-plan.md) for the steady-state hypotheses
-each fault probes and the phased rollout (PR A here is the harness).
+each fault probes and the phased rollout.
+
+`scripts/validate-circuit-breaker.sh` asserts one of those hypotheses end-to-end:
+pause payment-service, drive the real checkout path, and confirm order-service's Feign
+circuit breaker opens (calls fail fast instead of hanging on the time limit) and then
+recovers once payment-service returns.
+
+```bash
+scripts/validate-circuit-breaker.sh   # requires the stack up
+```
 
 ---
 
@@ -494,7 +503,7 @@ each fault probes and the phased rollout (PR A here is the harness).
 | auth-server | 27 | 10 |
 | catalog-service | 114 | — |
 | customer-service | 27 | — |
-| order-service | 72 | — |
+| order-service | 75 | — |
 | payment-service | 42 | 15 |
 | shopping-cart-service | 31 | 8 |
 | coupon-service | 37 | 12 |
@@ -502,4 +511,4 @@ each fault probes and the phased rollout (PR A here is the harness).
 | wishlist-service | 17 | 10 |
 | inventory-service | 51 | 8 |
 | notification-service | 16 | 8 |
-| **Total** | **489** | **81** |
+| **Total** | **492** | **81** |
