@@ -105,14 +105,27 @@ Verified live: before the fix a hung payment hung checkout 15s/call with the bre
 stuck closed; after, the first ~4–5 calls time out at 4s, the breaker opens, and
 subsequent calls fail in ~50ms until payment recovers.
 
-## Phase C — Saga compensation under real failure
+## Phase C — Saga compensation under real failure *(done)*
 
-- End-to-end test: place a saga order with payment-service actually down (or via
-  `simulatePaymentFailure=true`) and assert the `SagaInstance` reaches
-  `COMPENSATED`, the reserved stock is released in inventory-service, and the cart
-  is left intact.
-- This is the path currently covered only by `OrderSagaOrchestratorTest` against
-  mocks — here it runs against the live services and Kafka topics.
+- **`scripts/validate-saga-compensation.sh`**: drives the async checkout saga against
+  the live services and Kafka topics. It first runs a healthy saga as a control
+  (asserts `COMPLETED` + cart cleared), then a failing one and asserts the
+  `SagaInstance` reaches `COMPENSATED`, the reserved stock is released back in
+  inventory-service, and the cart is left intact. This is the path previously covered
+  only by `OrderSagaOrchestratorTest` against mocks.
+- **Lever**: the compensation trigger is `POST /order/saga?simulatePaymentFailure=true`,
+  which makes payment-service reply with a `PaymentFailed` event. That is the *correct*
+  trigger — compensation is driven by a payment failure *reply*, not by payment being
+  unreachable.
+- **Finding (documented gap, not fixed here)**: if payment-service is merely *down*,
+  the `ChargePaymentCommand` sits unconsumed on `payment-commands` and the saga parks
+  in `STOCK_RESERVED` indefinitely — there is no timeout-based compensation. A saga
+  timeout/reaper would be a separate feature PR; flagged here so it isn't mistaken for
+  validated behaviour.
+
+Verified live: healthy saga `STARTED → STOCK_RESERVED → PAYMENT_CONFIRMED → COMPLETED`
+(cart cleared); failing saga `STARTED → STOCK_RESERVED → COMPENSATING → COMPENSATED`
+with `lastError="Simulated payment gateway failure"`, reserved stock released, cart kept.
 
 ## Phase D — Resilience alert rules + dashboard panels
 
