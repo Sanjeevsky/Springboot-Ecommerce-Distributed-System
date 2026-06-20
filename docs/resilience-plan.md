@@ -75,15 +75,35 @@ checkout flow: login → cart → order → confirm at the smoke load level.
   companion deliverable.
 - Smallest PR; unblocks B–E.
 
-## Phase B — Circuit-breaker validation
+## Phase B — Circuit-breaker validation *(done — required a fix)*
 
-- Scenario script: kill payment-service, drive checkout load via the k6 suite, and
-  assert from `resilience4j_circuitbreaker_state` (Prometheus) and
-  `/actuator/health` that the breaker **opens** and requests **fail fast** rather
-  than hanging the full timelimiter window.
-- Restore payment-service and assert the breaker **half-opens then closes** after
-  `waitDurationInOpenState`, and checkout success rate returns to baseline.
-- Asserted programmatically, not eyeballed in Grafana.
+Validating the hypotheses first surfaced a latent bug: the Feign circuit breakers
+never engaged. order-service uses `spring-cloud-circuitbreaker-resilience4j`, whose
+breakers are configured by a Java `Customizer` bean — there was none, so they ran on
+library defaults (a 100-call window, no effective time limit). The
+`resilience4j.circuitbreaker.instances.*` properties were dead config, read only by
+the separate resilience4j-spring-boot2 registry that the Feign path never touches. A
+hung payment-service therefore blocked every order worker on the 15s Feign read
+timeout — no load shedding.
+
+- **Fix**: `CircuitBreakerConfiguration.java` adds the missing
+  `Customizer<Resilience4JCircuitBreakerFactory>` — a 4s time limit and a breaker that
+  opens on sustained failure (10-call window, 5-call minimum, 50% threshold, 10s open
+  state). The 15s read-timeout / time-limiter properties stay as a cold-start backstop
+  (and to satisfy config validation).
+- **`scripts/validate-circuit-breaker.sh`**: drives the real checkout path through the
+  gateway, uses `chaos.sh pause payment-service`, and asserts from order-service's
+  `/actuator/circuitbreakerevents` stream that the breaker goes `CLOSED_TO_OPEN`, that
+  calls fail fast (<1s) once open instead of riding the time limit (~4s), and that it
+  auto-recovers (`OPEN_TO_HALF_OPEN` → `HALF_OPEN_TO_CLOSED`) after payment returns.
+  Asserted programmatically, not eyeballed.
+- Reading breaker **state from Prometheus** is deferred to Phase D: the lazily-created
+  Feign breakers aren't bound to the metrics registry yet, so D adds that binding
+  alongside the panels/alerts.
+
+Verified live: before the fix a hung payment hung checkout 15s/call with the breaker
+stuck closed; after, the first ~4–5 calls time out at 4s, the breaker opens, and
+subsequent calls fail in ~50ms until payment recovers.
 
 ## Phase C — Saga compensation under real failure
 
