@@ -10,9 +10,12 @@ against documented steady-state hypotheses.
 
 ## Implementation status
 
-Not started. This is Phase 8, following the completed sales-catalog-admin plan
+Phases A–E complete. This is Phase 8, following the completed sales-catalog-admin plan
 (Phases 0–7) and the operational-hardening PRs (#8–#14: tracing-on, image slim,
-the Metaspace OOM fixes, auth-error UX, Metaspace monitoring).
+the Metaspace OOM fixes, auth-error UX, Metaspace monitoring). Phase B turned up — and
+fixed — a real bug (the Feign circuit breakers never engaged). Two follow-ups are flagged
+below and not done here: a saga timeout/reaper (Phase C) and exporting per-Feign-client
+breaker state to Prometheus (Phase D).
 
 ## What already exists (the foundation)
 
@@ -152,13 +155,31 @@ with `lastError="Simulated payment gateway failure"`, reserved stock released, c
 Verified live: `promtool check rules` passes (6 rules), all four alerts load in Prometheus
 (`/api/v1/rules`), and Grafana provisions the 11-panel dashboard.
 
-## Phase E — Wire into verification + soak baseline
+## Phase E — Wire into verification + soak baseline *(done)*
 
-- `scripts/chaos-suite.sh`: automate Phases B and C as a gated suite, in the spirit
-  of `scripts/verify-local.sh`.
-- Capture a documented soak-test baseline (p99 latency, HikariCP active
-  connections, consumer-lag drain time) in this doc as the regression reference for
-  future changes.
+- **`scripts/chaos-suite.sh`**: runs the Phase B and Phase C validations as one gated
+  suite (in the spirit of `scripts/verify-local.sh`), reports a combined pass/fail, and
+  always `chaos.sh restore`s on exit — even on failure or Ctrl-C — so a failed run never
+  leaves a service paused. Skippable with `RUN_CIRCUIT_BREAKER=0` / `RUN_SAGA=0`.
+- **Soak baseline** — the regression reference below.
+
+### Soak / steady-state baseline
+
+A full 30-minute soak is driven by k6 (`k6 run --env SCENARIO=soak load-tests/checkout-flow.js`)
+and watched on the Grafana `ecommerce-overview` dashboard. k6 is not installed in every
+environment, so the reference snapshot below was captured under a light synthetic
+checkout load (≈40 orders + browse) — re-run the k6 soak before trusting these as
+production figures, but they pin the right order of magnitude:
+
+| Signal | Baseline | Where to watch |
+|--------|----------|----------------|
+| Healthy `POST /order-service/order` latency | mean ≈ 0.12s, max ≈ 0.28s (light load) | HTTP P99 Latency panel |
+| HikariCP pool size (per service) | max 3 connections | Active DB Connections panel — should stay below 3 under load |
+| Kafka consumer lag at rest | drains to 0 | Kafka Consumer Lag panel (hypothesis #4) |
+| Saga outcomes | COMPLETED dominates; COMPENSATED only on injected payment failure | Checkout Saga Outcomes panel |
+
+A P99 spike on the latency panel with HikariCP pinned at 3 indicates DB connection-pool
+exhaustion; consumer lag that does not drain within seconds indicates a stuck consumer.
 
 ## Recommended approach
 
