@@ -474,6 +474,14 @@ to inventory, and leaves the cart intact.
 scripts/validate-saga-compensation.sh   # requires the stack up
 ```
 
+`scripts/chaos-suite.sh` runs both validations as one gated suite and always restores any
+injected fault on exit. See [docs/resilience-plan.md](docs/resilience-plan.md) for the
+steady-state/soak baseline.
+
+```bash
+scripts/chaos-suite.sh   # circuit-breaker + saga checks; requires the stack up
+```
+
 ---
 
 ## Project Structure
