@@ -465,6 +465,15 @@ recovers once payment-service returns.
 scripts/validate-circuit-breaker.sh   # requires the stack up
 ```
 
+`scripts/validate-saga-compensation.sh` proves the checkout saga compensates: a healthy
+saga completes and clears the cart, while a saga forced to fail at payment
+(`simulatePaymentFailure=true`) reaches `COMPENSATED`, releases the reserved stock back
+to inventory, and leaves the cart intact.
+
+```bash
+scripts/validate-saga-compensation.sh   # requires the stack up
+```
+
 ---
 
 ## Project Structure
