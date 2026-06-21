@@ -75,3 +75,18 @@ groups:
         annotations:
           summary: "Checkout sagas compensating frequently"
           description: "Order sagas are compensating at {{ $value | printf \"%.2f\" }}/s over 5m for 10m — payments are failing after stock reservation; check payment-service."
+
+      # A Feign circuit breaker that stays tripped means a downstream is persistently failing.
+      # The breaker auto-recovers after 10s (waitDurationInOpenState) and flaps open->half_open
+      # while the dependency is down, so max_over_time captures "open at some point recently";
+      # requiring that for 5m means it has been tripping for ~10m, not a one-off blip. Breaker
+      # state is exported per Feign method by FeignCircuitBreakerStateMetrics, e.g.
+      # name="HardCodedTarget#initiatePayment(PaymentRequest)".
+      - alert: FeignCircuitBreakerOpen
+        expr: max by (job, name) (max_over_time(resilience4j_circuitbreaker_state{state="open"}[5m])) == 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.job }} circuit breaker open: {{ $labels.name }}"
+          description: "{{ $labels.job }}'s circuit breaker {{ $labels.name }} has been tripping open for 5m — the downstream it guards is persistently failing; calls are being shed to the fallback."
