@@ -459,7 +459,9 @@ each fault probes and the phased rollout.
 `scripts/validate-circuit-breaker.sh` asserts one of those hypotheses end-to-end:
 pause payment-service, drive the real checkout path, and confirm order-service's Feign
 circuit breaker opens (calls fail fast instead of hanging on the time limit) and then
-recovers once payment-service returns.
+recovers once payment-service returns. Each Feign breaker's state is exported to Prometheus
+as `resilience4j_circuitbreaker_state{name="HardCodedTarget#…"}` (per-method), with a
+`FeignCircuitBreakerOpen` alert when one trips persistently.
 
 ```bash
 scripts/validate-circuit-breaker.sh   # requires the stack up
@@ -535,7 +537,7 @@ RUN_SAGA_TIMEOUT=1 scripts/chaos-suite.sh    # also run the saga timeout reaper 
 | auth-server | 27 | 10 |
 | catalog-service | 114 | — |
 | customer-service | 27 | — |
-| order-service | 81 | — |
+| order-service | 83 | — |
 | payment-service | 42 | 15 |
 | shopping-cart-service | 31 | 8 |
 | coupon-service | 37 | 12 |
@@ -543,4 +545,4 @@ RUN_SAGA_TIMEOUT=1 scripts/chaos-suite.sh    # also run the saga timeout reaper 
 | wishlist-service | 17 | 10 |
 | inventory-service | 51 | 8 |
 | notification-service | 16 | 8 |
-| **Total** | **498** | **81** |
+| **Total** | **500** | **81** |

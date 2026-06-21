@@ -10,13 +10,13 @@ against documented steady-state hypotheses.
 
 ## Implementation status
 
-Phases A–F complete. This is Phase 8, following the completed sales-catalog-admin plan
+Phases A–G complete. This is Phase 8, following the completed sales-catalog-admin plan
 (Phases 0–7) and the operational-hardening PRs (#8–#14: tracing-on, image slim,
 the Metaspace OOM fixes, auth-error UX, Metaspace monitoring). Phase B turned up — and
 fixed — a real bug (the Feign circuit breakers never engaged). The saga timeout/reaper that
-Phase C flagged as a gap is now built out in **[Phase F](#phase-f--saga-timeout-reaper-done)**.
-One item remains **deferred by design**, not skipped — exporting per-Feign-client breaker
-state to Prometheus; its rationale is in [Deferred by design](#deferred-by-design) below.
+Phase C flagged as a gap is now built out in **[Phase F](#phase-f--saga-timeout-reaper-done)**,
+and the breaker-state export that Phase D deferred is now done in
+**[Phase G](#phase-g--export-feign-circuit-breaker-state-done)** — nothing remains deferred.
 
 ## What already exists (the foundation)
 
@@ -145,14 +145,13 @@ with `lastError="Simulated payment gateway failure"`, reserved stock released, c
 - **Grafana** (`ecommerce-overview.json`) gains two panels — *Checkout Saga Outcomes* and
   *Downstream Feign Timeouts*. The existing dashboard already had HTTP-5xx and Kafka-lag
   panels, so those weren't duplicated. Mirrors how the Metaspace alert + panel were added in #14.
-- **Circuit-breaker state caveat**: the per-Feign-client breaker *state*
-  (`resilience4j_circuitbreaker_state` for `HardCodedTarget#…`) is **not** exported to
-  Prometheus — Spring Cloud's factory keeps the breakers in a registry the
-  resilience4j-spring-boot2 Micrometer binder doesn't track at runtime (only the time-limiter
-  side is metered, hence the timeout-based alert). Breaker **open/close transitions remain
-  observable** via order-service's `/actuator/circuitbreakerevents` (which Phase B's
-  validation asserts against). Wiring breaker state into Prometheus is a follow-up — see
-  [Deferred by design](#deferred-by-design).
+- **Circuit-breaker state caveat (resolved in [Phase G](#phase-g--export-feign-circuit-breaker-state-done))**:
+  at the time of Phase D the per-Feign-client breaker *state*
+  (`resilience4j_circuitbreaker_state` for `HardCodedTarget#…`) was **not** exported to
+  Prometheus — the lazily-created Feign breakers weren't metered, so only the time-limiter side
+  was scraped (hence the timeout-based alert). Breaker open/close stayed observable via
+  `/actuator/circuitbreakerevents`. Phase G now exports the state directly and adds a
+  `FeignCircuitBreakerOpen` alert on top of it.
 
 Verified live: `promtool check rules` passes (6 rules), all four alerts load in Prometheus
 (`/api/v1/rules`), and Grafana provisions the 11-panel dashboard.
@@ -223,23 +222,40 @@ Each stuck saga is compensated in its own transaction, so one failure doesn't ab
 of the sweep. The reaper is idempotent run-to-run: once a saga is `COMPENSATED` it leaves the
 in-flight set and is never re-scanned.
 
-## Deferred by design
+## Phase G — Export Feign circuit-breaker state *(done)*
 
-One resilience item was considered and **intentionally left out** of this phase. It is
-documented here so it isn't mistaken for validated behaviour, and so a future contributor
-doesn't "fix" it as if it were a bug — it is a separate feature, not a gap in this work.
-(The saga timeout/reaper that previously sat here is now implemented — see
-[Phase F](#phase-f--saga-timeout-reaper-done).)
+Resolves the Phase D caveat. The per-Feign-client breaker *state*
+(`resilience4j_circuitbreaker_state` for `HardCodedTarget#…`) was not reaching Prometheus, so
+breaker open/close was only visible via `/actuator/circuitbreakerevents` and the alerts had to
+key off the time-limiter timeout metric instead.
 
-1. **Per-Feign-client breaker state → Prometheus.** `resilience4j_circuitbreaker_state` for
-   the `HardCodedTarget#…` Feign breakers is not scraped: Spring Cloud's factory keeps those
-   lazily-created breakers in a registry the resilience4j-spring-boot2 Micrometer binder
-   doesn't track at runtime (only the time-limiter side is metered). A speculative metrics
-   binding was **reverted rather than shipped unconfirmed**. Breaker open/close transitions
-   stay observable via order-service `/actuator/circuitbreakerevents` (asserted by Phase B),
-   and the Phase D alerts key off the exported time-limiter timeout metric
-   (`resilience4j_timelimiter_calls_total{kind="timeout"}`) instead. Wiring breaker state
-   into Prometheus is a follow-up.
+- **Root cause (confirmed empirically, not assumed).** The Feign breakers are created lazily on
+  first call. Both resilience4j-spring-boot2 *and* Spring Cloud's own active
+  `MicrometerResilience4JCustomizerConfiguration` already bind `TaggedCircuitBreakerMetrics` to
+  the factory registry — so simply binding it again (the earlier reverted attempt) is redundant
+  and changes nothing: in this version stack (spring-cloud-circuitbreaker 2.0.2 / resilience4j
+  1.7.0) the registry's `onEntryAdded` event does not meter these lazily-created breakers. Only
+  the eager `resilience4j.circuitbreaker.instances.*` instances were exported. The time-limiter
+  side *was* metered because the factory shares the metered `TimeLimiterRegistry` bean.
+- **Fix**: `FeignCircuitBreakerStateMetrics` (order-service) does not rely on the entry-added
+  event. It polls the `CircuitBreakerRegistry` bean — the same registry
+  `/actuator/circuitbreakers` reads, which provably contains the Feign breakers — on a
+  `@Scheduled` reconcile (`circuitbreaker.metrics.reconcile-ms`, 15s) and registers a Micrometer
+  state gauge for each breaker it hasn't seen. It reuses the standard
+  `resilience4j.circuitbreaker.state` name/tags (uniform across Feign and property breakers;
+  re-registering an already-metered instance is a no-op, Micrometer builders being idempotent by
+  id). A breaker's gauges appear within one reconcile of its first call and then track its state.
+- **Alert**: `FeignCircuitBreakerOpen` in `alert-rules.yml` fires when
+  `max_over_time(resilience4j_circuitbreaker_state{state="open"}[5m]) == 1` holds `for: 5m` — a
+  breaker tripping persistently (the flap-tolerant form, since the breaker auto-recovers every
+  10s). This is the alert Phase D wanted but couldn't express.
+- **Tests**: `FeignCircuitBreakerStateMetricsTest` (a breaker present at reconcile is exported;
+  one created later is picked up on the next reconcile; the gauge flips when the breaker
+  transitions open).
+- **Verified live**: after a Feign-driven order, all five `HardCodedTarget#…` breakers export 6
+  state series each; pausing payment-service and driving orders flips
+  `resilience4j_circuitbreaker_state{name="HardCodedTarget#initiatePayment(PaymentRequest)",state="open"}`
+  to `1`. `promtool check rules` passes (7 rules).
 
 ## Recommended approach
 
@@ -248,7 +264,8 @@ Phases **A → C are the core** — the harness plus the two proofs that matter
 end-to-end). Phases **D and E are the polish** that make the validation permanent
 and prevent it from rotting: alerts so regressions page, and a soak baseline so
 performance drift is caught. **Phase F** then hardens the saga itself — turning the
-unreachable-participant gap C documented into bounded, auto-compensated behaviour.
+unreachable-participant gap C documented into bounded, auto-compensated behaviour — and
+**Phase G** closes the observability loop by exporting Feign breaker state and alerting on it.
 
 ## Suggested PR sequence
 
@@ -258,5 +275,6 @@ unreachable-participant gap C documented into bounded, auto-compensated behaviou
 4. **PR D** — Phase D (resilience alert rules + Grafana panels).
 5. **PR E** — Phase E (chaos suite gating + soak baseline).
 6. **PR F** — Phase F (saga timeout reaper for the unreachable-participant case).
+7. **PR G** — Phase G (export Feign circuit-breaker state + breaker-open alert).
 
 Each PR is independently shippable; A unblocks everything.
