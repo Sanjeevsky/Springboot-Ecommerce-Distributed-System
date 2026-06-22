@@ -132,7 +132,7 @@ Owns the order lifecycle and the saga orchestrator. Two checkout paths:
 | Legacy (sync) | `POST /order` | Feign calls for payment inline; blocks until payment returns |
 | Saga (async) | `POST /order/saga` | Returns 202 immediately; async saga runs over Kafka |
 
-Feign calls are wrapped in Resilience4j circuit breakers (name: `orderServiceCircuitBreaker`). See [Workflows — Checkout Saga](workflows.md) for the full state machine.
+Feign calls are wrapped in per-method Resilience4j circuit breakers (e.g. `HardCodedTarget#initiatePayment(PaymentRequest)`), tuned in `CircuitBreakerConfiguration`. See [Workflows — Checkout Saga](workflows.md) for the full state machine and [docs/resilience-plan.md](resilience-plan.md) for the breaker tuning/metrics.
 
 Idempotency: pass `Idempotency-Key: <uuid>` header to make order creation safe to retry.
 
@@ -291,7 +291,7 @@ Cache is optional: set `SPRING_CACHE_TYPE=none` to disable Redis caching and fal
 
 ### Circuit Breaker (order-service)
 
-Resilience4j `@CircuitBreaker(name = "orderServiceCircuitBreaker")` wraps all Feign calls. States: `CLOSED → OPEN → HALF_OPEN → CLOSED`. Fallback methods return safe defaults (empty list, null payment, etc.).
+With `feign.circuitbreaker.enabled=true`, Spring Cloud OpenFeign auto-wraps every Feign call in a Resilience4j breaker named per method (e.g. `HardCodedTarget#initiatePayment(PaymentRequest)`). The breakers are tuned by a Java `Customizer` in `CircuitBreakerConfiguration` (4s time limit + open-on-failure) — without it they ran on library defaults and never engaged. States: `CLOSED → OPEN → HALF_OPEN → CLOSED`; fallback methods return safe defaults (empty list, null payment, etc.). Each breaker's state is exported to Prometheus by `FeignCircuitBreakerStateMetrics` (`resilience4j_circuitbreaker_state`) with a `FeignCircuitBreakerOpen` alert. See [docs/resilience-plan.md](resilience-plan.md).
 
 ### Idempotency
 
@@ -303,7 +303,7 @@ Resilience4j `@CircuitBreaker(name = "orderServiceCircuitBreaker")` wraps all Fe
 
 ### Saga Compensation
 
-If payment fails after stock has been reserved, the saga publishes `OrderCancelledEvent` which triggers `inventory-service.releaseStock()` — the inverse of the reservation step. Orders end in `CANCELLED` status with the saga instance in `COMPENSATED` state.
+If payment fails after stock has been reserved, the saga publishes `OrderCancelledEvent` which triggers `inventory-service.releaseStock()` — the inverse of the reservation step. Orders end in `CANCELLED` status with the saga instance in `COMPENSATED` state. That path is driven by a payment *failure reply*; if a participant is instead *unreachable* (e.g. payment-service down, its command unconsumed), `SagaTimeoutReaper` compensates any saga parked in an in-flight state past `saga.timeout` so reserved stock is never leaked.
 
 ---
 

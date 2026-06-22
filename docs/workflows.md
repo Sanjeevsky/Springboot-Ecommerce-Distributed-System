@@ -424,6 +424,13 @@ notification-service
   │  INSERT notification { userId, "Your order #X was cancelled", type=ORDER }
 ```
 
+The path above is driven by a payment *failure reply*. If a participant is instead
+*unreachable* (e.g. payment-service down, its `ChargePaymentCommand` never consumed), the saga
+would park in `STOCK_RESERVED` forever. `SagaTimeoutReaper` (order-service) sweeps sagas stuck in
+an in-flight state past `saga.timeout` and drives them down the same
+`COMPENSATING → COMPENSATED` path, so reserved stock is never leaked. See
+[SAGA.md](SAGA.md) and [resilience-plan.md](resilience-plan.md) Phase F.
+
 ### Polling Saga Status
 
 ```

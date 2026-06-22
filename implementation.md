@@ -141,6 +141,18 @@ Stock validation before creating order (non-blocking — continue with warning i
 Circuit breakers on all Feign clients with graceful fallbacks:
 - `CartFeignClientFallback`, `PaymentFeignClientFallback`, `CustomerFeignClientFallback`
 
+The Spring Cloud OpenFeign breakers are tuned by a Java `Customizer` in
+`CircuitBreakerConfiguration` (4s time limit + open-on-failure) — without it they ran on
+library defaults and never engaged, so a hung downstream blocked every worker on the Feign
+read timeout. Each breaker's state is exported to Prometheus by `FeignCircuitBreakerStateMetrics`
+(`resilience4j_circuitbreaker_state{name="HardCodedTarget#…"}`) with a `FeignCircuitBreakerOpen`
+alert. The checkout saga (`OrderSagaOrchestrator`) compensates on a payment failure reply and,
+for an unreachable participant, via the `SagaTimeoutReaper`. A `scripts/chaos.sh` fault-injection
+harness plus asserted validations (`validate-circuit-breaker.sh`, `validate-saga-compensation.sh`,
+`validate-saga-timeout.sh`, gated by `chaos-suite.sh`) prove all of this end-to-end. Full detail
+and the phased rollout: [docs/resilience-plan.md](docs/resilience-plan.md) and
+[docs/SAGA.md](docs/SAGA.md).
+
 **3.2 Kafka Dead Letter Queue**
 
 Inventory, order, notification, and review consumers use retry + dead-letter handling. Consumer processing failures are rethrown to the listener container and published to `{topic}-dlt` after bounded retries.
@@ -221,6 +233,13 @@ wishlist-service/pom.xml                             [done: openfeign]
 
 ```
 order-service/src/main/resources/application.properties  [done: resilience4j config]
+order-service/src/main/java/.../config/
+  CircuitBreakerConfiguration.java                   [done: makes Feign breakers engage]
+  FeignCircuitBreakerStateMetrics.java               [done: breaker state -> Prometheus]
+order-service/src/main/java/.../service/
+  SagaTimeoutReaper.java                             [done: compensate parked sagas]
+scripts/chaos.sh, scripts/validate-*.sh              [done: chaos harness + validations]
+observability/alert-rules.yml                        [done: resilience alert group]
 inventory-service/src/main/java/.../events/
   OrderEventConsumer.java                            [done: retry/DLQ handler]
 order-service/src/main/java/.../events/
