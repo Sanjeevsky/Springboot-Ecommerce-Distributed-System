@@ -96,7 +96,7 @@ Kafka consumers retry failed records twice with a 1 second backoff, then publish
 - **Search**: Elasticsearch 7.13 — full-text search + auto-suggest + Spring Data Elasticsearch
 - **Caching**: Redis 7.2 — catalog product cache + cart session
 - **Database**: MySQL 8.0 (one schema per service, 11 total)
-- **Resilience**: Resilience4j circuit breakers + Feign fallbacks + DLT retry
+- **Resilience**: Resilience4j circuit breakers (engaged via a Java `Customizer`, state exported to Prometheus) + Feign fallbacks + DLT retry; orchestration-saga compensation with a timeout reaper; a `scripts/chaos.sh` fault-injection harness with asserted validations (see [Resilience / chaos testing](#resilience--chaos-testing))
 - **Logging**: Logstash JSON (logstash-logback-encoder 7.2) — structured JSON on every service; MDC fields: `traceId`, `spanId`, `correlationId`, `userId`, `service`
 - **MDC propagation**: `X-Correlation-ID` generated at gateway, forwarded through Feign headers and Kafka message headers; auto-configured via `platform-commons` spring.factories
 - **Tracing**: Spring Cloud Sleuth + Zipkin
