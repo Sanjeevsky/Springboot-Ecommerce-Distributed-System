@@ -1,0 +1,15 @@
+{
+  "name": "trove-ui-capture",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Playwright recorder for Trove storefront/Studio UI navigation B-roll.",
+  "scripts": {
+    "setup": "npm install && npx playwright install chromium",
+    "record": "node record.mjs",
+    "verify": "node verify.mjs"
+  },
+  "dependencies": {
+    "playwright": "^1.48.2"
+  }
+}
